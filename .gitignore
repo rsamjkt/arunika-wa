@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# runtime data: user accounts, password hashes, sessions, API keys — never commit
+/data/
+
 # vercel
 .vercel
 
