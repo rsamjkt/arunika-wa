@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/sessions";
 import { validateApiKey } from "@/lib/apikeys";
+import { getFullUser } from "@/lib/users";
 
 const PUBLIC_PATHS = new Set(["/login", "/api/auth/login"]);
+// GET is a public plan catalog (needed for the registration page); the
+// route itself gates POST/PATCH/DELETE behind requireSuperadmin().
+const PUBLIC_PREFIXES = ["/api/plans"];
 const SESSION_COOKIE = "arunika_session";
 // User & API-key management must only ever be reachable from a logged-in
 // browser session — never via X-Api-Key, even though it lives under /api/.
@@ -10,11 +14,17 @@ const COOKIE_ONLY_PREFIXES = ["/api/users", "/api/api-keys", "/api/webhook-confi
 // Called by WAHA itself, not a browser or an app-issued API key — it
 // authenticates the request itself via HMAC signature verification instead.
 const SELF_VERIFIED_PATHS = new Set(["/api/webhooks/waha"]);
+// Platform-owner-only area — a valid session isn't enough, role must be superadmin.
+const ADMIN_PREFIXES = ["/admin"];
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (PUBLIC_PATHS.has(pathname) || SELF_VERIFIED_PATHS.has(pathname)) {
+  if (
+    PUBLIC_PATHS.has(pathname) ||
+    SELF_VERIFIED_PATHS.has(pathname) ||
+    PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))
+  ) {
     return NextResponse.next();
   }
 
@@ -22,6 +32,12 @@ export function proxy(req: NextRequest) {
   const session = cookie ? getSession(cookie) : null;
 
   if (session) {
+    if (ADMIN_PREFIXES.some((p) => pathname.startsWith(p))) {
+      const user = getFullUser(session.userId);
+      if (user?.role !== "superadmin") {
+        return NextResponse.redirect(new URL("/", req.url));
+      }
+    }
     return NextResponse.next();
   }
 

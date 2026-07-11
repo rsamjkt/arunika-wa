@@ -22,6 +22,8 @@ const TITLES: Record<string, string> = {
   "/templates": "Template Pesan",
   "/flow": "Auto-Reply",
   "/reports": "Laporan",
+  "/admin/plans": "Kelola Paket",
+  "/admin/tenants": "Kelola Tenant",
 };
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
