@@ -517,6 +517,64 @@ h3 {
   color: var(--ink-soft);
 }
 
+/* ---------- bar chart (reports) ---------- */
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 172px;
+  padding-top: 8px;
+}
+.barcol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.barstack {
+  width: 100%;
+  max-width: 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+}
+.bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: var(--primary-gradient);
+}
+.bar.fail {
+  background: var(--danger);
+  border-radius: 0 0 0 0;
+}
+.bar.recv {
+  background: var(--info);
+}
+.barlbl {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.leg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.lgd {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
 /* ---------- data table ---------- */
 .table-wrap {
   overflow-x: auto;
