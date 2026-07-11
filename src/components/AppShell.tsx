@@ -17,6 +17,11 @@ const TITLES: Record<string, string> = {
   "/settings": "Pengaturan",
   "/settings/users": "Manajemen User",
   "/settings/api-keys": "API Key",
+  "/settings/webhook": "Webhook",
+  "/broadcast": "Broadcast",
+  "/templates": "Template Pesan",
+  "/flow": "Auto-Reply",
+  "/reports": "Laporan",
 };
 
 export default function AppShell({ children }: { children: React.ReactNode }) {

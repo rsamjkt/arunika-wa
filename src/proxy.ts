@@ -6,12 +6,15 @@ const PUBLIC_PATHS = new Set(["/login", "/api/auth/login"]);
 const SESSION_COOKIE = "arunika_session";
 // User & API-key management must only ever be reachable from a logged-in
 // browser session — never via X-Api-Key, even though it lives under /api/.
-const COOKIE_ONLY_PREFIXES = ["/api/users", "/api/api-keys"];
+const COOKIE_ONLY_PREFIXES = ["/api/users", "/api/api-keys", "/api/webhook-config", "/api/autoreply"];
+// Called by WAHA itself, not a browser or an app-issued API key — it
+// authenticates the request itself via HMAC signature verification instead.
+const SELF_VERIFIED_PATHS = new Set(["/api/webhooks/waha"]);
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (PUBLIC_PATHS.has(pathname)) {
+  if (PUBLIC_PATHS.has(pathname) || SELF_VERIFIED_PATHS.has(pathname)) {
     return NextResponse.next();
   }
 
