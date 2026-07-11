@@ -28,7 +28,10 @@ export default function Sidebar({
     <aside className={`sidebar${open ? " open" : ""}`}>
       <Link href="/" className="brand" onClick={onNavigate}>
         <span className="mark">A</span>
-        Arunika · WA
+        <span className="brand-text">
+          <span className="bname">Arunika · WA</span>
+          <span className="btag">GATEWAY PLATFORM</span>
+        </span>
       </Link>
       <nav>
         <span className="nav-label">Menu</span>
