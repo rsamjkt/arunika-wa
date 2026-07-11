@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendText } from "@/lib/waha";
 import { logEvent } from "@/lib/messageLog";
 import { deliverOutboundWebhook } from "@/lib/webhookConfig";
+import { getSessionOwner } from "@/lib/tenancy";
 import {
   getSettings,
   hasSeenContact,
@@ -35,37 +36,38 @@ interface WahaWebhookPayload {
   };
 }
 
-async function runAutoReply(session: string, chatId: string, text: string) {
-  const settings = getSettings();
+async function runAutoReply(ownerId: string, session: string, chatId: string, text: string) {
+  const settings = getSettings(ownerId);
   if (!settings.enabled) return;
 
   const isNewContact = !hasSeenContact(session, chatId);
   markSeenContact(session, chatId);
 
   if (isNewContact && settings.welcomeEnabled) {
-    await sendReply(session, chatId, settings.welcomeMessage);
+    await sendReply(ownerId, session, chatId, settings.welcomeMessage);
     return;
   }
 
   if (!isWithinBusinessHours(settings)) {
     if (settings.outsideHoursEnabled) {
-      await sendReply(session, chatId, settings.outsideHoursMessage);
+      await sendReply(ownerId, session, chatId, settings.outsideHoursMessage);
     }
     return;
   }
 
   const rule = matchKeywordRule(settings, text);
   if (rule) {
-    await sendReply(session, chatId, rule.reply);
+    await sendReply(ownerId, session, chatId, rule.reply);
   }
 }
 
-async function sendReply(session: string, chatId: string, text: string) {
+async function sendReply(ownerId: string, session: string, chatId: string, text: string) {
   try {
     await sendText(session, chatId, text);
-    logEvent({ direction: "out", session, chatId, kind: "text", status: "sent", source: "autoreply" });
+    logEvent({ ownerId, direction: "out", session, chatId, kind: "text", status: "sent", source: "autoreply" });
   } catch (err) {
     logEvent({
+      ownerId,
       direction: "out",
       session,
       chatId,
@@ -92,14 +94,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Forward to the user's configured outbound webhook (if any) without
-  // blocking the response — WAHA expects a fast 200 or it will retry.
-  deliverOutboundWebhook(data.event, data).catch(() => {});
+  const ownerId = getSessionOwner(data.session);
+  if (!ownerId) {
+    // Session not (yet) attributed to any tenant — nothing to log or act on.
+    return NextResponse.json({ ok: true });
+  }
+
+  // Forward to the owning tenant's configured outbound webhook (if any)
+  // without blocking the response — WAHA expects a fast 200 or it retries.
+  deliverOutboundWebhook(ownerId, data.event, data).catch(() => {});
 
   if (data.event === "message" && data.payload && !data.payload.fromMe) {
     const chatId = data.payload.from;
     const text = data.payload.body ?? "";
     logEvent({
+      ownerId,
       direction: "in",
       session: data.session,
       chatId: chatId ?? "unknown",
@@ -107,7 +116,7 @@ export async function POST(req: NextRequest) {
       status: "received",
     });
     if (chatId) {
-      runAutoReply(data.session, chatId, text).catch((err) => {
+      runAutoReply(ownerId, data.session, chatId, text).catch((err) => {
         console.error("[autoreply] failed:", err);
       });
     }

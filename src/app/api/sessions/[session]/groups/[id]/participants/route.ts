@@ -5,11 +5,15 @@ import {
   removeGroupParticipants,
   WahaError,
 } from "@/lib/waha";
+import { requireSessionAccess } from "@/lib/tenancy";
 
 type Params = { params: Promise<{ session: string; id: string }> };
 
 export async function GET(_req: Request, { params }: Params) {
   const { session, id } = await params;
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   try {
     const participants = await getGroupParticipants(session, id);
     return NextResponse.json(participants);
@@ -24,6 +28,9 @@ export async function GET(_req: Request, { params }: Params) {
 
 export async function POST(req: NextRequest, { params }: Params) {
   const { session, id } = await params;
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   try {
     const { participants } = await req.json();
     if (!Array.isArray(participants) || participants.length === 0) {
@@ -45,6 +52,9 @@ export async function POST(req: NextRequest, { params }: Params) {
 
 export async function DELETE(req: NextRequest, { params }: Params) {
   const { session, id } = await params;
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   try {
     const { participants } = await req.json();
     if (!Array.isArray(participants) || participants.length === 0) {

@@ -37,41 +37,56 @@ const DEFAULTS: AutoReplySettings = {
   rules: [],
 };
 
-export function getSettings(): AutoReplySettings {
-  const stored = readJson<Partial<AutoReplySettings>>(FILE, DEFAULTS);
+type Store = Record<string, AutoReplySettings>;
+
+function allSettings(): Store {
+  return readJson<Store>(FILE, {});
+}
+
+export function getSettings(ownerId: string): AutoReplySettings {
+  const stored = allSettings()[ownerId] ?? {};
   return {
     ...DEFAULTS,
     ...stored,
     businessHours: { ...DEFAULTS.businessHours, ...stored.businessHours },
+    rules: stored.rules ?? [],
   };
 }
 
-export function updateSettings(patch: Partial<AutoReplySettings>): AutoReplySettings {
+export function updateSettings(ownerId: string, patch: Partial<AutoReplySettings>): AutoReplySettings {
   const defined = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
-  const next = { ...getSettings(), ...defined };
-  writeJson(FILE, next);
+  const next = { ...getSettings(ownerId), ...defined };
+  const store = allSettings();
+  store[ownerId] = next;
+  writeJson(FILE, store);
   return next;
 }
 
-export function createRule(keywords: string[], reply: string): KeywordRule {
-  const settings = getSettings();
+export function createRule(ownerId: string, keywords: string[], reply: string): KeywordRule {
+  const settings = getSettings(ownerId);
   const rule: KeywordRule = { id: crypto.randomUUID(), keywords, reply, enabled: true };
   settings.rules.push(rule);
-  writeJson(FILE, settings);
+  const store = allSettings();
+  store[ownerId] = settings;
+  writeJson(FILE, store);
   return rule;
 }
 
-export function updateRule(id: string, patch: Partial<Omit<KeywordRule, "id">>): void {
-  const settings = getSettings();
+export function updateRule(ownerId: string, id: string, patch: Partial<Omit<KeywordRule, "id">>): void {
+  const settings = getSettings(ownerId);
   const defined = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
   settings.rules = settings.rules.map((r) => (r.id === id ? { ...r, ...defined } : r));
-  writeJson(FILE, settings);
+  const store = allSettings();
+  store[ownerId] = settings;
+  writeJson(FILE, store);
 }
 
-export function deleteRule(id: string): void {
-  const settings = getSettings();
+export function deleteRule(ownerId: string, id: string): void {
+  const settings = getSettings(ownerId);
   settings.rules = settings.rules.filter((r) => r.id !== id);
-  writeJson(FILE, settings);
+  const store = allSettings();
+  store[ownerId] = settings;
+  writeJson(FILE, store);
 }
 
 function wibNow(): Date {

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCampaign, listCampaigns, startCampaign } from "@/lib/campaigns";
+import { getCurrentFullUser } from "@/lib/currentUser";
+import { requireSessionAccess } from "@/lib/tenancy";
 
 export async function GET() {
-  return NextResponse.json(listCampaigns());
+  const user = await getCurrentFullUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return NextResponse.json(listCampaigns(user.id));
 }
 
 export async function POST(req: NextRequest) {
@@ -21,7 +25,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Audiens tidak boleh kosong" }, { status: 400 });
   }
 
+  const { user, response } = await requireSessionAccess(session);
+  if (response) return response;
+
   const campaign = createCampaign(
+    user!.id,
     name,
     session,
     messageBody,
@@ -29,7 +37,7 @@ export async function POST(req: NextRequest) {
     typeof templateId === "string" ? templateId : undefined,
   );
 
-  if (startNow) startCampaign(campaign.id);
+  if (startNow) startCampaign(user!.id, campaign.id);
 
   return NextResponse.json(campaign, { status: 201 });
 }

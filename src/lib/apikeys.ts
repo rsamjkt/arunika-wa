@@ -1,8 +1,10 @@
 import crypto from "node:crypto";
 import { readJson, writeJson } from "./store";
+import { getPrimarySuperadminId } from "./users";
 
 export type ApiKeyRecord = {
   id: string;
+  ownerId: string;
   name: string;
   key: string;
   createdAt: string;
@@ -18,6 +20,7 @@ function seed(): ApiKeyRecord[] {
   if (!legacy) return [];
   const seeded: ApiKeyRecord = {
     id: crypto.randomUUID(),
+    ownerId: getPrimarySuperadminId(),
     name: "Legacy Key (migrasi otomatis)",
     key: legacy,
     createdAt: new Date().toISOString(),
@@ -33,14 +36,15 @@ function all(): ApiKeyRecord[] {
   return keys.length > 0 ? keys : seed();
 }
 
-export function listApiKeys(): ApiKeyRecord[] {
-  return all();
+export function listApiKeys(ownerId: string): ApiKeyRecord[] {
+  return all().filter((k) => k.ownerId === ownerId);
 }
 
-export function createApiKey(name: string): ApiKeyRecord {
+export function createApiKey(ownerId: string, name: string): ApiKeyRecord {
   const keys = all();
   const record: ApiKeyRecord = {
     id: crypto.randomUUID(),
+    ownerId,
     name: name.trim() || "Tanpa nama",
     key: crypto.randomBytes(24).toString("hex"),
     createdAt: new Date().toISOString(),
@@ -52,16 +56,16 @@ export function createApiKey(name: string): ApiKeyRecord {
   return record;
 }
 
-export function revokeApiKey(id: string) {
+export function revokeApiKey(ownerId: string, id: string) {
   const keys = all();
-  const next = keys.map((k) => (k.id === id ? { ...k, revoked: true } : k));
+  const next = keys.map((k) => (k.id === id && k.ownerId === ownerId ? { ...k, revoked: true } : k));
   writeJson(FILE, next);
 }
 
-export function deleteApiKey(id: string) {
+export function deleteApiKey(ownerId: string, id: string) {
   writeJson(
     FILE,
-    all().filter((k) => k.id !== id),
+    all().filter((k) => !(k.id === id && k.ownerId === ownerId)),
   );
 }
 

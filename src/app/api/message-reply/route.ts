@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { replyMessage, WahaError } from "@/lib/waha";
+import { requireSessionAccess } from "@/lib/tenancy";
 
 export async function POST(req: NextRequest) {
+  const { session, chatId, replyTo, text } = await req.json();
+  if (!session || !chatId || !replyTo || !text) {
+    return NextResponse.json(
+      { error: "session, chatId, replyTo, dan text wajib diisi" },
+      { status: 400 },
+    );
+  }
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   try {
-    const { session, chatId, replyTo, text } = await req.json();
-    if (!session || !chatId || !replyTo || !text) {
-      return NextResponse.json(
-        { error: "session, chatId, replyTo, dan text wajib diisi" },
-        { status: 400 },
-      );
-    }
     const message = await replyMessage(session, chatId, replyTo, text);
     return NextResponse.json(message, { status: 201 });
   } catch (err) {

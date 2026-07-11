@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { stopSession, WahaError } from "@/lib/waha";
+import { requireSessionAccess } from "@/lib/tenancy";
 
 type Params = { params: Promise<{ session: string }> };
 
 export async function POST(_req: Request, { params }: Params) {
   const { session } = await params;
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   try {
     const info = await stopSession(session);
     return NextResponse.json(info);

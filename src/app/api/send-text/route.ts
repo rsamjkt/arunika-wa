@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendText, WahaError } from "@/lib/waha";
 import { logEvent } from "@/lib/messageLog";
+import { getSessionOwner, requireSessionAccess } from "@/lib/tenancy";
 
 export async function POST(req: NextRequest) {
   const { session, chatId, text } = await req.json();
@@ -10,14 +11,18 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+  const { user, response } = await requireSessionAccess(session);
+  if (response) return response;
+  const ownerId = getSessionOwner(session) ?? user!.id;
+
   try {
     const message = await sendText(session, chatId, text);
-    logEvent({ direction: "out", session, chatId, kind: "text", status: "sent", source: "manual" });
+    logEvent({ ownerId, direction: "out", session, chatId, kind: "text", status: "sent", source: "manual" });
     return NextResponse.json(message, { status: 201 });
   } catch (err) {
     const status = err instanceof WahaError ? err.status : 500;
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
-    logEvent({ direction: "out", session, chatId, kind: "text", status: "failed", source: "manual", error: errorMessage });
+    logEvent({ ownerId, direction: "out", session, chatId, kind: "text", status: "failed", source: "manual", error: errorMessage });
     return NextResponse.json({ error: errorMessage }, { status });
   }
 }

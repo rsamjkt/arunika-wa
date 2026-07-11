@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setProfileStatus, WahaError } from "@/lib/waha";
+import { requireSessionAccess } from "@/lib/tenancy";
 
 type Params = { params: Promise<{ session: string }> };
 
 export async function POST(req: NextRequest, { params }: Params) {
   const { session } = await params;
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   try {
     const { status: newStatus } = await req.json();
     if (!newStatus) {

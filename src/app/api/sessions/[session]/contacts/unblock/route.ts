@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { unblockContact, WahaError } from "@/lib/waha";
+import { requireSessionAccess } from "@/lib/tenancy";
 
 type Params = { params: Promise<{ session: string }> };
 
 export async function POST(req: NextRequest, { params }: Params) {
   const { session } = await params;
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   try {
     const { contactId } = await req.json();
     if (!contactId) {

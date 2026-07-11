@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { deleteSession, getSession, WahaError } from "@/lib/waha";
+import { releaseSessionOwner, requireSessionAccess } from "@/lib/tenancy";
 
 type Params = { params: Promise<{ session: string }> };
 
 export async function GET(_req: Request, { params }: Params) {
   const { session } = await params;
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   try {
     const info = await getSession(session);
     return NextResponse.json(info);
@@ -19,8 +23,12 @@ export async function GET(_req: Request, { params }: Params) {
 
 export async function DELETE(_req: Request, { params }: Params) {
   const { session } = await params;
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   try {
     await deleteSession(session);
+    releaseSessionOwner(session);
     return new NextResponse(null, { status: 204 });
   } catch (err) {
     const status = err instanceof WahaError ? err.status : 500;
