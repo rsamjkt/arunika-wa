@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSettings, updateSettings } from "@/lib/autoreply";
-import { getCurrentFullUser } from "@/lib/currentUser";
+import { requireFeature } from "@/lib/authz";
 
 export async function GET() {
-  const user = await getCurrentFullUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  return NextResponse.json(getSettings(user.id));
+  const { user, response } = await requireFeature("autoreply");
+  if (response) return response;
+  return NextResponse.json(getSettings(user!.id));
 }
 
 export async function PUT(req: NextRequest) {
-  const user = await getCurrentFullUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { user, response } = await requireFeature("autoreply");
+  if (response) return response;
 
   const body = await req.json();
   const {
@@ -21,7 +21,7 @@ export async function PUT(req: NextRequest) {
     outsideHoursEnabled,
     outsideHoursMessage,
   } = body;
-  const next = updateSettings(user.id, {
+  const next = updateSettings(user!.id, {
     enabled: typeof enabled === "boolean" ? enabled : undefined,
     welcomeEnabled: typeof welcomeEnabled === "boolean" ? welcomeEnabled : undefined,
     welcomeMessage: typeof welcomeMessage === "string" ? welcomeMessage : undefined,

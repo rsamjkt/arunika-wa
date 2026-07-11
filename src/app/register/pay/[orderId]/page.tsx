@@ -1,7 +1,7 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, use, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface StatusResponse {
   status: "PENDING" | "PAID" | "EXPIRED";
@@ -11,8 +11,18 @@ interface StatusResponse {
 }
 
 export default function PayPage({ params }: { params: Promise<{ orderId: string }> }) {
+  return (
+    <Suspense fallback={null}>
+      <PayPageInner params={params} />
+    </Suspense>
+  );
+}
+
+function PayPageInner({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") ?? "/login?paid=1";
   const [data, setData] = useState<StatusResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +39,7 @@ export default function PayPage({ params }: { params: Promise<{ orderId: string 
         }
         setData(json);
         if (json.status === "PAID") {
-          setTimeout(() => router.push("/login?paid=1"), 1500);
+          setTimeout(() => router.push(redirectTo), 1500);
         }
       } catch {
         // network hiccup — just retry on next tick
@@ -41,7 +51,7 @@ export default function PayPage({ params }: { params: Promise<{ orderId: string 
       cancelled = true;
       clearInterval(id);
     };
-  }, [orderId, router]);
+  }, [orderId, router, redirectTo]);
 
   return (
     <div className="login-shell">
@@ -85,7 +95,7 @@ export default function PayPage({ params }: { params: Promise<{ orderId: string 
             <div className="badge good" style={{ marginBottom: 12 }}>
               Pembayaran berhasil
             </div>
-            <p className="sub">Akun Anda sudah aktif. Mengarahkan ke halaman masuk…</p>
+            <p className="sub">Akun Anda sudah aktif. Mengarahkan…</p>
           </>
         )}
 

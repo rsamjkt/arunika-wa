@@ -24,6 +24,7 @@ const TITLES: Record<string, string> = {
   "/reports": "Laporan",
   "/admin/plans": "Kelola Paket",
   "/admin/tenants": "Kelola Tenant",
+  "/account/plan": "Paket Saya",
 };
 
 export default function AppShell({ children }: { children: React.ReactNode }) {

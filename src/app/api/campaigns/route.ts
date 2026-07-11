@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCampaign, listCampaigns, startCampaign } from "@/lib/campaigns";
-import { getCurrentFullUser } from "@/lib/currentUser";
+import { requireFeature } from "@/lib/authz";
 import { requireSessionAccess } from "@/lib/tenancy";
 
 export async function GET() {
-  const user = await getCurrentFullUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  return NextResponse.json(listCampaigns(user.id));
+  const { user, response } = await requireFeature("broadcast");
+  if (response) return response;
+  return NextResponse.json(listCampaigns(user!.id));
 }
 
 export async function POST(req: NextRequest) {
+  const { response: featureResponse } = await requireFeature("broadcast");
+  if (featureResponse) return featureResponse;
+
   const { name, session, messageBody, templateId, recipients, startNow } = await req.json();
 
   if (!name || typeof name !== "string") {

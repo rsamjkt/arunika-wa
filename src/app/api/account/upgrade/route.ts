@@ -1,0 +1,51 @@
+import crypto from "node:crypto";
+import { NextRequest, NextResponse } from "next/server";
+import { getCurrentFullUser } from "@/lib/currentUser";
+import { getPlan } from "@/lib/plans";
+import { activateSubscription } from "@/lib/users";
+import { createTransaction, KlikQrisError } from "@/lib/klikqris";
+import { createTransactionRecord } from "@/lib/transactions";
+
+export async function POST(req: NextRequest) {
+  const user = await getCurrentFullUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { planId } = await req.json();
+  const plan = typeof planId === "string" ? getPlan(planId) : null;
+  if (!plan) return NextResponse.json({ error: "Paket tidak ditemukan" }, { status: 400 });
+
+  if (plan.isFree) {
+    activateSubscription(user.id, plan.id, null);
+    return NextResponse.json({ ok: true, requiresPayment: false });
+  }
+
+  const orderId = `UPG-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
+  try {
+    const tx = await createTransaction(orderId, plan.priceRp, `Upgrade ke paket ${plan.name} - Arunika-WA`);
+    createTransactionRecord({
+      orderId: tx.order_id,
+      userId: user.id,
+      planId: plan.id,
+      amount: Number(tx.amount),
+      totalAmount: Number(tx.total_amount),
+      signature: tx.signature,
+      qrisImage: tx.qris_image ?? "",
+      expiredAt: tx.expired_at,
+      createdAt: tx.created_at,
+    });
+    return NextResponse.json({
+      ok: true,
+      requiresPayment: true,
+      orderId: tx.order_id,
+      totalAmount: tx.total_amount,
+      qrisImage: tx.qris_image,
+      expiredAt: tx.expired_at,
+    });
+  } catch (err) {
+    const status = err instanceof KlikQrisError ? err.status : 500;
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Gagal membuat transaksi pembayaran" },
+      { status: status || 500 },
+    );
+  }
+}
