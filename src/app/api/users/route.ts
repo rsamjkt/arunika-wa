@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createUser, listUsers } from "@/lib/users";
+import { requireSuperadmin } from "@/lib/authz";
 
 export async function GET() {
-  return NextResponse.json(listUsers());
+  const { response } = await requireSuperadmin();
+  if (response) return response;
+
+  // Platform staff only — tenants are managed separately at /admin/tenants.
+  return NextResponse.json(listUsers().filter((u) => u.role === "superadmin"));
 }
 
 export async function POST(req: NextRequest) {
+  const { response } = await requireSuperadmin();
+  if (response) return response;
+
   const { username, password } = await req.json();
 
   if (!username || typeof username !== "string" || username.trim().length < 3) {

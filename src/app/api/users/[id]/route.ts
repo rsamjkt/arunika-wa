@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { changePassword, deleteUser } from "@/lib/users";
 import { deleteSessionsForUser } from "@/lib/sessions";
 import { getCurrentUser } from "@/lib/currentUser";
+import { requireSuperadmin } from "@/lib/authz";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { response } = await requireSuperadmin();
+  if (response) return response;
+
   const { id } = await params;
   const { password } = await req.json();
 
@@ -22,6 +26,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { response } = await requireSuperadmin();
+  if (response) return response;
+
   const { id } = await params;
 
   const current = await getCurrentUser();

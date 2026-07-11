@@ -27,7 +27,9 @@ const SELF_VERIFIED_PATHS = new Set([
   "/api/cron/downgrade-expired",
 ]);
 // Platform-owner-only area — a valid session isn't enough, role must be superadmin.
-const ADMIN_PREFIXES = ["/admin"];
+// /settings/users manages platform-staff accounts, not tenant data, so it
+// belongs here too even though it isn't under /admin.
+const ADMIN_PREFIXES = ["/admin", "/settings/users"];
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
