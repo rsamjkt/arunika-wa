@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createGroup, listGroups, WahaError } from "@/lib/waha";
+import { requireSessionAccess } from "@/lib/tenancy";
 
 type Params = { params: Promise<{ session: string }> };
 
 export async function GET(_req: Request, { params }: Params) {
   const { session } = await params;
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   try {
     const groups = await listGroups(session);
     return NextResponse.json(groups);
@@ -19,6 +23,9 @@ export async function GET(_req: Request, { params }: Params) {
 
 export async function POST(req: NextRequest, { params }: Params) {
   const { session } = await params;
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   try {
     const { name, participants } = await req.json();
     if (!name || !Array.isArray(participants) || participants.length === 0) {

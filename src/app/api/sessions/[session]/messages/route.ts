@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMessages, WahaError } from "@/lib/waha";
+import { requireSessionAccess } from "@/lib/tenancy";
 
 type Params = { params: Promise<{ session: string }> };
 
 export async function GET(req: NextRequest, { params }: Params) {
   const { session } = await params;
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   const chatId = req.nextUrl.searchParams.get("chatId");
   if (!chatId) {
     return NextResponse.json({ error: "chatId wajib diisi" }, { status: 400 });

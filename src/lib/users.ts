@@ -232,3 +232,10 @@ export function incrementQuotaUsage(userId: string, by = 1) {
 export function getFullUser(id: string): User | null {
   return all().find((u) => u.id === id) ?? null;
 }
+
+/** The original platform-owner account — used to attribute legacy,
+ * pre-multi-tenancy data (e.g. the migrated API key) on first read. */
+export function getPrimarySuperadminId(): string {
+  const users = all();
+  return (users.find((u) => u.role === "superadmin") ?? users[0]).id;
+}

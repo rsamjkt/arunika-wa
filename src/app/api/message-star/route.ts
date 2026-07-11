@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { starMessage, WahaError } from "@/lib/waha";
+import { requireSessionAccess } from "@/lib/tenancy";
 
 export async function POST(req: NextRequest) {
+  const { session, chatId, messageId, star } = await req.json();
+  if (!session || !chatId || !messageId || typeof star !== "boolean") {
+    return NextResponse.json(
+      { error: "session, chatId, messageId, dan star (boolean) wajib diisi" },
+      { status: 400 },
+    );
+  }
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   try {
-    const { session, chatId, messageId, star } = await req.json();
-    if (!session || !chatId || !messageId || typeof star !== "boolean") {
-      return NextResponse.json(
-        { error: "session, chatId, messageId, dan star (boolean) wajib diisi" },
-        { status: 400 },
-      );
-    }
     await starMessage(session, chatId, messageId, star);
     return NextResponse.json({ ok: true });
   } catch (err) {

@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { unpinMessage, WahaError } from "@/lib/waha";
+import { requireSessionAccess } from "@/lib/tenancy";
 
 export async function POST(req: NextRequest) {
+  const { session, chatId, messageId } = await req.json();
+  if (!session || !chatId || !messageId) {
+    return NextResponse.json(
+      { error: "session, chatId, dan messageId wajib diisi" },
+      { status: 400 },
+    );
+  }
+  const { response } = await requireSessionAccess(session);
+  if (response) return response;
+
   try {
-    const { session, chatId, messageId } = await req.json();
-    if (!session || !chatId || !messageId) {
-      return NextResponse.json(
-        { error: "session, chatId, dan messageId wajib diisi" },
-        { status: 400 },
-      );
-    }
     await unpinMessage(session, chatId, messageId);
     return NextResponse.json({ ok: true });
   } catch (err) {

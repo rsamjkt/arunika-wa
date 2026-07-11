@@ -3,6 +3,7 @@ import { readJson, writeJson } from "./store";
 
 export type MessageTemplate = {
   id: string;
+  ownerId: string;
   name: string;
   category: string;
   body: string;
@@ -12,18 +13,25 @@ export type MessageTemplate = {
 
 const FILE = "templates.json";
 
-export function listTemplates(): MessageTemplate[] {
-  return readJson<MessageTemplate[]>(FILE, []).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+function all(): MessageTemplate[] {
+  return readJson<MessageTemplate[]>(FILE, []);
 }
 
-export function getTemplate(id: string): MessageTemplate | null {
-  return readJson<MessageTemplate[]>(FILE, []).find((t) => t.id === id) ?? null;
+export function listTemplates(ownerId: string): MessageTemplate[] {
+  return all()
+    .filter((t) => t.ownerId === ownerId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-export function createTemplate(name: string, category: string, body: string): MessageTemplate {
-  const templates = readJson<MessageTemplate[]>(FILE, []);
+export function getTemplate(ownerId: string, id: string): MessageTemplate | null {
+  return all().find((t) => t.id === id && t.ownerId === ownerId) ?? null;
+}
+
+export function createTemplate(ownerId: string, name: string, category: string, body: string): MessageTemplate {
+  const templates = all();
   const template: MessageTemplate = {
     id: crypto.randomUUID(),
+    ownerId,
     name,
     category: category || "Umum",
     body,
@@ -36,27 +44,31 @@ export function createTemplate(name: string, category: string, body: string): Me
 }
 
 export function updateTemplate(
+  ownerId: string,
   id: string,
   patch: Partial<Pick<MessageTemplate, "name" | "category" | "body">>,
 ): void {
-  const templates = readJson<MessageTemplate[]>(FILE, []);
+  const templates = all();
   const defined = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
   writeJson(
     FILE,
-    templates.map((t) => (t.id === id ? { ...t, ...defined } : t)),
+    templates.map((t) => (t.id === id && t.ownerId === ownerId ? { ...t, ...defined } : t)),
   );
 }
 
-export function deleteTemplate(id: string): void {
-  const templates = readJson<MessageTemplate[]>(FILE, []);
+export function deleteTemplate(ownerId: string, id: string): void {
+  const templates = all();
   writeJson(
     FILE,
-    templates.filter((t) => t.id !== id),
+    templates.filter((t) => !(t.id === id && t.ownerId === ownerId)),
   );
 }
 
+/** Internal side effect (called after a successful send) — not user-facing,
+ * so it doesn't re-verify ownership; the templateId already came from a
+ * campaign/send the caller owns. */
 export function incrementUsage(id: string, by = 1): void {
-  const templates = readJson<MessageTemplate[]>(FILE, []);
+  const templates = all();
   writeJson(
     FILE,
     templates.map((t) => (t.id === id ? { ...t, usedCount: t.usedCount + by } : t)),

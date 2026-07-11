@@ -4,6 +4,7 @@ import { readJson, writeJson } from "./store";
 export type LogEntry = {
   id: string;
   timestamp: string;
+  ownerId: string;
   direction: "out" | "in";
   session: string;
   chatId: string;
@@ -29,13 +30,13 @@ export function logEvent(entry: Omit<LogEntry, "id" | "timestamp">) {
   }
 }
 
-export function getRecentLogs(limit = 200): LogEntry[] {
-  const log = readJson<LogEntry[]>(FILE, []);
+export function getRecentLogs(ownerId: string, limit = 200): LogEntry[] {
+  const log = readJson<LogEntry[]>(FILE, []).filter((e) => e.ownerId === ownerId);
   return log.slice(-limit).reverse();
 }
 
-export function getStats(days = 14) {
-  const log = readJson<LogEntry[]>(FILE, []);
+export function getStats(ownerId: string, days = 14) {
+  const log = readJson<LogEntry[]>(FILE, []).filter((e) => e.ownerId === ownerId);
   const now = Date.now();
   const cutoff = now - days * 24 * 60 * 60 * 1000;
   const recent = log.filter((e) => new Date(e.timestamp).getTime() >= cutoff);

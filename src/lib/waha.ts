@@ -79,10 +79,23 @@ export function getSession(session: string) {
 }
 
 export async function createSession(name: string) {
+  const webhookSecret = process.env.WAHA_WEBHOOK_SECRET;
+  const config = webhookSecret
+    ? {
+        webhooks: [
+          {
+            url: "http://127.0.0.1:4000/api/webhooks/waha",
+            events: ["message", "message.ack", "session.status"],
+            hmac: { key: webhookSecret },
+          },
+        ],
+      }
+    : undefined;
+
   try {
     return await wahaJson<SessionInfo>("/api/sessions", {
       method: "POST",
-      body: JSON.stringify({ name, start: true }),
+      body: JSON.stringify({ name, start: true, config }),
     });
   } catch (err) {
     // Session with this name already exists (e.g. it disconnected earlier) —

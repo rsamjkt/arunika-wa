@@ -14,6 +14,7 @@ export type CampaignRecipient = {
 
 export type Campaign = {
   id: string;
+  ownerId: string;
   name: string;
   session: string;
   messageBody: string;
@@ -42,12 +43,21 @@ function save(campaigns: Campaign[]) {
   writeJson(FILE, campaigns);
 }
 
-export function listCampaigns(): Campaign[] {
-  return all().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+export function listCampaigns(ownerId: string): Campaign[] {
+  return all()
+    .filter((c) => c.ownerId === ownerId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-export function getCampaign(id: string): Campaign | null {
+/** Internal lookup (no ownership filter) — used by the background runner,
+ * which already only ever operates on campaign IDs it started itself. */
+function getCampaignUnscoped(id: string): Campaign | null {
   return all().find((c) => c.id === id) ?? null;
+}
+
+export function getCampaign(ownerId: string, id: string): Campaign | null {
+  const campaign = getCampaignUnscoped(id);
+  return campaign && campaign.ownerId === ownerId ? campaign : null;
 }
 
 export function isCampaignActive(id: string): boolean {
@@ -55,6 +65,7 @@ export function isCampaignActive(id: string): boolean {
 }
 
 export function createCampaign(
+  ownerId: string,
   name: string,
   session: string,
   messageBody: string,
@@ -63,6 +74,7 @@ export function createCampaign(
 ): Campaign {
   const campaign: Campaign = {
     id: crypto.randomUUID(),
+    ownerId,
     name,
     session,
     messageBody,
@@ -99,18 +111,19 @@ function substituteVariables(body: string, recipient: { chatId: string; name?: s
   return body.replace(/\{nama\}/g, recipient.name || "Pelanggan").replace(/\{nomor\}/g, digits);
 }
 
-export function cancelCampaign(id: string) {
+export function cancelCampaign(ownerId: string, id: string) {
+  const campaign = getCampaign(ownerId, id);
+  if (!campaign) return;
   canceledCampaigns.add(id);
-  const campaign = getCampaign(id);
-  if (campaign && campaign.status === "sending") {
+  if (campaign.status === "sending") {
     updateCampaign(id, { status: "canceled", completedAt: new Date().toISOString() });
   }
 }
 
 /** Fire-and-forget: begins (or resumes) sending. Safe to call multiple times. */
-export function startCampaign(id: string) {
+export function startCampaign(ownerId: string, id: string) {
   if (activeCampaigns.has(id)) return;
-  const campaign = getCampaign(id);
+  const campaign = getCampaign(ownerId, id);
   if (!campaign) return;
   if (campaign.status === "completed" || campaign.status === "canceled") return;
 
@@ -124,7 +137,7 @@ export function startCampaign(id: string) {
 }
 
 async function runCampaign(id: string) {
-  let campaign = getCampaign(id);
+  let campaign = getCampaignUnscoped(id);
   if (!campaign) return;
 
   const pending = campaign.recipients.filter((r) => r.status === "pending");
@@ -136,6 +149,7 @@ async function runCampaign(id: string) {
       await sendText(campaign.session, recipient.chatId, text);
       updateRecipient(id, recipient.chatId, { status: "sent", sentAt: new Date().toISOString() });
       logEvent({
+        ownerId: campaign.ownerId,
         direction: "out",
         session: campaign.session,
         chatId: recipient.chatId,
@@ -150,6 +164,7 @@ async function runCampaign(id: string) {
       const message = err instanceof Error ? err.message : String(err);
       updateRecipient(id, recipient.chatId, { status: "failed", error: message });
       logEvent({
+        ownerId: campaign.ownerId,
         direction: "out",
         session: campaign.session,
         chatId: recipient.chatId,
@@ -167,7 +182,7 @@ async function runCampaign(id: string) {
     await new Promise((r) => setTimeout(r, delay));
   }
 
-  campaign = getCampaign(id);
+  campaign = getCampaignUnscoped(id);
   if (campaign && campaign.status === "sending") {
     updateCampaign(id, { status: "completed", completedAt: new Date().toISOString() });
   }
