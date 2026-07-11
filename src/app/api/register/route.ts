@@ -1,0 +1,63 @@
+import { NextRequest, NextResponse } from "next/server";
+import crypto from "node:crypto";
+import { createTenant, deleteUser } from "@/lib/users";
+import { getPlan } from "@/lib/plans";
+import { createTransaction, KlikQrisError } from "@/lib/klikqris";
+import { createTransactionRecord } from "@/lib/transactions";
+
+export async function POST(req: NextRequest) {
+  const { username, password, planId } = await req.json();
+
+  if (!username || typeof username !== "string" || username.trim().length < 3) {
+    return NextResponse.json({ error: "Username minimal 3 karakter" }, { status: 400 });
+  }
+  if (!password || typeof password !== "string" || password.length < 6) {
+    return NextResponse.json({ error: "Password minimal 6 karakter" }, { status: 400 });
+  }
+  const plan = typeof planId === "string" ? getPlan(planId) : null;
+  if (!plan) {
+    return NextResponse.json({ error: "Paket tidak ditemukan" }, { status: 400 });
+  }
+
+  let tenant;
+  try {
+    tenant = createTenant(username.trim(), password, plan.id, plan.isFree ? "active" : "pending_payment");
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal mendaftar" }, { status: 409 });
+  }
+
+  if (plan.isFree) {
+    return NextResponse.json({ ok: true, requiresPayment: false });
+  }
+
+  const orderId = `REG-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
+  try {
+    const tx = await createTransaction(orderId, plan.priceRp, `Registrasi paket ${plan.name} - Arunika-WA`);
+    createTransactionRecord({
+      orderId: tx.order_id,
+      userId: tenant.id,
+      planId: plan.id,
+      amount: Number(tx.amount),
+      totalAmount: Number(tx.total_amount),
+      signature: tx.signature,
+      qrisImage: tx.qris_image ?? "",
+      expiredAt: tx.expired_at,
+      createdAt: tx.created_at,
+    });
+    return NextResponse.json({
+      ok: true,
+      requiresPayment: true,
+      orderId: tx.order_id,
+      totalAmount: tx.total_amount,
+      qrisImage: tx.qris_image,
+      expiredAt: tx.expired_at,
+    });
+  } catch (err) {
+    deleteUser(tenant.id);
+    const status = err instanceof KlikQrisError ? err.status : 500;
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Gagal membuat transaksi pembayaran" },
+      { status: status || 500 },
+    );
+  }
+}

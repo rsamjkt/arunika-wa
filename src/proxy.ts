@@ -3,17 +3,23 @@ import { getSession } from "@/lib/sessions";
 import { validateApiKey } from "@/lib/apikeys";
 import { getFullUser } from "@/lib/users";
 
-const PUBLIC_PATHS = new Set(["/login", "/api/auth/login"]);
+const PUBLIC_PATHS = new Set(["/login", "/api/auth/login", "/api/register"]);
 // GET is a public plan catalog (needed for the registration page); the
 // route itself gates POST/PATCH/DELETE behind requireSuperadmin().
-const PUBLIC_PREFIXES = ["/api/plans"];
+// /register(/pay/...) and /api/qris/status/... must be reachable before
+// a session/account exists, during sign-up and while paying for a plan.
+const PUBLIC_PREFIXES = ["/api/plans", "/register", "/api/qris/status"];
 const SESSION_COOKIE = "arunika_session";
 // User & API-key management must only ever be reachable from a logged-in
 // browser session — never via X-Api-Key, even though it lives under /api/.
 const COOKIE_ONLY_PREFIXES = ["/api/users", "/api/api-keys", "/api/webhook-config", "/api/autoreply"];
-// Called by WAHA itself, not a browser or an app-issued API key — it
-// authenticates the request itself via HMAC signature verification instead.
-const SELF_VERIFIED_PATHS = new Set(["/api/webhooks/waha"]);
+// Called by an external service, not a browser or an app-issued API key —
+// each authenticates the request itself (HMAC / stored signature) instead.
+const SELF_VERIFIED_PATHS = new Set([
+  "/api/webhooks/waha",
+  "/api/webhooks/klikqris",
+  "/api/cron/downgrade-expired",
+]);
 // Platform-owner-only area — a valid session isn't enough, role must be superadmin.
 const ADMIN_PREFIXES = ["/admin"];
 
