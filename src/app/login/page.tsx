@@ -82,6 +82,13 @@ function LoginPageInner() {
         <button className="btn" type="submit" disabled={busy || !username || !password} style={{ width: "100%" }}>
           {busy ? "Memproses…" : "Masuk"}
         </button>
+
+        <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
+          Belum punya akun?{" "}
+          <a href="/register" style={{ color: "var(--primary)" }}>
+            Daftar
+          </a>
+        </p>
       </form>
     </div>
   );
