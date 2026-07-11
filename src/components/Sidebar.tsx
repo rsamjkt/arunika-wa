@@ -1,9 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const NAV_GROUPS = [
+type NavItem = { href: string; label: string; icon: string; feature?: string };
+type NavGroup = { label: string; items: NavItem[] };
+
+const NAV_GROUPS: NavGroup[] = [
   {
     label: "Menu",
     items: [
@@ -15,9 +19,9 @@ const NAV_GROUPS = [
     label: "Pesan",
     items: [
       { href: "/send", label: "Kirim Pesan", icon: "📤" },
-      { href: "/broadcast", label: "Broadcast", icon: "📣" },
-      { href: "/templates", label: "Template", icon: "📝" },
-      { href: "/flow", label: "Auto-Reply", icon: "🤖" },
+      { href: "/broadcast", label: "Broadcast", icon: "📣", feature: "broadcast" },
+      { href: "/templates", label: "Template", icon: "📝", feature: "templates" },
+      { href: "/flow", label: "Auto-Reply", icon: "🤖", feature: "autoreply" },
     ],
   },
   {
@@ -47,6 +51,24 @@ const NAV_GROUPS = [
   },
 ];
 
+const TENANT_GROUP: NavGroup = {
+  label: "Akun",
+  items: [{ href: "/account/plan", label: "Paket Saya", icon: "💳" }],
+};
+
+const SUPERADMIN_GROUP: NavGroup = {
+  label: "Platform",
+  items: [
+    { href: "/admin/plans", label: "Kelola Paket", icon: "📦" },
+    { href: "/admin/tenants", label: "Kelola Tenant", icon: "🏢" },
+  ],
+};
+
+interface Me {
+  role: "superadmin" | "tenant";
+  plan: { features: string[] } | null;
+}
+
 export default function Sidebar({
   open,
   onNavigate,
@@ -55,6 +77,26 @@ export default function Sidebar({
   onNavigate: () => void;
 }) {
   const pathname = usePathname();
+  const [me, setMe] = useState<Me | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setMe)
+      .catch(() => {});
+  }, []);
+
+  const isSuperadmin = me?.role === "superadmin";
+  const features = me?.plan?.features ?? [];
+
+  const groups: NavGroup[] = [
+    ...NAV_GROUPS.map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.feature || isSuperadmin || features.includes(item.feature)),
+    })),
+    ...(me && !isSuperadmin ? [TENANT_GROUP] : []),
+    ...(isSuperadmin ? [SUPERADMIN_GROUP] : []),
+  ];
 
   return (
     <aside className={`sidebar${open ? " open" : ""}`}>
@@ -66,7 +108,7 @@ export default function Sidebar({
         </span>
       </Link>
       <nav>
-        {NAV_GROUPS.map((group) => (
+        {groups.map((group) => (
           <div key={group.label}>
             <span className="nav-label">{group.label}</span>
             {group.items.map((item) => {
