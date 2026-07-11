@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRule } from "@/lib/autoreply";
-import { getCurrentFullUser } from "@/lib/currentUser";
+import { requireFeature } from "@/lib/authz";
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentFullUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { user, response } = await requireFeature("autoreply");
+  if (response) return response;
 
   const { keywords, reply } = await req.json();
   if (!Array.isArray(keywords) || keywords.length === 0 || !keywords.every((k) => typeof k === "string")) {
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Balasan wajib diisi" }, { status: 400 });
   }
   const rule = createRule(
-    user.id,
+    user!.id,
     keywords.map((k: string) => k.trim()).filter(Boolean),
     reply,
   );

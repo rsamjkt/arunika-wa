@@ -12,7 +12,13 @@ const PUBLIC_PREFIXES = ["/api/plans", "/register", "/api/qris/status"];
 const SESSION_COOKIE = "arunika_session";
 // User & API-key management must only ever be reachable from a logged-in
 // browser session — never via X-Api-Key, even though it lives under /api/.
-const COOKIE_ONLY_PREFIXES = ["/api/users", "/api/api-keys", "/api/webhook-config", "/api/autoreply"];
+const COOKIE_ONLY_PREFIXES = [
+  "/api/users",
+  "/api/api-keys",
+  "/api/webhook-config",
+  "/api/autoreply",
+  "/api/account",
+];
 // Called by an external service, not a browser or an app-issued API key —
 // each authenticates the request itself (HMAC / stored signature) instead.
 const SELF_VERIFIED_PATHS = new Set([

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentFullUser } from "./currentUser";
 import { getPlan, hasFeature as planHasFeature, type FeatureKey } from "./plans";
-import type { User } from "./users";
+import { getEffectiveQuotaUsage, type User } from "./users";
 
 export async function requireSuperadmin(): Promise<{ user: User | null; response: NextResponse | null }> {
   const user = await getCurrentFullUser();
@@ -9,6 +9,22 @@ export async function requireSuperadmin(): Promise<{ user: User | null; response
     return { user: null, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
   return { user, response: null };
+}
+
+/** True if the user (or their plan) still has room to send this month.
+ * Superadmin and unlimited-quota plans always pass. */
+export function hasQuotaRemaining(user: User): boolean {
+  if (user.role === "superadmin") return true;
+  const plan = getPlan(user.planId);
+  if (!plan || plan.monthlyMessageQuota === null) return true;
+  return getEffectiveQuotaUsage(user.id) < plan.monthlyMessageQuota;
+}
+
+export function quotaExceededResponse(): NextResponse {
+  return NextResponse.json(
+    { error: "Kuota pesan bulanan paket Anda sudah habis. Silakan upgrade paket." },
+    { status: 429 },
+  );
 }
 
 export async function requireFeature(

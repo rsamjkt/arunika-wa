@@ -3,6 +3,8 @@ import { readJson, writeJson } from "./store";
 import { sendText } from "./waha";
 import { logEvent } from "./messageLog";
 import { incrementUsage } from "./templates";
+import { getFullUser, incrementQuotaUsage } from "./users";
+import { hasQuotaRemaining } from "./authz";
 
 export type CampaignRecipient = {
   chatId: string;
@@ -144,6 +146,12 @@ async function runCampaign(id: string) {
   for (const recipient of pending) {
     if (canceledCampaigns.has(id)) break;
 
+    const owner = getFullUser(campaign.ownerId);
+    if (!owner || !hasQuotaRemaining(owner)) {
+      updateRecipient(id, recipient.chatId, { status: "failed", error: "Kuota pesan bulanan habis" });
+      continue;
+    }
+
     const text = substituteVariables(campaign.messageBody, recipient);
     try {
       await sendText(campaign.session, recipient.chatId, text);
@@ -159,6 +167,7 @@ async function runCampaign(id: string) {
         campaignId: id,
         templateId: campaign.templateId,
       });
+      incrementQuotaUsage(campaign.ownerId);
       if (campaign.templateId) incrementUsage(campaign.templateId);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
