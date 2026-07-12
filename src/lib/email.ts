@@ -86,6 +86,21 @@ const BUTTON = (href: string, label: string) => `
   </tr>
 </table>`;
 
+const INVOICE_TABLE = (rows: [string, string][]) => `
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #e6ece9;border-radius:10px;overflow:hidden;">
+  ${rows
+    .map(
+      ([label, value], i) => `
+  <tr>
+    <td style="padding:10px 14px;font-size:13px;color:#8a9a94;background:${i % 2 === 0 ? "#f7faf8" : "#ffffff"};">${label}</td>
+    <td style="padding:10px 14px;font-size:13px;color:#0a3d36;font-weight:700;text-align:right;background:${i % 2 === 0 ? "#f7faf8" : "#ffffff"};">${value}</td>
+  </tr>`,
+    )
+    .join("")}
+</table>`;
+
+const RP = (n: number) => `Rp${n.toLocaleString("id-ID")}`;
+
 export function welcomeEmail(username: string, planName: string): { subject: string; html: string } {
   return {
     subject: "Selamat datang di Arunika · WA",
@@ -97,13 +112,57 @@ export function welcomeEmail(username: string, planName: string): { subject: str
   };
 }
 
-export function paymentConfirmedEmail(username: string, planName: string): { subject: string; html: string } {
+/** Sent when a QRIS transaction is created — includes the QR code inline so
+ * the tenant can pay straight from their inbox even if they lose the tab. */
+export function invoicePendingEmail(
+  username: string,
+  planName: string,
+  orderId: string,
+  totalAmount: number,
+  qrisImage: string,
+  expiredAt: string,
+  payUrl: string,
+): { subject: string; html: string } {
   return {
-    subject: "Pembayaran berhasil — paket Anda aktif",
+    subject: `Invoice ${orderId} — selesaikan pembayaran paket ${planName}`,
     html: WRAPPER(
-      "Pembayaran diterima ✅",
+      "Selesaikan Pembayaran 🧾",
       `<p>Halo <b>${username}</b>,</p>
-       <p>Pembayaran Anda berhasil diverifikasi. Paket <b>${planName}</b> sudah aktif di akun Anda.</p>`,
+       <p>Berikut invoice untuk paket <b>${planName}</b>. Scan QRIS di bawah dengan aplikasi e-wallet/mobile banking Anda — bayar tepat sesuai nominal (termasuk kode unik) supaya otomatis terverifikasi.</p>
+       ${INVOICE_TABLE([
+         ["No. Invoice", orderId],
+         ["Paket", planName],
+         ["Total Bayar", RP(totalAmount)],
+         ["Kedaluwarsa", new Date(expiredAt).toLocaleString("id-ID")],
+       ])}
+       ${qrisImage ? `<div style="text-align:center;margin:20px 0;"><img src="${qrisImage}" alt="QRIS" width="220" height="220" style="border:1px solid #e6ece9;border-radius:10px;"></div>` : ""}
+       ${BUTTON(payUrl, "Buka Halaman Pembayaran")}
+       <p style="color:#8a9a94;font-size:13px">Sudah bayar? Status akan otomatis terupdate dalam beberapa detik, tidak perlu konfirmasi manual.</p>`,
+    ),
+  };
+}
+
+export function paymentConfirmedEmail(
+  username: string,
+  planName: string,
+  orderId: string,
+  totalAmount: number,
+  paidAt: string,
+): { subject: string; html: string } {
+  return {
+    subject: `Invoice ${orderId} — pembayaran berhasil, paket Anda aktif`,
+    html: WRAPPER(
+      "Pembayaran Diterima ✅",
+      `<p>Halo <b>${username}</b>,</p>
+       <p>Pembayaran Anda berhasil diverifikasi. Paket <b>${planName}</b> sudah aktif di akun Anda.</p>
+       ${INVOICE_TABLE([
+         ["No. Invoice", orderId],
+         ["Paket", planName],
+         ["Total Dibayar", RP(totalAmount)],
+         ["Dibayar pada", new Date(paidAt).toLocaleString("id-ID")],
+         ["Status", "LUNAS"],
+       ])}
+       <p style="color:#8a9a94;font-size:13px">Simpan email ini sebagai bukti pembayaran Anda.</p>`,
     ),
   };
 }

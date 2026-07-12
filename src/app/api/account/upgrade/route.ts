@@ -5,6 +5,7 @@ import { getPlan } from "@/lib/plans";
 import { activateSubscription } from "@/lib/users";
 import { createTransaction, KlikQrisError } from "@/lib/klikqris";
 import { createTransactionRecord } from "@/lib/transactions";
+import { invoicePendingEmail, sendEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentFullUser();
@@ -36,6 +37,20 @@ export async function POST(req: NextRequest) {
       expiredAt: tx.expired_at,
       createdAt: tx.created_at,
     });
+
+    if (user.email) {
+      const { subject, html } = invoicePendingEmail(
+        user.username,
+        plan.name,
+        tx.order_id,
+        Number(tx.total_amount),
+        tx.qris_image ?? "",
+        tx.expired_at,
+        `${req.nextUrl.origin}/register/pay/${tx.order_id}`,
+      );
+      sendEmail(user.email, subject, html).catch(() => {});
+    }
+
     return NextResponse.json({
       ok: true,
       requiresPayment: true,
