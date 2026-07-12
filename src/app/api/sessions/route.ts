@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, listSessions, WahaError } from "@/lib/waha";
 import { getCurrentFullUser } from "@/lib/currentUser";
-import { getPlan } from "@/lib/plans";
+import { getEffectivePlan } from "@/lib/authz";
 import { countOwnedSessions, getOwnedSessionNames, getSessionOwner, recordSessionOwner } from "@/lib/tenancy";
-import { getEffectiveTenantId, getGoverningUser } from "@/lib/users";
+import { getEffectiveTenantId } from "@/lib/users";
 
 export async function GET() {
   const user = await getCurrentFullUser();
@@ -41,8 +41,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (user.role !== "superadmin" && !existingOwner) {
-    const plan = getPlan(getGoverningUser(user).planId);
-    const limit = plan?.deviceLimit ?? 1;
+    const plan = getEffectivePlan(user);
+    const limit = plan.deviceLimit;
     if (countOwnedSessions(tenantId) >= limit) {
       return NextResponse.json(
         { error: `Paket Anda hanya mengizinkan ${limit} perangkat. Upgrade paket untuk menambah perangkat.` },

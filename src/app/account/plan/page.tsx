@@ -27,6 +27,7 @@ interface Me {
   subscriptionStatus: string;
   subscriptionExpiresAt: string | null;
   plan: Plan | null;
+  pendingOrderId: string | null;
   usage: { messagesSent: number; devices: number };
 }
 
@@ -99,6 +100,20 @@ export default function AccountPlanPage() {
 
   return (
     <div>
+      {me.subscriptionStatus === "pending_payment" && me.pendingOrderId && (
+        <div
+          className="callout"
+          style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}
+        >
+          <span>
+            <b>Ada tagihan menunggu pembayaran.</b> Paket baru Anda aktif setelah pembayaran QRIS diterima — sampai
+            saat itu akun Anda memakai batas paket Free.
+          </span>
+          <a href={`/register/pay/${me.pendingOrderId}`} className="btn" style={{ flexShrink: 0 }}>
+            Selesaikan Pembayaran
+          </a>
+        </div>
+      )}
       {plan && (
         <div className="card cpad mb16" style={{ padding: 22 }}>
           <div className="ch">
