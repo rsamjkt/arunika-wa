@@ -1,4 +1,7 @@
+import crypto from "node:crypto";
 import nodemailer from "nodemailer";
+
+export type EmailAttachment = { filename: string; content: Buffer; cid: string; contentType?: string };
 
 const SMTP_HOST = process.env.SMTP_HOST ?? "";
 const SMTP_PORT = Number(process.env.SMTP_PORT ?? "587");
@@ -24,17 +27,39 @@ function getTransporter() {
 
 /** Fire-and-forget-but-safe: logs failures, never throws into the caller's
  * main flow (registration/payment/etc. must succeed even if email fails). */
-export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+export async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+  attachments?: EmailAttachment[],
+): Promise<void> {
   const t = getTransporter();
   if (!t) {
     console.warn(`[email] SMTP not configured — skipped "${subject}" to ${to}`);
     return;
   }
   try {
-    await t.sendMail({ from: FROM, to, subject, html });
+    await t.sendMail({ from: FROM, to, subject, html, attachments });
   } catch (err) {
     console.error(`[email] send error to ${to}:`, err instanceof Error ? err.message : err);
   }
+}
+
+/** Converts a "data:image/png;base64,...." string (as returned by
+ * KlikQRIS) into a CID attachment + matching <img src="cid:..."> tag.
+ * Gmail and most webmail clients strip inline data: URIs from received
+ * emails for security — a CID-referenced attachment is the one embedding
+ * method that actually renders across clients. Returns an empty tag/no
+ * attachment if the string isn't a data URI (defensive, shouldn't happen). */
+function embedInlineImage(dataUri: string): { tag: string; attachment: EmailAttachment | null } {
+  const match = dataUri.match(/^data:([\w/+.-]+);base64,(.+)$/);
+  if (!match) return { tag: "", attachment: null };
+  const [, contentType, base64Data] = match;
+  const cid = `img-${crypto.randomBytes(8).toString("hex")}`;
+  return {
+    tag: `<div style="text-align:center;margin:20px 0;"><img src="cid:${cid}" alt="QRIS" width="220" height="220" style="border:1px solid #e6ece9;border-radius:10px;"></div>`,
+    attachment: { filename: "qris.png", content: Buffer.from(base64Data, "base64"), cid, contentType },
+  };
 }
 
 const WRAPPER = (title: string, body: string) => `
@@ -122,7 +147,8 @@ export function invoicePendingEmail(
   qrisImage: string,
   expiredAt: string,
   payUrl: string,
-): { subject: string; html: string } {
+): { subject: string; html: string; attachments: EmailAttachment[] } {
+  const { tag: qrTag, attachment } = qrisImage ? embedInlineImage(qrisImage) : { tag: "", attachment: null };
   return {
     subject: `Invoice ${orderId} — selesaikan pembayaran paket ${planName}`,
     html: WRAPPER(
@@ -135,10 +161,11 @@ export function invoicePendingEmail(
          ["Total Bayar", RP(totalAmount)],
          ["Kedaluwarsa", new Date(expiredAt).toLocaleString("id-ID")],
        ])}
-       ${qrisImage ? `<div style="text-align:center;margin:20px 0;"><img src="${qrisImage}" alt="QRIS" width="220" height="220" style="border:1px solid #e6ece9;border-radius:10px;"></div>` : ""}
+       ${qrTag}
        ${BUTTON(payUrl, "Buka Halaman Pembayaran")}
        <p style="color:#8a9a94;font-size:13px">Sudah bayar? Status akan otomatis terupdate dalam beberapa detik, tidak perlu konfirmasi manual.</p>`,
     ),
+    attachments: attachment ? [attachment] : [],
   };
 }
 
