@@ -137,7 +137,7 @@ export default function HelpPage() {
         </Link>
         <div style={{ display: "flex", gap: 10 }}>
           {loggedIn ? (
-            <Link href="/dashboard" className="btn">
+            <Link href="/dashboard" className="btn" style={{ background: "#0b0d10", color: "#fff", boxShadow: "none" }}>
               Ke Dashboard
             </Link>
           ) : (
@@ -145,7 +145,7 @@ export default function HelpPage() {
               <Link href="/login" className="btn secondary">
                 Masuk
               </Link>
-              <Link href="/register" className="btn">
+              <Link href="/register" className="btn" style={{ background: "#0b0d10", color: "#fff", boxShadow: "none" }}>
                 Daftar Gratis
               </Link>
             </>
@@ -177,8 +177,8 @@ export default function HelpPage() {
                       width: 26,
                       height: 26,
                       borderRadius: "50%",
-                      background: "var(--primary-gradient)",
-                      color: "#04271f",
+                      background: "#0b0d10",
+                      color: "#f97316",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -207,14 +207,14 @@ export default function HelpPage() {
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    background: "#0a3d36",
+                    background: "#0b0d10",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: 10,
                   }}
                 >
-                  <f.icon size={17} color="#5eead4" strokeWidth={2} />
+                  <f.icon size={17} color="#f97316" strokeWidth={2} />
                 </div>
                 <strong style={{ fontSize: "0.88rem", display: "block", marginBottom: 6 }}>{f.title}</strong>
                 <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", margin: 0 }}>{f.body}</p>
@@ -267,7 +267,7 @@ export default function HelpPage() {
             : (
               <>
                 Hubungi kami lewat WhatsApp atau email yang tertera di dashboard setelah Anda masuk, atau langsung{" "}
-                <Link href="/register" style={{ color: "var(--primary)" }}>
+                <Link href="/register" style={{ color: "#0b0d10", fontWeight: 700 }}>
                   coba gratis
                 </Link>{" "}
                 — tidak perlu kartu kredit.

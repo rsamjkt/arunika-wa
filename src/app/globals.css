@@ -1450,7 +1450,7 @@ table.dtable .actions-cell button {
   flex: 1 1 46%;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(160deg, #0a3d36 0%, #0f5245 55%, #137a5e 100%);
+  background: linear-gradient(160deg, #0b0d10 0%, #14171c 100%);
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -1476,8 +1476,8 @@ table.dtable .actions-cell button {
   width: 320px;
   height: 320px;
   border-radius: 50%;
-  background: var(--primary-gradient);
-  opacity: 0.14;
+  background: rgba(255, 255, 255, 0.06);
+  opacity: 1;
 }
 .auth-hero-inner {
   position: relative;
