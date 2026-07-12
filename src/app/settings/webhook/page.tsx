@@ -2,6 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+interface WebhookDelivery {
+  id: string;
+  timestamp: string;
+  event: string;
+  ok: boolean;
+  status?: number;
+  error?: string;
+}
+
 interface WebhookConfig {
   url: string;
   events: string[];
@@ -9,6 +18,7 @@ interface WebhookConfig {
   secret: string;
   lastDeliveryAt: string | null;
   lastDeliveryOk: boolean | null;
+  recentDeliveries: WebhookDelivery[];
 }
 
 const ALL_EVENTS = [
@@ -202,6 +212,50 @@ export default function WebhookSettingsPage() {
             Buat Ulang
           </button>
         </div>
+      </div>
+
+      <div className="card cpad" style={{ padding: 22, marginTop: 16 }}>
+        <div className="ch">
+          <div>
+            <h2 style={{ fontSize: "1rem" }}>Riwayat Pengiriman</h2>
+            <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: 4 }}>
+              20 pengiriman terakhir ke endpoint Anda.
+            </p>
+          </div>
+        </div>
+        <table className="dtable">
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>Event</th>
+              <th>Status</th>
+              <th>Keterangan</th>
+            </tr>
+          </thead>
+          <tbody>
+            {config.recentDeliveries.map((d) => (
+              <tr key={d.id}>
+                <td className="mono" style={{ color: "var(--ink-soft)" }}>
+                  {new Date(d.timestamp).toLocaleString("id-ID")}
+                </td>
+                <td className="mono">{d.event}</td>
+                <td>
+                  <span className={`badge ${d.ok ? "good" : "bad"}`}>{d.ok ? "Berhasil" : "Gagal"}</span>
+                </td>
+                <td style={{ fontSize: "0.78rem", color: "var(--ink-soft)" }}>
+                  {d.status ? `HTTP ${d.status}` : d.error ?? "—"}
+                </td>
+              </tr>
+            ))}
+            {config.recentDeliveries.length === 0 && (
+              <tr>
+                <td colSpan={4} style={{ textAlign: "center", color: "var(--ink-soft)", padding: 24 }}>
+                  Belum ada pengiriman.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

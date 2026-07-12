@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { readJson, writeJson } from "./store";
+import { logWebhookDelivery } from "./webhookLog";
 
 export type OutboundWebhookConfig = {
   url: string;
@@ -78,7 +79,9 @@ function recordDelivery(ownerId: string, ok: boolean) {
   writeJson(FILE, store);
 }
 
-async function send(url: string, secret: string, body: unknown): Promise<boolean> {
+type SendResult = { ok: boolean; status?: number; error?: string };
+
+async function send(url: string, secret: string, body: unknown): Promise<SendResult> {
   const payload = JSON.stringify(body);
   const signature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
 
@@ -93,9 +96,9 @@ async function send(url: string, secret: string, body: unknown): Promise<boolean
       body: payload,
       signal: AbortSignal.timeout(8000),
     });
-    return res.ok;
-  } catch {
-    return false;
+    return { ok: res.ok, status: res.status };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -103,23 +106,25 @@ export async function deliverOutboundWebhook(ownerId: string, event: string, bod
   const cfg = getWebhookConfig(ownerId);
   if (!cfg.enabled || !cfg.url || !cfg.events.includes(event)) return;
 
-  let ok = await send(cfg.url, cfg.secret, body);
-  if (!ok) {
+  let result = await send(cfg.url, cfg.secret, body);
+  if (!result.ok) {
     await new Promise((r) => setTimeout(r, 1500));
-    ok = await send(cfg.url, cfg.secret, body);
+    result = await send(cfg.url, cfg.secret, body);
   }
-  recordDelivery(ownerId, ok);
+  recordDelivery(ownerId, result.ok);
+  logWebhookDelivery({ ownerId, event, ok: result.ok, status: result.status, error: result.error });
 }
 
 /** Sends a test payload regardless of the enabled/events gate. */
 export async function testOutboundWebhook(ownerId: string): Promise<{ ok: boolean; error?: string }> {
   const cfg = getWebhookConfig(ownerId);
   if (!cfg.url) return { ok: false, error: "Belum ada URL webhook yang diset" };
-  const ok = await send(cfg.url, cfg.secret, {
+  const result = await send(cfg.url, cfg.secret, {
     event: "test",
     timestamp: Date.now(),
     payload: { message: "Ini adalah test webhook dari Arunika-WA." },
   });
-  recordDelivery(ownerId, ok);
-  return { ok };
+  recordDelivery(ownerId, result.ok);
+  logWebhookDelivery({ ownerId, event: "test", ok: result.ok, status: result.status, error: result.error });
+  return { ok: result.ok, error: result.error };
 }

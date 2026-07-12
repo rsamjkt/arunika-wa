@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWebhookConfig, regenerateWebhookSecret, updateWebhookConfig } from "@/lib/webhookConfig";
+import { getRecentWebhookDeliveries } from "@/lib/webhookLog";
 import { requireFeature } from "@/lib/authz";
 import { getEffectiveTenantId } from "@/lib/users";
 
 export async function GET() {
   const { user, response } = await requireFeature("webhook");
   if (response) return response;
-  return NextResponse.json(getWebhookConfig(getEffectiveTenantId(user!)));
+  const tenantId = getEffectiveTenantId(user!);
+  return NextResponse.json({
+    ...getWebhookConfig(tenantId),
+    recentDeliveries: getRecentWebhookDeliveries(tenantId, 20),
+  });
 }
 
 export async function PUT(req: NextRequest) {
