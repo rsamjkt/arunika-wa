@@ -7,6 +7,7 @@ import { createTransaction, KlikQrisError } from "@/lib/klikqris";
 import { createTransactionRecord } from "@/lib/transactions";
 import { invoicePendingEmail, sendEmail } from "@/lib/email";
 import { getAppUrl } from "@/lib/appUrl";
+import { sendInvoiceWhatsApp } from "@/lib/customerNotify";
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentFullUser();
@@ -50,6 +51,17 @@ export async function POST(req: NextRequest) {
         `${getAppUrl()}/register/pay/${tx.order_id}`,
       );
       sendEmail(user.email, subject, html, attachments).catch(() => {});
+    }
+    if (user.phone) {
+      sendInvoiceWhatsApp(
+        user.phone,
+        user.username,
+        plan.name,
+        tx.order_id,
+        Number(tx.total_amount),
+        `${getAppUrl()}/register/pay/${tx.order_id}`,
+        tx.expired_at,
+      );
     }
 
     return NextResponse.json({
