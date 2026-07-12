@@ -40,8 +40,12 @@ const SELF_VERIFIED_PATHS = new Set([
 ]);
 // Platform-owner-only area — a valid session isn't enough, role must be superadmin.
 // /settings/users manages platform-staff accounts, not tenant data, so it
-// belongs here too even though it isn't under /admin.
-const ADMIN_PREFIXES = ["/admin", "/settings/users"];
+// belongs here too even though it isn't under /admin. /api/admin is listed
+// explicitly too — it doesn't share the /admin prefix, so without this a
+// logged-in tenant session (not just a stray API key) would reach every
+// /api/admin/* route and rely solely on that route's own requireSuperadmin()
+// check as the only thing standing between them and another tenant's data.
+const ADMIN_PREFIXES = ["/admin", "/settings/users", "/api/admin"];
 // Tenant-owner-only area — billing and team membership stay off-limits to
 // staff logins, which share the owner's plan/quota/devices but not control
 // over them.
@@ -86,7 +90,9 @@ export function proxy(req: NextRequest) {
     }
     if (ADMIN_PREFIXES.some((p) => pathname.startsWith(p))) {
       if (user?.role !== "superadmin") {
-        return NextResponse.redirect(new URL("/dashboard", req.url));
+        return pathname.startsWith("/api/")
+          ? NextResponse.json({ error: "Forbidden" }, { status: 403 })
+          : NextResponse.redirect(new URL("/dashboard", req.url));
       }
     }
     if (TENANT_OWNER_PREFIXES.some((p) => pathname.startsWith(p))) {
