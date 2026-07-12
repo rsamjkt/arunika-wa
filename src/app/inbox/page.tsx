@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { substituteVariables } from "@/lib/textVars";
 
 type SessionStatus =
   | "STOPPED"
@@ -30,6 +31,24 @@ interface WAMessage {
   body: string;
   hasMedia?: boolean;
 }
+
+interface TeamMember {
+  id: string;
+  username: string;
+}
+
+interface Assignment {
+  assignedTo: string | null;
+  status: "open" | "resolved";
+}
+
+interface MessageTemplate {
+  id: string;
+  name: string;
+  body: string;
+}
+
+const UNASSIGNED: Assignment = { assignedTo: null, status: "open" };
 
 function initials(text: string) {
   return text
@@ -80,6 +99,10 @@ function InboxPageInner() {
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [chatsLoading, setChatsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  const [filterMode, setFilterMode] = useState<"all" | "mine" | "unassigned" | "resolved">("all");
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<WAMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
@@ -89,6 +112,12 @@ function InboxPageInner() {
   const [imageError, setImageError] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<{ id: string; preview: string } | null>(null);
   const [actingOn, setActingOn] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [noteTags, setNoteTags] = useState("");
+  const [noteText, setNoteText] = useState("");
+  const [noteSaved, setNoteSaved] = useState(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const msgsEndRef = useRef<HTMLDivElement | null>(null);
   const typingRef = useRef(false);
@@ -114,6 +143,17 @@ function InboxPageInner() {
     return () => clearInterval(id);
   }, [loadSessions]);
 
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((me) => setMyUserId(me?.id ?? null))
+      .catch(() => {});
+    fetch("/api/templates")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setTemplates)
+      .catch(() => {});
+  }, []);
+
   const chatsInFlight = useRef(false);
 
   const loadChats = useCallback(async () => {
@@ -128,17 +168,42 @@ function InboxPageInner() {
     }
   }, [activeSession]);
 
+  const loadAssignments = useCallback(async () => {
+    if (!activeSession) return;
+    const res = await fetch(`/api/inbox/assignment?session=${encodeURIComponent(activeSession)}`);
+    if (res.ok) {
+      const data = await res.json();
+      setAssignments(data.assignments ?? {});
+      setTeamMembers(data.teamMembers ?? []);
+    }
+  }, [activeSession]);
+
+  async function updateAssignment(chatId: string, patch: Partial<Assignment>) {
+    if (!activeSession) return;
+    setAssignments((prev) => ({ ...prev, [chatId]: { ...(prev[chatId] ?? UNASSIGNED), ...patch } }));
+    await fetch("/api/inbox/assignment", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session: activeSession, chatId, ...patch }),
+    });
+  }
+
   useEffect(() => {
     setActiveChatId(null);
     setMessages([]);
     setChats([]);
     setSearch("");
+    setFilterMode("all");
     if (!activeSession) return;
     setChatsLoading(true);
     loadChats();
-    const id = setInterval(loadChats, 8_000);
+    loadAssignments();
+    const id = setInterval(() => {
+      loadChats();
+      loadAssignments();
+    }, 8_000);
     return () => clearInterval(id);
-  }, [activeSession, loadChats]);
+  }, [activeSession, loadChats, loadAssignments]);
 
   const messagesInFlight = useRef(false);
 
@@ -171,6 +236,42 @@ function InboxPageInner() {
   useEffect(() => {
     msgsEndRef.current?.scrollIntoView({ block: "end" });
   }, [messages]);
+
+  useEffect(() => {
+    setShowNotes(false);
+    setNoteTags("");
+    setNoteText("");
+    setNoteSaved(true);
+    if (!activeSession || !activeChatId) return;
+    fetch(
+      `/api/inbox/contact-note?session=${encodeURIComponent(activeSession)}&contactId=${encodeURIComponent(activeChatId)}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        setNoteTags((data.tags ?? []).join(", "));
+        setNoteText(data.note ?? "");
+      })
+      .catch(() => {});
+  }, [activeSession, activeChatId]);
+
+  async function saveNote() {
+    if (!activeSession || !activeChatId) return;
+    await fetch("/api/inbox/contact-note", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session: activeSession,
+        contactId: activeChatId,
+        tags: noteTags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+        note: noteText,
+      }),
+    });
+    setNoteSaved(true);
+  }
 
   useEffect(() => {
     if (!activeSession || !activeChatId) return;
@@ -270,13 +371,31 @@ function InboxPageInner() {
 
   const filteredChats = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return chats;
     return chats.filter((c) => {
-      const name = (c.name ?? c.id).toLowerCase();
-      const snippet = (c.lastMessage?.body ?? "").toLowerCase();
-      return name.includes(q) || snippet.includes(q);
+      if (q) {
+        const name = (c.name ?? c.id).toLowerCase();
+        const snippet = (c.lastMessage?.body ?? "").toLowerCase();
+        if (!name.includes(q) && !snippet.includes(q)) return false;
+      }
+      const a = assignments[c.id] ?? UNASSIGNED;
+      if (filterMode === "mine") return a.assignedTo === myUserId && a.status === "open";
+      if (filterMode === "unassigned") return !a.assignedTo && a.status === "open";
+      if (filterMode === "resolved") return a.status === "resolved";
+      return true;
     });
-  }, [chats, search]);
+  }, [chats, search, assignments, filterMode, myUserId]);
+
+  function memberName(id: string | null) {
+    if (!id) return null;
+    return teamMembers.find((m) => m.id === id)?.username ?? null;
+  }
+
+  function applyTemplate(t: MessageTemplate) {
+    if (!activeChatId) return;
+    const chat = chats.find((c) => c.id === activeChatId);
+    setText(substituteVariables(t.body, { chatId: activeChatId, name: chat?.name ?? undefined }));
+    setShowTemplates(false);
+  }
 
   async function send() {
     if (!activeSession || !activeChatId || !text.trim()) return;
@@ -383,6 +502,28 @@ function InboxPageInner() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          {teamMembers.length > 1 && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "0 12px 10px" }}>
+              {(
+                [
+                  ["all", "Semua"],
+                  ["mine", "Punya saya"],
+                  ["unassigned", "Belum ditugaskan"],
+                  ["resolved", "Selesai"],
+                ] as const
+              ).map(([mode, chipLabel]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={filterMode === mode ? "btn" : "btn secondary"}
+                  style={{ padding: "4px 10px", fontSize: "0.72rem" }}
+                  onClick={() => setFilterMode(mode)}
+                >
+                  {chipLabel}
+                </button>
+              ))}
+            </div>
+          )}
           {chatsLoading ? (
             <div style={{ padding: "20px 16px", fontSize: "0.8rem", color: "var(--ink-soft)" }}>
               Menyinkronkan chat pertama kali… bisa sampai 30 detik.
@@ -396,25 +537,43 @@ function InboxPageInner() {
               Tidak ada percakapan yang cocok dengan &quot;{search}&quot;.
             </div>
           ) : null}
-          {filteredChats.map((c) => (
-            <button
-              key={c.id}
-              className={`conv${c.id === activeChatId ? " active" : ""}`}
-              onClick={() => setActiveChatId(c.id)}
-            >
-              <div className="avatar-sm">{initials(c.name ?? c.id)}</div>
-              <div className="meta">
-                <div className="top">
-                  <span className="name">{c.name ?? c.id.split("@")[0]}</span>
-                  <span className="time mono">{formatTime(c.lastMessage?.timestamp)}</span>
+          {filteredChats.map((c) => {
+            const a = assignments[c.id] ?? UNASSIGNED;
+            const assigneeName = memberName(a.assignedTo);
+            return (
+              <button
+                key={c.id}
+                className={`conv${c.id === activeChatId ? " active" : ""}`}
+                onClick={() => setActiveChatId(c.id)}
+              >
+                <div className="avatar-sm">{initials(c.name ?? c.id)}</div>
+                <div className="meta">
+                  <div className="top">
+                    <span className="name">{c.name ?? c.id.split("@")[0]}</span>
+                    <span className="time mono">{formatTime(c.lastMessage?.timestamp)}</span>
+                  </div>
+                  <div className="snippet">
+                    {c.lastMessage?.fromMe ? "Anda: " : ""}
+                    {c.lastMessage?.body ?? ""}
+                  </div>
+                  {teamMembers.length > 1 && (a.assignedTo || a.status === "resolved") && (
+                    <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                      {assigneeName && (
+                        <span className="badge pending" style={{ fontSize: "0.65rem" }}>
+                          {assigneeName}
+                        </span>
+                      )}
+                      {a.status === "resolved" && (
+                        <span className="badge good" style={{ fontSize: "0.65rem" }}>
+                          Selesai
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="snippet">
-                  {c.lastMessage?.fromMe ? "Anda: " : ""}
-                  {c.lastMessage?.body ?? ""}
-                </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -428,8 +587,83 @@ function InboxPageInner() {
                 {activeChat?.name ?? activeChatId.split("@")[0]}
                 <small className="mono">{activeChatId}</small>
               </div>
-              <span className="badge good">Terhubung</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+                {teamMembers.length > 1 && (
+                  <select
+                    className="field"
+                    style={{ width: 150, fontSize: "0.78rem", padding: "6px 8px" }}
+                    value={(assignments[activeChatId] ?? UNASSIGNED).assignedTo ?? ""}
+                    onChange={(e) => updateAssignment(activeChatId, { assignedTo: e.target.value || null })}
+                  >
+                    <option value="">Belum ditugaskan</option>
+                    {teamMembers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.username}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <button
+                  type="button"
+                  className={`btn ${(assignments[activeChatId] ?? UNASSIGNED).status === "resolved" ? "secondary" : ""}`}
+                  style={{ padding: "6px 12px", fontSize: "0.78rem" }}
+                  onClick={() =>
+                    updateAssignment(activeChatId, {
+                      status: (assignments[activeChatId] ?? UNASSIGNED).status === "resolved" ? "open" : "resolved",
+                    })
+                  }
+                >
+                  {(assignments[activeChatId] ?? UNASSIGNED).status === "resolved" ? "Buka Lagi" : "Tandai Selesai"}
+                </button>
+                <button
+                  type="button"
+                  className={showNotes ? "btn" : "btn secondary"}
+                  style={{ padding: "6px 12px", fontSize: "0.78rem" }}
+                  onClick={() => setShowNotes((v) => !v)}
+                >
+                  📝 Catatan
+                </button>
+                <span className="badge good">Terhubung</span>
+              </div>
             </div>
+            {showNotes && (
+              <div
+                style={{
+                  padding: "12px 18px",
+                  borderBottom: "1px solid var(--border)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  background: "var(--surface)",
+                }}
+              >
+                <input
+                  className="field"
+                  placeholder="Tag (pisahkan dengan koma), mis. VIP, Reseller"
+                  value={noteTags}
+                  onChange={(e) => {
+                    setNoteTags(e.target.value);
+                    setNoteSaved(false);
+                  }}
+                  onBlur={saveNote}
+                  style={{ fontSize: "0.82rem" }}
+                />
+                <textarea
+                  className="compose"
+                  placeholder="Catatan internal tentang kontak ini…"
+                  value={noteText}
+                  onChange={(e) => {
+                    setNoteText(e.target.value);
+                    setNoteSaved(false);
+                  }}
+                  onBlur={saveNote}
+                  style={{ minHeight: 60, fontSize: "0.82rem" }}
+                />
+                <span style={{ fontSize: "0.7rem", color: "var(--ink-soft)" }}>
+                  {noteSaved ? "Tersimpan" : "Menyimpan saat keluar dari kolom…"}
+                </span>
+              </div>
+            )}
             <div className="msgs">
               {messagesLoading && messages.length === 0 && (
                 <div style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>Memuat pesan…</div>
@@ -492,6 +726,51 @@ function InboxPageInner() {
                 <button onClick={() => setReplyTo(null)}>✕</button>
               </div>
             )}
+            {showTemplates && (
+              <div
+                style={{
+                  margin: "0 18px 8px",
+                  maxHeight: 220,
+                  overflowY: "auto",
+                  border: "1px solid var(--border)",
+                  borderRadius: 11,
+                  background: "var(--surface)",
+                }}
+              >
+                {templates.length === 0 ? (
+                  <p style={{ padding: 14, fontSize: "0.8rem", color: "var(--ink-soft)" }}>
+                    Belum ada template.{" "}
+                    <Link href="/templates" style={{ color: "var(--primary)" }}>
+                      Buat template
+                    </Link>
+                  </p>
+                ) : (
+                  templates.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => applyTemplate(t)}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        textAlign: "left",
+                        padding: "10px 14px",
+                        borderBottom: "1px solid var(--border)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <div style={{ fontSize: "0.82rem", fontWeight: 700 }}>{t.name}</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--ink-soft)" }}>
+                        {t.body.slice(0, 70)}
+                        {t.body.length > 70 ? "…" : ""}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
             <div className="composer">
               <input
                 ref={fileInputRef}
@@ -508,6 +787,15 @@ function InboxPageInner() {
                 disabled={sendingImage}
               >
                 {sendingImage ? "…" : "📎"}
+              </button>
+              <button
+                type="button"
+                className={showTemplates ? "btn" : "btn secondary"}
+                style={{ padding: "8px 10px" }}
+                title="Pakai template"
+                onClick={() => setShowTemplates((v) => !v)}
+              >
+                📋
               </button>
               <input
                 className="field"

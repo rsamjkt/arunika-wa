@@ -238,6 +238,15 @@ export function listStaffForTenant(ownerId: string): PublicUser[] {
     .map(toPublic);
 }
 
+/** Owner + all staff for a tenant — the assignable "team" for chat
+ * assignment, visible to owner and staff alike (unlike /api/team,
+ * which is owner-only CRUD). */
+export function listTeamMembers(tenantId: string): { id: string; username: string }[] {
+  const owner = getFullUser(tenantId);
+  const members = owner ? [{ id: owner.id, username: owner.username }] : [];
+  return members.concat(listStaffForTenant(tenantId).map((s) => ({ id: s.id, username: s.username })));
+}
+
 export function deleteUser(id: string) {
   const users = all();
   if (users.length <= 1) throw new Error("Minimal harus ada satu user");

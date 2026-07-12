@@ -24,13 +24,13 @@ export async function POST(req: NextRequest) {
       chatId,
       contacts as VCardContact[],
     );
-    logEvent({ ownerId, direction: "out", session, chatId, kind: "vcard", status: "sent", source: "manual" });
+    logEvent({ ownerId, actorId: user!.id, direction: "out", session, chatId, kind: "vcard", status: "sent", source: "manual" });
     incrementQuotaUsage(ownerId);
     return NextResponse.json(message, { status: 201 });
   } catch (err) {
     const status = err instanceof WahaError ? err.status : 500;
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
-    logEvent({ ownerId, direction: "out", session, chatId, kind: "vcard", status: "failed", source: "manual", error: errorMessage });
+    logEvent({ ownerId, actorId: user!.id, direction: "out", session, chatId, kind: "vcard", status: "failed", source: "manual", error: errorMessage });
     return NextResponse.json({ error: errorMessage }, { status });
   }
 }
