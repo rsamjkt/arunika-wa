@@ -9,6 +9,9 @@ import { createTransactionRecord } from "@/lib/transactions";
 export async function POST(req: NextRequest) {
   const user = await getCurrentFullUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (user.role === "tenant_staff") {
+    return NextResponse.json({ error: "Hanya pemilik akun yang bisa mengubah paket" }, { status: 403 });
+  }
 
   const { planId } = await req.json();
   const plan = typeof planId === "string" ? getPlan(planId) : null;

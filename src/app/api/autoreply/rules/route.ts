@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRule } from "@/lib/autoreply";
 import { requireFeature } from "@/lib/authz";
+import { getEffectiveTenantId } from "@/lib/users";
 
 export async function POST(req: NextRequest) {
   const { user, response } = await requireFeature("autoreply");
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Balasan wajib diisi" }, { status: 400 });
   }
   const rule = createRule(
-    user!.id,
+    getEffectiveTenantId(user!),
     keywords.map((k: string) => k.trim()).filter(Boolean),
     reply,
   );

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCampaign, listCampaigns, startCampaign } from "@/lib/campaigns";
 import { requireFeature } from "@/lib/authz";
+import { getEffectiveTenantId } from "@/lib/users";
 import { requireSessionAccess } from "@/lib/tenancy";
 
 export async function GET() {
   const { user, response } = await requireFeature("broadcast");
   if (response) return response;
-  return NextResponse.json(listCampaigns(user!.id));
+  return NextResponse.json(listCampaigns(getEffectiveTenantId(user!)));
 }
 
 export async function POST(req: NextRequest) {
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
   if (response) return response;
 
   const campaign = createCampaign(
-    user!.id,
+    getEffectiveTenantId(user!),
     name,
     session,
     messageBody,
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
     typeof templateId === "string" ? templateId : undefined,
   );
 
-  if (startNow) startCampaign(user!.id, campaign.id);
+  if (startNow) startCampaign(getEffectiveTenantId(user!), campaign.id);
 
   return NextResponse.json(campaign, { status: 201 });
 }

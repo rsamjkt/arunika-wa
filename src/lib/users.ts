@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { readJson, writeJson } from "./store";
 import { getFreePlan } from "./plans";
 
-export type Role = "superadmin" | "tenant";
+export type Role = "superadmin" | "tenant" | "tenant_staff";
 
 export type QuotaUsage = { month: string; sent: number };
 
@@ -15,11 +15,20 @@ export type User = {
   salt: string;
   createdAt: string;
   role: Role;
+  /** Set only for role==='tenant_staff' — the owning tenant's user id.
+   * Staff share the owner's plan/quota/devices; null for everyone else. */
+  tenantId: string | null;
   planId: string;
   subscriptionStatus: "active" | "pending_payment";
   subscriptionExpiresAt: string | null;
   quotaUsage: QuotaUsage;
 };
+
+/** Resolves the tenant whose plan/quota/devices actually govern this
+ * user: themselves for owners/superadmin, their owner for staff. */
+export function getEffectiveTenantId(user: User): string {
+  return user.tenantId ?? user.id;
+}
 
 export type PublicUser = Omit<User, "passwordHash" | "salt">;
 
@@ -51,6 +60,7 @@ function seed(): User[] {
     salt,
     createdAt: new Date().toISOString(),
     role: "superadmin",
+    tenantId: null,
     planId: getFreePlan().id,
     subscriptionStatus: "active",
     subscriptionExpiresAt: null,
@@ -63,13 +73,15 @@ function seed(): User[] {
 function migrate(users: User[]): User[] {
   let changed = false;
   const migrated = users.map((u) => {
-    if (u.role && u.planId && u.subscriptionStatus && u.quotaUsage && "email" in u && "phone" in u) return u;
+    if (u.role && u.planId && u.subscriptionStatus && u.quotaUsage && "email" in u && "phone" in u && "tenantId" in u)
+      return u;
     changed = true;
     return {
       ...u,
       email: u.email ?? null,
       phone: u.phone ?? null,
       role: u.role ?? ("superadmin" as const),
+      tenantId: u.tenantId ?? null,
       planId: u.planId ?? getFreePlan().id,
       subscriptionStatus: u.subscriptionStatus ?? ("active" as const),
       subscriptionExpiresAt: u.subscriptionExpiresAt ?? null,
@@ -116,6 +128,7 @@ export function createUser(username: string, password: string): PublicUser {
     salt,
     createdAt: new Date().toISOString(),
     role: "superadmin",
+    tenantId: null,
     planId: getFreePlan().id,
     subscriptionStatus: "active",
     subscriptionExpiresAt: null,
@@ -152,6 +165,7 @@ export function createTenant(
     salt,
     createdAt: new Date().toISOString(),
     role: "tenant",
+    tenantId: null,
     planId,
     subscriptionStatus,
     subscriptionExpiresAt: null,
@@ -162,12 +176,67 @@ export function createTenant(
   return toPublic(user);
 }
 
+/** Creates a staff login under an owning tenant — shares the owner's
+ * plan, quota and devices. `email` is optional (needed only if the staff
+ * member should be able to use forgot-password themselves). */
+export function createStaff(
+  ownerId: string,
+  username: string,
+  password: string,
+  email: string | null,
+): PublicUser {
+  const users = all();
+  if (users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
+    throw new Error("Username sudah dipakai");
+  }
+  if (email && users.some((u) => u.email && u.email.toLowerCase() === email.toLowerCase())) {
+    throw new Error("Email sudah terdaftar");
+  }
+  const owner = users.find((u) => u.id === ownerId);
+  if (!owner || owner.role !== "tenant") throw new Error("Owner tidak ditemukan");
+  const salt = crypto.randomBytes(16).toString("hex");
+  const user: User = {
+    id: crypto.randomUUID(),
+    username,
+    email,
+    phone: null,
+    passwordHash: hashPassword(password, salt),
+    salt,
+    createdAt: new Date().toISOString(),
+    role: "tenant_staff",
+    tenantId: ownerId,
+    planId: owner.planId,
+    subscriptionStatus: owner.subscriptionStatus,
+    subscriptionExpiresAt: owner.subscriptionExpiresAt,
+    quotaUsage: { month: currentMonth(), sent: 0 },
+  };
+  users.push(user);
+  writeJson(FILE, users);
+  return toPublic(user);
+}
+
+export function listStaffForTenant(ownerId: string): PublicUser[] {
+  return all()
+    .filter((u) => u.role === "tenant_staff" && u.tenantId === ownerId)
+    .map(toPublic);
+}
+
 export function deleteUser(id: string) {
   const users = all();
   if (users.length <= 1) throw new Error("Minimal harus ada satu user");
   const next = users.filter((u) => u.id !== id);
   if (next.length === users.length) throw new Error("User tidak ditemukan");
   writeJson(FILE, next);
+}
+
+/** Removes a staff login — only if it actually belongs to `ownerId`. */
+export function deleteStaff(ownerId: string, staffId: string) {
+  const users = all();
+  const staff = users.find((u) => u.id === staffId);
+  if (!staff || staff.role !== "tenant_staff" || staff.tenantId !== ownerId) {
+    throw new Error("Staf tidak ditemukan");
+  }
+  writeJson(FILE, users.filter((u) => u.id !== staffId));
 }
 
 export function changePassword(id: string, password: string) {
@@ -265,6 +334,14 @@ export function incrementQuotaUsage(userId: string, by = 1) {
 
 export function getFullUser(id: string): User | null {
   return all().find((u) => u.id === id) ?? null;
+}
+
+/** The record whose planId/quotaUsage actually governs `user` — the
+ * owner's record for staff (who share the owner's plan/quota/devices),
+ * `user` itself otherwise. */
+export function getGoverningUser(user: User): User {
+  if (!user.tenantId) return user;
+  return all().find((u) => u.id === user.tenantId) ?? user;
 }
 
 /** The original platform-owner account — used to attribute legacy,

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSettings, updateSettings } from "@/lib/autoreply";
 import { requireFeature } from "@/lib/authz";
+import { getEffectiveTenantId } from "@/lib/users";
 
 export async function GET() {
   const { user, response } = await requireFeature("autoreply");
   if (response) return response;
-  return NextResponse.json(getSettings(user!.id));
+  return NextResponse.json(getSettings(getEffectiveTenantId(user!)));
 }
 
 export async function PUT(req: NextRequest) {
@@ -21,7 +22,7 @@ export async function PUT(req: NextRequest) {
     outsideHoursEnabled,
     outsideHoursMessage,
   } = body;
-  const next = updateSettings(user!.id, {
+  const next = updateSettings(getEffectiveTenantId(user!), {
     enabled: typeof enabled === "boolean" ? enabled : undefined,
     welcomeEnabled: typeof welcomeEnabled === "boolean" ? welcomeEnabled : undefined,
     welcomeMessage: typeof welcomeMessage === "string" ? welcomeMessage : undefined,

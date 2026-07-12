@@ -23,7 +23,7 @@ interface Plan {
 }
 
 interface Me {
-  role: "superadmin" | "tenant";
+  role: "superadmin" | "tenant" | "tenant_staff";
   subscriptionStatus: string;
   subscriptionExpiresAt: string | null;
   plan: Plan | null;
@@ -80,6 +80,16 @@ export default function AccountPlanPage() {
       <div className="card cpad" style={{ padding: 22 }}>
         <p style={{ color: "var(--ink-soft)" }}>
           Akun superadmin tidak terikat paket — akses penuh ke semua fitur.
+        </p>
+      </div>
+    );
+  }
+
+  if (me.role === "tenant_staff") {
+    return (
+      <div className="card cpad" style={{ padding: 22 }}>
+        <p style={{ color: "var(--ink-soft)" }}>
+          Paket & tagihan hanya bisa dikelola oleh pemilik akun.
         </p>
       </div>
     );
