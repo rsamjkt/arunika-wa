@@ -1,8 +1,10 @@
+import { CalendarClock, Users, Wallet, Webhook } from "lucide-react";
+
 const FEATURES = [
-  { icon: "👥", text: "Staf/tim tak terbatas di setiap paket, termasuk yang gratis" },
-  { icon: "💸", text: "Mulai dari Rp0 — paket berbayar dari Rp19.000/bulan" },
-  { icon: "📅", text: "Broadcast terjadwal, template, dan auto-reply bawaan" },
-  { icon: "🔌", text: "API key sendiri untuk integrasi ke aplikasi Anda" },
+  { icon: Users, text: "Staf/tim tak terbatas di setiap paket, termasuk yang gratis" },
+  { icon: Wallet, text: "Mulai dari Rp0 — paket berbayar dari Rp19.000/bulan" },
+  { icon: CalendarClock, text: "Broadcast terjadwal, template, dan auto-reply bawaan" },
+  { icon: Webhook, text: "API key sendiri untuk integrasi ke aplikasi Anda" },
 ];
 
 export default function AuthHero({
@@ -24,7 +26,9 @@ export default function AuthHero({
         <div className="auth-hero-features">
           {FEATURES.map((f) => (
             <div className="auth-hero-feature" key={f.text}>
-              <span className="ic">{f.icon}</span>
+              <span className="ic">
+                <f.icon size={14} strokeWidth={2} />
+              </span>
               <span>{f.text}</span>
             </div>
           ))}
