@@ -15,7 +15,7 @@ const PUBLIC_PATHS = new Set([
 // route itself gates POST/PATCH/DELETE behind requireSuperadmin().
 // /register(/pay/...), /api/qris/status/..., and /reset-password/[token]
 // must be reachable before a session/account exists.
-const PUBLIC_PREFIXES = ["/api/plans", "/register", "/api/qris/status", "/reset-password"];
+const PUBLIC_PREFIXES = ["/api/plans", "/register", "/api/qris/status", "/reset-password", "/help"];
 const SESSION_COOKIE = "arunika_session";
 // User & API-key management must only ever be reachable from a logged-in
 // browser session — never via X-Api-Key, even though it lives under /api/.
