@@ -26,3 +26,16 @@ export async function getCurrentFullUser() {
   }
   return null;
 }
+
+/** The API key record for the current request, if it was authenticated
+ * via X-Api-Key rather than the browser session cookie — null for
+ * browser/dashboard requests. Used to attribute sends for API usage
+ * reporting. */
+export async function getCurrentApiKey() {
+  const session = await getCurrentUser();
+  if (session) return null;
+
+  const h = await headers();
+  const apiKey = h.get("x-api-key");
+  return apiKey ? validateApiKey(apiKey) : null;
+}

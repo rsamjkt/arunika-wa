@@ -19,6 +19,12 @@ interface AgentStat {
   sent: number;
   failed: number;
 }
+interface ApiKeyStat {
+  apiKeyId: string;
+  name: string;
+  sent: number;
+  failed: number;
+}
 interface ReportStats {
   days: DayStat[];
   totalSent: number;
@@ -29,6 +35,7 @@ interface ReportStats {
   activeCampaigns: number;
   totalCampaigns: number;
   agentStats: AgentStat[];
+  apiKeyStats: ApiKeyStat[];
 }
 
 export default function ReportsPage() {
@@ -197,6 +204,48 @@ export default function ReportsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {stats.apiKeyStats.length > 0 && (
+        <div className="card cpad" style={{ padding: 18, marginTop: 16 }}>
+          <div className="ch">
+            <div>
+              <div className="chttl">Penggunaan API</div>
+              <div className="chsub">Pesan manual per sumber (dashboard vs API key), 14 hari terakhir</div>
+            </div>
+          </div>
+          <table className="dtable">
+            <thead>
+              <tr>
+                <th>Sumber</th>
+                <th>Terkirim</th>
+                <th>Gagal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.apiKeyStats.map((s) => (
+                <tr key={s.apiKeyId}>
+                  <td style={{ fontWeight: 700 }}>
+                    {s.apiKeyId === "dashboard" ? s.name : <span className="mono">{s.name}</span>}
+                  </td>
+                  <td className="mono" style={{ color: "var(--success)" }}>
+                    {s.sent}
+                  </td>
+                  <td className="mono" style={{ color: s.failed > 0 ? "var(--danger)" : "var(--ink-soft)" }}>
+                    {s.failed}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p style={{ fontSize: "0.75rem", color: "var(--ink-soft)", marginTop: 10 }}>
+            Kelola API key di{" "}
+            <a href="/settings/api-keys" style={{ color: "var(--primary)" }}>
+              Pengaturan → API Key
+            </a>
+            .
+          </p>
         </div>
       )}
     </div>
