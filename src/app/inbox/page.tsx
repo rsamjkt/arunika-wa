@@ -24,12 +24,20 @@ interface ChatSummary {
   lastMessage: { body?: string; timestamp?: number; fromMe?: boolean } | null;
 }
 
+interface WAMediaInfo {
+  url: string;
+  filename?: string | null;
+  mimetype: string;
+  error?: string;
+}
+
 interface WAMessage {
   id: string;
   timestamp: number;
   fromMe: boolean;
   body: string;
   hasMedia?: boolean;
+  media?: WAMediaInfo | null;
 }
 
 interface TeamMember {
@@ -80,6 +88,30 @@ function formatTime(ts?: number) {
     return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
   }
   return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
+}
+
+function MediaContent({ media }: { media: WAMediaInfo }) {
+  if (media.error) {
+    return <div className="media-fallback">Media gagal dimuat</div>;
+  }
+  if (media.mimetype.startsWith("image/")) {
+    return (
+      <a href={media.url} target="_blank" rel="noopener noreferrer">
+        <img src={media.url} alt="Gambar" className="bub-media" loading="lazy" />
+      </a>
+    );
+  }
+  if (media.mimetype.startsWith("video/")) {
+    return <video src={media.url} controls className="bub-media" />;
+  }
+  if (media.mimetype.startsWith("audio/")) {
+    return <audio src={media.url} controls className="bub-audio" />;
+  }
+  return (
+    <a href={media.url} target="_blank" rel="noopener noreferrer" className="media-fallback">
+      📄 {media.filename || "Dokumen"} — buka/unduh
+    </a>
+  );
 }
 
 export default function InboxPage() {
@@ -423,11 +455,17 @@ function InboxPageInner() {
     }
   }
 
-  async function sendImageFile(fileList: FileList | null) {
+  function attachEndpoint(mimetype: string): string {
+    if (mimetype.startsWith("image/")) return "/api/send-image";
+    if (mimetype.startsWith("video/")) return "/api/send-video";
+    return "/api/send-file";
+  }
+
+  async function sendAttachment(fileList: FileList | null) {
     const file = fileList?.[0];
     if (!file || !activeSession || !activeChatId) return;
     if (file.size > 15 * 1024 * 1024) {
-      setImageError("Ukuran gambar maksimal 15MB.");
+      setImageError("Ukuran file maksimal 15MB.");
       return;
     }
     setImageError(null);
@@ -440,23 +478,24 @@ function InboxPageInner() {
         reader.readAsDataURL(file);
       });
       const base64 = dataUrl.split(",")[1] ?? "";
-      const res = await fetch("/api/send-image", {
+      const mimetype = file.type || "application/octet-stream";
+      const res = await fetch(attachEndpoint(mimetype), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           session: activeSession,
           chatId: activeChatId,
-          file: { mimetype: file.type || "image/jpeg", filename: file.name, data: base64 },
+          file: { mimetype, filename: file.name, data: base64 },
           caption: text.trim() || undefined,
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Gagal mengirim gambar");
+      if (!res.ok) throw new Error(data.error ?? "Gagal mengirim file");
       setText("");
       await loadMessages();
       await loadChats();
     } catch (err) {
-      setImageError(err instanceof Error ? err.message : "Gagal mengirim gambar");
+      setImageError(err instanceof Error ? err.message : "Gagal mengirim file");
     } finally {
       setSendingImage(false);
     }
@@ -671,7 +710,9 @@ function InboxPageInner() {
               {messages.map((m) => (
                 <div key={m.id} className={`msg-row ${m.fromMe ? "out" : "in"}`}>
                   <div className={`bub ${m.fromMe ? "out" : "in"}`}>
-                    {m.hasMedia && !m.body ? "📎 Media (pratinjau belum didukung)" : m.body}
+                    {m.hasMedia && m.media && <MediaContent media={m.media} />}
+                    {m.hasMedia && !m.media && <div className="media-fallback">📎 Media tidak tersedia</div>}
+                    {m.body && <div className={m.hasMedia ? "bub-caption" : undefined}>{m.body}</div>}
                     <span className="t mono">{formatTime(m.timestamp)}</span>
                   </div>
                   <div className="msg-actions">
@@ -775,14 +816,14 @@ function InboxPageInner() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx"
                 style={{ display: "none" }}
-                onChange={(e) => sendImageFile(e.target.files)}
+                onChange={(e) => sendAttachment(e.target.files)}
               />
               <button
                 className="btn secondary"
                 style={{ padding: "8px 10px" }}
-                title="Lampirkan gambar"
+                title="Lampirkan gambar, video, atau dokumen"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={sendingImage}
               >

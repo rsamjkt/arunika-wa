@@ -59,6 +59,13 @@ export interface ChatSummary {
   } | null;
 }
 
+export interface WAMediaInfo {
+  url: string;
+  filename?: string | null;
+  mimetype: string;
+  error?: string;
+}
+
 export interface WAMessage {
   id: string;
   timestamp: number;
@@ -67,6 +74,7 @@ export interface WAMessage {
   to: string;
   body: string;
   hasMedia?: boolean;
+  media?: WAMediaInfo | null;
   ack?: number;
 }
 
@@ -153,7 +161,7 @@ export function getChatsOverview(session: string, limit = 30) {
 
 export function getMessages(session: string, chatId: string, limit = 50) {
   return wahaJson<WAMessage[]>(
-    `/api/${encodeURIComponent(session)}/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}&downloadMedia=false&sortOrder=desc`,
+    `/api/${encodeURIComponent(session)}/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}&downloadMedia=true&sortOrder=desc`,
   );
 }
 
