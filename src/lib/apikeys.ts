@@ -69,6 +69,11 @@ export function deleteApiKey(ownerId: string, id: string) {
   );
 }
 
+/** Cascade delete — used when a tenant account is removed entirely. */
+export function deleteAllForOwner(ownerId: string): void {
+  writeJson(FILE, all().filter((k) => k.ownerId !== ownerId));
+}
+
 export function validateApiKey(key: string): ApiKeyRecord | null {
   if (!key) return null;
   const keys = all();

@@ -55,6 +55,13 @@ export function updateWebhookConfig(
   return next;
 }
 
+/** Cascade delete — used when a tenant account is removed entirely. */
+export function deleteConfigForOwner(ownerId: string): void {
+  const store = allConfigs();
+  delete store[ownerId];
+  writeJson(FILE, store);
+}
+
 export function regenerateWebhookSecret(ownerId: string): OutboundWebhookConfig {
   const current = getWebhookConfig(ownerId);
   const next = { ...current, secret: crypto.randomBytes(24).toString("hex") };

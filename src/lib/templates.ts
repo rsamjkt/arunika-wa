@@ -64,6 +64,11 @@ export function deleteTemplate(ownerId: string, id: string): void {
   );
 }
 
+/** Cascade delete — used when a tenant account is removed entirely. */
+export function deleteAllForOwner(ownerId: string): void {
+  writeJson(FILE, all().filter((t) => t.ownerId !== ownerId));
+}
+
 /** Internal side effect (called after a successful send) — not user-facing,
  * so it doesn't re-verify ownership; the templateId already came from a
  * campaign/send the caller owns. */

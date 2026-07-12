@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/sessions";
+import { deleteSession, getSession } from "@/lib/sessions";
 import { validateApiKey } from "@/lib/apikeys";
-import { getFullUser } from "@/lib/users";
+import { getFullUser, getGoverningUser } from "@/lib/users";
 
 const PUBLIC_PATHS = new Set([
   "/login",
@@ -26,6 +26,7 @@ const COOKIE_ONLY_PREFIXES = [
   "/api/autoreply",
   "/api/account",
   "/api/team",
+  "/api/admin",
 ];
 // Called by an external service, not a browser or an app-issued API key —
 // each authenticates the request itself (HMAC / stored signature) instead.
@@ -58,14 +59,21 @@ export function proxy(req: NextRequest) {
   const session = cookie ? getSession(cookie) : null;
 
   if (session) {
+    const user = getFullUser(session.userId);
+    if (user && user.role !== "superadmin" && getGoverningUser(user).suspended) {
+      deleteSession(cookie!);
+      const loginUrl = new URL("/login", req.url);
+      loginUrl.searchParams.set("suspended", "1");
+      return pathname.startsWith("/api/")
+        ? NextResponse.json({ error: "Akun ini telah dinonaktifkan. Hubungi admin platform." }, { status: 403 })
+        : NextResponse.redirect(loginUrl);
+    }
     if (ADMIN_PREFIXES.some((p) => pathname.startsWith(p))) {
-      const user = getFullUser(session.userId);
       if (user?.role !== "superadmin") {
         return NextResponse.redirect(new URL("/", req.url));
       }
     }
     if (TENANT_OWNER_PREFIXES.some((p) => pathname.startsWith(p))) {
-      const user = getFullUser(session.userId);
       if (user?.role !== "tenant" && user?.role !== "superadmin") {
         return pathname.startsWith("/api/")
           ? NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -83,6 +91,10 @@ export function proxy(req: NextRequest) {
       const apiKey = req.headers.get("x-api-key");
       const record = apiKey ? validateApiKey(apiKey) : null;
       if (record) {
+        const owner = getFullUser(record.ownerId);
+        if (owner && getGoverningUser(owner).suspended) {
+          return NextResponse.json({ error: "Akun ini telah dinonaktifkan." }, { status: 403 });
+        }
         return NextResponse.next();
       }
     }

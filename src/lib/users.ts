@@ -22,6 +22,9 @@ export type User = {
   subscriptionStatus: "active" | "pending_payment";
   subscriptionExpiresAt: string | null;
   quotaUsage: QuotaUsage;
+  /** Superadmin-set kill switch — suspended tenants (and their staff,
+   * via getGoverningUser) can't log in or use an existing session. */
+  suspended: boolean;
 };
 
 /** Resolves the tenant whose plan/quota/devices actually govern this
@@ -65,6 +68,7 @@ function seed(): User[] {
     subscriptionStatus: "active",
     subscriptionExpiresAt: null,
     quotaUsage: { month: currentMonth(), sent: 0 },
+    suspended: false,
   };
   writeJson(FILE, [seeded]);
   return [seeded];
@@ -73,7 +77,16 @@ function seed(): User[] {
 function migrate(users: User[]): User[] {
   let changed = false;
   const migrated = users.map((u) => {
-    if (u.role && u.planId && u.subscriptionStatus && u.quotaUsage && "email" in u && "phone" in u && "tenantId" in u)
+    if (
+      u.role &&
+      u.planId &&
+      u.subscriptionStatus &&
+      u.quotaUsage &&
+      "email" in u &&
+      "phone" in u &&
+      "tenantId" in u &&
+      "suspended" in u
+    )
       return u;
     changed = true;
     return {
@@ -86,6 +99,7 @@ function migrate(users: User[]): User[] {
       subscriptionStatus: u.subscriptionStatus ?? ("active" as const),
       subscriptionExpiresAt: u.subscriptionExpiresAt ?? null,
       quotaUsage: u.quotaUsage ?? { month: currentMonth(), sent: 0 },
+      suspended: u.suspended ?? false,
     };
   });
   if (changed) writeJson(FILE, migrated);
@@ -133,6 +147,7 @@ export function createUser(username: string, password: string): PublicUser {
     subscriptionStatus: "active",
     subscriptionExpiresAt: null,
     quotaUsage: { month: currentMonth(), sent: 0 },
+    suspended: false,
   };
   users.push(user);
   writeJson(FILE, users);
@@ -170,6 +185,7 @@ export function createTenant(
     subscriptionStatus,
     subscriptionExpiresAt: null,
     quotaUsage: { month: currentMonth(), sent: 0 },
+    suspended: false,
   };
   users.push(user);
   writeJson(FILE, users);
@@ -209,6 +225,7 @@ export function createStaff(
     subscriptionStatus: owner.subscriptionStatus,
     subscriptionExpiresAt: owner.subscriptionExpiresAt,
     quotaUsage: { month: currentMonth(), sent: 0 },
+    suspended: false,
   };
   users.push(user);
   writeJson(FILE, users);
@@ -272,6 +289,16 @@ export function activateSubscription(userId: string, planId: string, expiresAt: 
       u.id === userId ? { ...u, planId, subscriptionStatus: "active" as const, subscriptionExpiresAt: expiresAt } : u,
     ),
   );
+}
+
+export function suspendUser(userId: string) {
+  const users = all();
+  writeJson(FILE, users.map((u) => (u.id === userId ? { ...u, suspended: true } : u)));
+}
+
+export function reactivateUser(userId: string) {
+  const users = all();
+  writeJson(FILE, users.map((u) => (u.id === userId ? { ...u, suspended: false } : u)));
 }
 
 export function downgradeToFree(userId: string) {

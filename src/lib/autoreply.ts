@@ -89,6 +89,13 @@ export function deleteRule(ownerId: string, id: string): void {
   writeJson(FILE, store);
 }
 
+/** Cascade delete — used when a tenant account is removed entirely. */
+export function deleteSettingsForOwner(ownerId: string): void {
+  const store = allSettings();
+  delete store[ownerId];
+  writeJson(FILE, store);
+}
+
 function wibNow(): Date {
   return new Date(Date.now() + 7 * 60 * 60 * 1000);
 }
