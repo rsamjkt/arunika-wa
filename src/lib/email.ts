@@ -1,38 +1,90 @@
-const API_KEY = process.env.RESEND_API_KEY ?? "";
-const FROM = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
+import nodemailer from "nodemailer";
+
+const SMTP_HOST = process.env.SMTP_HOST ?? "";
+const SMTP_PORT = Number(process.env.SMTP_PORT ?? "587");
+const SMTP_SECURE = process.env.SMTP_SECURE === "true";
+const SMTP_USER = process.env.SMTP_USER ?? "";
+const SMTP_PASS = process.env.SMTP_PASS ?? "";
+const FROM = process.env.EMAIL_FROM || SMTP_USER;
+
+let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+
+function getTransporter() {
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) return null;
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
+    });
+  }
+  return transporter;
+}
 
 /** Fire-and-forget-but-safe: logs failures, never throws into the caller's
  * main flow (registration/payment/etc. must succeed even if email fails). */
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-  if (!API_KEY) {
-    console.warn(`[email] RESEND_API_KEY not set — skipped "${subject}" to ${to}`);
+  const t = getTransporter();
+  if (!t) {
+    console.warn(`[email] SMTP not configured — skipped "${subject}" to ${to}`);
     return;
   }
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${API_KEY}`,
-      },
-      body: JSON.stringify({ from: FROM, to, subject, html }),
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      console.error(`[email] send failed (${res.status}) to ${to}: ${text}`);
-    }
+    await t.sendMail({ from: FROM, to, subject, html });
   } catch (err) {
     console.error(`[email] send error to ${to}:`, err instanceof Error ? err.message : err);
   }
 }
 
 const WRAPPER = (title: string, body: string) => `
-<div style="font-family:-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:24px">
-  <h2 style="color:#0a3d36">${title}</h2>
-  ${body}
-  <p style="color:#889691;font-size:12px;margin-top:32px">Arunika · WA — WhatsApp Gateway Platform</p>
-</div>`;
+<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#eef3f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef3f0;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(10,61,54,0.08);">
+            <tr>
+              <td style="background:#0a3d36;padding:26px 32px;">
+                <table role="presentation" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="background:#f97316;width:36px;height:36px;border-radius:9px;text-align:center;vertical-align:middle;font-weight:800;font-size:16px;color:#ffffff;line-height:36px;">A</td>
+                    <td style="padding-left:11px;color:#ffffff;font-weight:800;font-size:17px;vertical-align:middle;">Arunika&nbsp;·&nbsp;WA</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:34px 32px 8px;">
+                <h1 style="margin:0 0 18px;color:#0a3d36;font-size:20px;font-weight:800;">${title}</h1>
+                <div style="color:#3a4a45;font-size:14.5px;line-height:1.65;">${body}</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:26px 32px 28px;">
+                <div style="height:1px;background:#e6ece9;margin-bottom:20px;"></div>
+                <p style="margin:0;color:#8a9a94;font-size:12px;line-height:1.6;">
+                  Arunika · WA — WhatsApp Gateway Platform<br>
+                  Email ini dikirim otomatis, mohon tidak dibalas.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+
+const BUTTON = (href: string, label: string) => `
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:20px 0;">
+  <tr>
+    <td style="background:#25d366;border-radius:10px;">
+      <a href="${href}" style="display:inline-block;padding:12px 22px;color:#04271f;font-weight:700;font-size:14px;text-decoration:none;">${label}</a>
+    </td>
+  </tr>
+</table>`;
 
 export function welcomeEmail(username: string, planName: string): { subject: string; html: string } {
   return {
@@ -62,8 +114,8 @@ export function passwordResetEmail(resetUrl: string): { subject: string; html: s
     html: WRAPPER(
       "Reset Password",
       `<p>Kami menerima permintaan reset password untuk akun Anda.</p>
-       <p><a href="${resetUrl}" style="background:#25d366;color:#04271f;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block">Atur Password Baru</a></p>
-       <p style="color:#889691;font-size:13px">Link ini berlaku 1 jam. Jika Anda tidak meminta ini, abaikan email ini.</p>`,
+       ${BUTTON(resetUrl, "Atur Password Baru")}
+       <p style="color:#8a9a94;font-size:13px">Link ini berlaku 1 jam. Jika Anda tidak meminta ini, abaikan email ini.</p>`,
     ),
   };
 }
