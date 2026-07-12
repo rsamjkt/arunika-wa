@@ -15,7 +15,19 @@ export async function GET(req: NextRequest, { params }: Params) {
   }
   try {
     const messages = await getMessages(session, chatId);
-    return NextResponse.json(messages);
+    const proxied = messages.map((m) => {
+      if (!m.media?.url) return m;
+      try {
+        const path = new URL(m.media.url).pathname;
+        return {
+          ...m,
+          media: { ...m.media, url: `/api/sessions/${encodeURIComponent(session)}/media?path=${encodeURIComponent(path)}` },
+        };
+      } catch {
+        return m;
+      }
+    });
+    return NextResponse.json(proxied);
   } catch (err) {
     const status = err instanceof WahaError ? err.status : 500;
     return NextResponse.json(
