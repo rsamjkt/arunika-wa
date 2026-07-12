@@ -99,7 +99,7 @@ export default function RegisterPage() {
 
   return (
     <div className="login-shell">
-      <div className="card login-card" style={{ width: "100%", maxWidth: step === 1 ? 1140 : 420, padding: 36 }}>
+      <div className="card login-card" style={{ width: "100%", maxWidth: step === 1 ? 1320 : 420, padding: 36 }}>
         <div className="brand" style={{ justifyContent: "center", marginBottom: 8 }}>
           <span className="mark">A</span>
           Arunika · WA
@@ -114,7 +114,7 @@ export default function RegisterPage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
                 gap: 14,
                 marginBottom: 24,
               }}
@@ -147,7 +147,9 @@ export default function RegisterPage() {
                       {p.deviceLimit} perangkat WA
                     </div>
                     <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 10 }}>
-                      {p.monthlyMessageQuota ? `${p.monthlyMessageQuota} pesan/bulan` : "Kuota pesan tanpa batas"}
+                      {p.monthlyMessageQuota
+                        ? `${p.monthlyMessageQuota.toLocaleString("id-ID")} pesan/bulan`
+                        : "Kuota pesan tanpa batas"}
                     </div>
                     <ul style={{ fontSize: "0.75rem", color: "var(--ink-soft)", paddingLeft: 16, margin: 0 }}>
                       {p.features.map((f) => (
