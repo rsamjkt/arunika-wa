@@ -127,7 +127,8 @@ export default function AccountPlanPage() {
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: "0.82rem" }}>
                 <span>Pesan bulan ini</span>
                 <strong>
-                  {me.usage.messagesSent} / {plan.monthlyMessageQuota ?? "∞"}
+                  {me.usage.messagesSent.toLocaleString("id-ID")} /{" "}
+                  {plan.monthlyMessageQuota ? plan.monthlyMessageQuota.toLocaleString("id-ID") : "∞"}
                 </strong>
               </div>
               <div className="progress">
@@ -146,7 +147,7 @@ export default function AccountPlanPage() {
 
       <h2 style={{ fontSize: "1rem", marginBottom: 12 }}>Semua Paket</h2>
       {error && <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 12 }}>{error}</p>}
-      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))" }}>
         {plans.map((p) => {
           const isCurrent = plan?.id === p.id;
           return (
@@ -160,7 +161,9 @@ export default function AccountPlanPage() {
                 {p.deviceLimit} perangkat WA
               </div>
               <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 10 }}>
-                {p.monthlyMessageQuota ? `${p.monthlyMessageQuota} pesan/bulan` : "Kuota pesan tanpa batas"}
+                {p.monthlyMessageQuota
+                  ? `${p.monthlyMessageQuota.toLocaleString("id-ID")} pesan/bulan`
+                  : "Kuota pesan tanpa batas"}
               </div>
               <ul style={{ fontSize: "0.75rem", color: "var(--ink-soft)", paddingLeft: 16, marginBottom: 14 }}>
                 {p.features.map((f) => (
