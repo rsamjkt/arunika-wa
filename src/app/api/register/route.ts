@@ -7,6 +7,7 @@ import { createTransactionRecord } from "@/lib/transactions";
 import { invoicePendingEmail, sendEmail, welcomeEmail } from "@/lib/email";
 import { applyReferralReward, recordReferral } from "@/lib/referrals";
 import { getAppUrl } from "@/lib/appUrl";
+import { sendInvoiceWhatsApp } from "@/lib/customerNotify";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -81,6 +82,17 @@ export async function POST(req: NextRequest) {
       `${getAppUrl()}/register/pay/${tx.order_id}`,
     );
     sendEmail(email.trim(), subject, html, attachments).catch(() => {});
+    if (tenant.phone) {
+      sendInvoiceWhatsApp(
+        tenant.phone,
+        tenant.username,
+        plan.name,
+        tx.order_id,
+        Number(tx.total_amount),
+        `${getAppUrl()}/register/pay/${tx.order_id}`,
+        tx.expired_at,
+      );
+    }
 
     return NextResponse.json({
       ok: true,
