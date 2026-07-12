@@ -56,6 +56,15 @@ const TENANT_OWNER_PREFIXES = [
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  const cookie = req.cookies.get(SESSION_COOKIE)?.value;
+  const session = cookie ? getSession(cookie) : null;
+
+  // "/" is the public marketing landing page for logged-out visitors, and
+  // a redirect straight to the dashboard for anyone already signed in.
+  if (pathname === "/") {
+    return session ? NextResponse.redirect(new URL("/dashboard", req.url)) : NextResponse.next();
+  }
+
   if (
     PUBLIC_PATHS.has(pathname) ||
     SELF_VERIFIED_PATHS.has(pathname) ||
@@ -63,9 +72,6 @@ export function proxy(req: NextRequest) {
   ) {
     return NextResponse.next();
   }
-
-  const cookie = req.cookies.get(SESSION_COOKIE)?.value;
-  const session = cookie ? getSession(cookie) : null;
 
   if (session) {
     const user = getFullUser(session.userId);
@@ -79,14 +85,14 @@ export function proxy(req: NextRequest) {
     }
     if (ADMIN_PREFIXES.some((p) => pathname.startsWith(p))) {
       if (user?.role !== "superadmin") {
-        return NextResponse.redirect(new URL("/", req.url));
+        return NextResponse.redirect(new URL("/dashboard", req.url));
       }
     }
     if (TENANT_OWNER_PREFIXES.some((p) => pathname.startsWith(p))) {
       if (user?.role !== "tenant" && user?.role !== "superadmin") {
         return pathname.startsWith("/api/")
           ? NextResponse.json({ error: "Forbidden" }, { status: 403 })
-          : NextResponse.redirect(new URL("/", req.url));
+          : NextResponse.redirect(new URL("/dashboard", req.url));
       }
     }
     return NextResponse.next();

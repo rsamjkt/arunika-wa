@@ -6,7 +6,7 @@ import Sidebar from "./Sidebar";
 import ThemeToggle from "./ThemeToggle";
 
 const TITLES: Record<string, string> = {
-  "/": "Dashboard",
+  "/dashboard": "Dashboard",
   "/inbox": "Inbox",
   "/send": "Kirim Pesan",
   "/contacts": "Kontak",
@@ -34,6 +34,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const title = TITLES[pathname] ?? "Arunika · WA";
 
   if (
+    pathname === "/" ||
     pathname === "/login" ||
     pathname.startsWith("/register") ||
     pathname === "/forgot-password" ||

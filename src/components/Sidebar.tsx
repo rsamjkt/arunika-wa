@@ -11,7 +11,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Menu",
     items: [
-      { href: "/", label: "Dashboard", icon: "▤" },
+      { href: "/dashboard", label: "Dashboard", icon: "▤" },
       { href: "/inbox", label: "Inbox", icon: "💬" },
     ],
   },
@@ -107,7 +107,7 @@ export default function Sidebar({
 
   return (
     <aside className={`sidebar${open ? " open" : ""}`}>
-      <Link href="/" className="brand" onClick={onNavigate}>
+      <Link href="/dashboard" className="brand" onClick={onNavigate}>
         <span className="mark">A</span>
         <span className="brand-text">
           <span className="bname">Arunika · WA</span>
@@ -119,7 +119,7 @@ export default function Sidebar({
           <div key={group.label}>
             <span className="nav-label">{group.label}</span>
             {group.items.map((item) => {
-              const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+              const active = item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}

@@ -1,311 +1,227 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-type SessionStatus =
-  | "STOPPED"
-  | "STARTING"
-  | "SCAN_QR_CODE"
-  | "WORKING"
-  | "FAILED";
-
-interface SessionInfo {
+interface Plan {
+  id: string;
   name: string;
-  status: SessionStatus;
-  me?: { id: string; pushName: string } | null;
+  priceRp: number;
+  deviceLimit: number;
+  monthlyMessageQuota: number | null;
+  isFree: boolean;
 }
 
-function badgeClass(status: SessionStatus) {
-  if (status === "WORKING") return "good";
-  if (status === "SCAN_QR_CODE" || status === "STARTING") return "pending";
-  if (status === "FAILED") return "bad";
-  return "off";
-}
+const FEATURES = [
+  { icon: "📤", title: "Kirim & Terima Pesan", body: "Teks, gambar, file, lokasi, kontak — dari dashboard atau API Anda sendiri." },
+  { icon: "📣", title: "Broadcast Terjadwal", body: "Kirim ke banyak kontak sekaligus, langsung atau dijadwalkan, dengan variabel nama/nomor otomatis." },
+  { icon: "🤖", title: "Auto-Reply Bawaan", body: "Balasan otomatis berbasis kata kunci, jam operasional, dan pesan sambutan — tanpa coding." },
+  { icon: "👥", title: "Tim Tak Terbatas", body: "Tambahkan staf/agent sebanyak yang Anda perlukan, di paket apa pun — termasuk yang gratis." },
+  { icon: "🔌", title: "API & Webhook", body: "Integrasikan langsung ke sistem Anda dengan API key sendiri dan event real-time." },
+  { icon: "📊", title: "Laporan Lengkap", body: "Volume pesan, performa tim, dan penggunaan API — semua dalam satu dashboard." },
+];
 
-function label(status: SessionStatus) {
-  return (
-    {
-      WORKING: "Terhubung",
-      SCAN_QR_CODE: "Menunggu scan",
-      STARTING: "Memulai",
-      FAILED: "Gagal",
-      STOPPED: "Terputus",
-    } as Record<SessionStatus, string>
-  )[status];
-}
+const WHY = [
+  { title: "Harga jujur, mulai dari Rp0", body: "Tidak ada biaya tersembunyi. Paket gratis benar-benar bisa dipakai, bukan cuma demo." },
+  { title: "Satu akun, satu tim", body: "Kebanyakan WA gateway kenakan biaya per-user. Di sini, staf tak terbatas gratis di semua paket." },
+  { title: "Setup dalam hitungan menit", body: "Scan QR seperti WhatsApp Web — tidak perlu proses verifikasi bisnis yang panjang." },
+];
 
-function initials(text: string) {
-  return (
-    text
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0]?.toUpperCase())
-      .join("") || "?"
-  );
-}
-
-interface ServerInfo {
-  status: { engine?: string } | null;
-  version: { version: string; engine?: string } | null;
-}
-
-interface UpdateStatus {
-  updateAvailable: boolean;
-  remotePushedAt: string;
-  checkedAt: string;
-  checkOk: boolean;
-}
-
-interface Me {
-  role: "superadmin" | "tenant" | "tenant_staff";
-  isOwner: boolean;
-  plan: { name: string; deviceLimit: number; monthlyMessageQuota: number | null } | null;
-  usage: { messagesSent: number; devices: number };
-}
-
-export default function DashboardPage() {
-  const [sessions, setSessions] = useState<SessionInfo[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [server, setServer] = useState<ServerInfo | null>(null);
-  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
-  const [me, setMe] = useState<Me | null>(null);
-
-  const load = useCallback(async () => {
-    const res = await fetch("/api/sessions");
-    if (res.ok) setSessions(await res.json());
-    setLoaded(true);
-  }, []);
+export default function LandingPage() {
+  const [plans, setPlans] = useState<Plan[]>([]);
 
   useEffect(() => {
-    load();
-    const id = setInterval(load, 6_000);
-    return () => clearInterval(id);
-  }, [load]);
-
-  useEffect(() => {
-    fetch("/api/server")
+    fetch("/api/plans")
       .then((r) => r.json())
-      .then(setServer)
+      .then(setPlans)
       .catch(() => {});
   }, []);
-
-  useEffect(() => {
-    fetch("/api/waha-update")
-      .then((r) => r.json())
-      .then(setUpdateStatus)
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setMe)
-      .catch(() => {});
-  }, []);
-
-  async function action(name: string, verb: "start" | "stop" | "restart") {
-    setBusy(name + verb);
-    try {
-      await fetch(`/api/sessions/${encodeURIComponent(name)}/${verb}`, { method: "POST" });
-      await load();
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function remove(name: string) {
-    if (!confirm(`Hapus perangkat "${name}"? Nomor ini harus dipasangkan ulang dari awal.`)) return;
-    setBusy(name + "delete");
-    try {
-      await fetch(`/api/sessions/${encodeURIComponent(name)}`, { method: "DELETE" });
-      await load();
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  const total = sessions.length;
-  const active = sessions.filter((s) => s.status === "WORKING").length;
-  const pending = sessions.filter((s) => s.status === "SCAN_QR_CODE" || s.status === "STARTING").length;
-  const down = sessions.filter((s) => s.status === "STOPPED" || s.status === "FAILED").length;
 
   return (
-    <div>
-      {updateStatus?.updateAvailable && (
-        <div className="callout warn">
-          <b>🔔 Update WAHA tersedia</b>
-          Image <span className="mono">devlikeapro/waha:latest</span> di Docker Hub sudah diperbarui
-          {updateStatus.remotePushedAt
-            ? ` pada ${new Date(updateStatus.remotePushedAt).toLocaleString("id-ID")}`
-            : ""}
-          , tapi server ini masih menjalankan versi lama. Update tidak dilakukan otomatis — jalankan{" "}
-          <span className="mono">docker pull devlikeapro/waha:latest</span> lalu recreate container saat waktunya
-          pas (proses ini akan memutus WA sebentar). Dicek otomatis setiap hari.
+    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "18px 28px",
+          borderBottom: "1px solid var(--border)",
+          background: "var(--surface)",
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+        }}
+      >
+        <div className="brand">
+          <span className="mark">A</span>
+          Arunika · WA
         </div>
-      )}
-      {me?.role !== "superadmin" && me?.plan && (
-        <div className="card cpad mb16" style={{ padding: 18 }}>
-          <div className="ch">
-            <div>
-              <span className="chttl">Paket: {me.plan.name}</span>
-              <div className="chsub">Pantau pemakaian atau ganti paket kapan saja</div>
-            </div>
-            {me.isOwner && (
-              <Link href="/account/plan" className="btn secondary" style={{ marginLeft: "auto" }}>
-                Kelola Paket
-              </Link>
-            )}
-          </div>
-          <div className="grid2">
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: "0.8rem" }}>
-                <span>Perangkat</span>
-                <strong>
-                  {me.usage.devices} / {me.plan.deviceLimit}
-                </strong>
-              </div>
-              <div className="progress">
-                <span style={{ width: `${Math.min(100, (me.usage.devices / me.plan.deviceLimit) * 100)}%` }} />
-              </div>
-            </div>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: "0.8rem" }}>
-                <span>Pesan bulan ini</span>
-                <strong>
-                  {me.usage.messagesSent} / {me.plan.monthlyMessageQuota ?? "∞"}
-                </strong>
-              </div>
-              <div className="progress">
-                <span
-                  style={{
-                    width: me.plan.monthlyMessageQuota
-                      ? `${Math.min(100, (me.usage.messagesSent / me.plan.monthlyMessageQuota) * 100)}%`
-                      : "4%",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <Link href="/help" style={{ fontSize: "0.85rem", color: "var(--ink-soft)", marginRight: 6 }}>
+            Bantuan
+          </Link>
+          <Link href="/login" className="btn secondary">
+            Masuk
+          </Link>
+          <Link href="/register" className="btn">
+            Daftar Gratis
+          </Link>
         </div>
-      )}
-      {server?.version && (
-        <p style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 14 }}>
-          Mesin: <strong className="mono">{server.version.engine ?? "WEBJS"}</strong> · WAHA{" "}
-          <span className="mono">{server.version.version}</span>
-        </p>
-      )}
-      <div className="stat-grid">
-        <div className="stat-card">
-          <div className="lbl">Total Perangkat</div>
-          <div className="val">{total}</div>
-        </div>
-        <div className="stat-card">
-          <div className="lbl">Terhubung</div>
-          <div className="val" style={{ color: "var(--success)" }}>
-            {active}
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="lbl">Menunggu Scan</div>
-          <div className="val" style={{ color: "var(--warning)" }}>
-            {pending}
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="lbl">Terputus / Gagal</div>
-          <div className="val" style={{ color: "var(--danger)" }}>
-            {down}
-          </div>
-        </div>
-      </div>
+      </header>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <h2 style={{ fontSize: "0.95rem" }}>Daftar Perangkat</h2>
-        <Link href="/connect" className="btn">
-          + Tambah Perangkat
-        </Link>
-      </div>
+      {/* Hero */}
+      <section
+        style={{
+          background: "linear-gradient(160deg, #0a3d36 0%, #0f5245 55%, #137a5e 100%)",
+          color: "#fff",
+          padding: "72px 20px 90px",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: -140,
+            right: -100,
+            width: 420,
+            height: 420,
+            borderRadius: "50%",
+            background: "var(--sun-gradient)",
+            opacity: 0.16,
+          }}
+        />
+        <div style={{ maxWidth: 720, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
+          <span
+            className="badge good"
+            style={{ background: "rgba(255,255,255,0.12)", color: "#fff", marginBottom: 20 }}
+          >
+            WhatsApp Gateway untuk Bisnis
+          </span>
+          <h1 style={{ fontSize: "2.3rem", fontWeight: 800, lineHeight: 1.2, margin: "18px 0 16px" }}>
+            Kelola WhatsApp bisnis Anda — bersama seluruh tim, dengan harga yang masuk akal.
+          </h1>
+          <p style={{ color: "rgba(255,255,255,0.78)", fontSize: "1rem", lineHeight: 1.6, marginBottom: 32 }}>
+            Broadcast, auto-reply, API, dan staf tak terbatas — mulai gratis, upgrade kapan saja.
+            Tidak perlu kartu kredit untuk mencoba.
+          </p>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <Link href="/register" className="btn" style={{ padding: "12px 24px", fontSize: "0.95rem" }}>
+              Mulai Gratis Sekarang
+            </Link>
+            <Link
+              href="/help"
+              className="btn secondary"
+              style={{ padding: "12px 24px", fontSize: "0.95rem", background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)" }}
+            >
+              Pelajari Fitur
+            </Link>
+          </div>
+        </div>
+      </section>
 
-      <div className="table-wrap">
-        <table className="dtable">
-          <thead>
-            <tr>
-              <th>Perangkat</th>
-              <th>Nomor</th>
-              <th>Status</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loaded && sessions.length === 0 && (
-              <tr>
-                <td colSpan={4} style={{ color: "var(--ink-soft)", textAlign: "center", padding: "32px 16px" }}>
-                  Belum ada perangkat. <Link href="/connect">Tambah yang pertama</Link>.
-                </td>
-              </tr>
-            )}
-            {sessions.map((s) => (
-              <tr key={s.name}>
-                <td>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div className="avatar-sm">{initials(s.name)}</div>
-                    <strong style={{ fontSize: "0.86rem" }}>{s.name}</strong>
-                  </div>
-                </td>
-                <td className="mono" style={{ color: "var(--ink-soft)" }}>
-                  {s.me?.id ? s.me.id.replace(/@.*/, "") : "—"}
-                </td>
-                <td>
-                  <span className={`badge ${badgeClass(s.status)}`}>{label(s.status)}</span>
-                </td>
-                <td>
-                  <div className="actions-cell">
-                    {s.status === "STOPPED" || s.status === "FAILED" ? (
-                      <button
-                        className="btn secondary"
-                        onClick={() => action(s.name, "start")}
-                        disabled={busy === s.name + "start"}
-                      >
-                        {busy === s.name + "start" ? "Memulai…" : "Mulai"}
-                      </button>
-                    ) : (
-                      <button
-                        className="btn secondary"
-                        onClick={() => action(s.name, "stop")}
-                        disabled={busy === s.name + "stop"}
-                      >
-                        {busy === s.name + "stop" ? "Menghentikan…" : "Berhenti"}
-                      </button>
-                    )}
-                    <button
-                      className="btn secondary"
-                      onClick={() => action(s.name, "restart")}
-                      disabled={busy === s.name + "restart"}
-                    >
-                      Mulai ulang
-                    </button>
-                    {s.status === "WORKING" && (
-                      <Link href={`/inbox?session=${encodeURIComponent(s.name)}`} className="btn secondary">
-                        Buka Inbox
-                      </Link>
-                    )}
-                    <button
-                      className="btn danger"
-                      onClick={() => remove(s.name)}
-                      disabled={busy === s.name + "delete"}
-                    >
-                      Hapus
-                    </button>
-                  </div>
-                </td>
-              </tr>
+      <main style={{ maxWidth: 1040, margin: "0 auto", padding: "64px 20px 80px" }}>
+        {/* Why */}
+        <section style={{ marginBottom: 64 }}>
+          <div className="grid3" style={{ gap: 20 }}>
+            {WHY.map((w) => (
+              <div key={w.title} className="card cpad" style={{ padding: 22 }}>
+                <strong style={{ fontSize: "0.95rem", display: "block", marginBottom: 8 }}>{w.title}</strong>
+                <p style={{ fontSize: "0.85rem", color: "var(--ink-soft)", margin: 0, lineHeight: 1.6 }}>{w.body}</p>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </section>
+
+        {/* Features */}
+        <section style={{ marginBottom: 64 }}>
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <h2 style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: 8 }}>Semua yang Anda butuhkan</h2>
+            <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem" }}>Satu dashboard untuk seluruh operasional WhatsApp bisnis Anda.</p>
+          </div>
+          <div className="grid3" style={{ gap: 14 }}>
+            {FEATURES.map((f) => (
+              <div className="card cpad" key={f.title} style={{ padding: 18 }}>
+                <div style={{ fontSize: "1.4rem", marginBottom: 8 }}>{f.icon}</div>
+                <strong style={{ fontSize: "0.88rem", display: "block", marginBottom: 6 }}>{f.title}</strong>
+                <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", margin: 0 }}>{f.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Pricing */}
+        {plans.length > 0 && (
+          <section style={{ marginBottom: 64 }}>
+            <div style={{ textAlign: "center", marginBottom: 32 }}>
+              <h2 style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: 8 }}>Harga Transparan</h2>
+              <p style={{ color: "var(--ink-soft)", fontSize: "0.9rem" }}>
+                Semua fitur tersedia di semua paket — bedanya cuma jumlah perangkat & kuota pesan.
+              </p>
+            </div>
+            <div className="stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+              {plans.map((p) => (
+                <div key={p.id} className="card" style={{ padding: 20 }}>
+                  <div style={{ fontWeight: 800, fontSize: "0.95rem", marginBottom: 6 }}>{p.name}</div>
+                  <div style={{ fontSize: "1.3rem", fontWeight: 800, marginBottom: 10 }}>
+                    {p.priceRp === 0 ? "Gratis" : `Rp${p.priceRp.toLocaleString("id-ID")}`}
+                    {p.priceRp > 0 && <small style={{ fontSize: "0.65rem", fontWeight: 500 }}> /bulan</small>}
+                  </div>
+                  <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 4 }}>{p.deviceLimit} perangkat WA</div>
+                  <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)" }}>
+                    {p.monthlyMessageQuota ? `${p.monthlyMessageQuota.toLocaleString("id-ID")} pesan/bulan` : "Kuota tanpa batas"}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign: "center", marginTop: 24 }}>
+              <Link href="/help" style={{ fontSize: "0.85rem", color: "var(--primary)" }}>
+                Lihat detail fitur & FAQ →
+              </Link>
+            </div>
+          </section>
+        )}
+
+        {/* Final CTA */}
+        <section
+          className="card cpad"
+          style={{
+            padding: 44,
+            textAlign: "center",
+            background: "var(--primary-gradient)",
+            border: "none",
+          }}
+        >
+          <h2 style={{ fontSize: "1.3rem", fontWeight: 800, marginBottom: 10, color: "#04271f" }}>
+            Siap mulai? Daftar gratis dalam 2 menit.
+          </h2>
+          <p style={{ color: "#0a3d36", fontSize: "0.88rem", marginBottom: 22 }}>
+            Tidak perlu kartu kredit. Upgrade kapan saja saat bisnis Anda berkembang.
+          </p>
+          <Link
+            href="/register"
+            className="btn"
+            style={{ background: "#04271f", color: "#fff", padding: "12px 28px", fontSize: "0.95rem" }}
+          >
+            Daftar Sekarang
+          </Link>
+        </section>
+      </main>
+
+      <footer
+        style={{
+          borderTop: "1px solid var(--border)",
+          padding: "24px 28px",
+          textAlign: "center",
+          fontSize: "0.78rem",
+          color: "var(--ink-soft)",
+        }}
+      >
+        Arunika · WA — WhatsApp Gateway Platform ·{" "}
+        <Link href="/help" style={{ color: "var(--primary)" }}>
+          Pusat Bantuan
+        </Link>
+      </footer>
     </div>
   );
 }

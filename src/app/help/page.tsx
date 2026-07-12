@@ -124,7 +124,7 @@ export default function HelpPage() {
         </Link>
         <div style={{ display: "flex", gap: 10 }}>
           {loggedIn ? (
-            <Link href="/" className="btn">
+            <Link href="/dashboard" className="btn">
               Ke Dashboard
             </Link>
           ) : (
