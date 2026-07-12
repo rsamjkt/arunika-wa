@@ -196,6 +196,9 @@ h3 {
   flex-direction: column;
   line-height: 1.15;
 }
+.sidebar .brand .bname {
+  display: block;
+}
 .sidebar .brand .btag {
   font-size: 0.63rem;
   font-weight: 700;
@@ -338,6 +341,17 @@ h3 {
   border-radius: 100px;
   white-space: nowrap;
 }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 11px;
+  border-radius: 100px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--bg);
+  color: var(--ink-soft);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
 .badge::before {
   content: "";
   width: 6px;
@@ -454,6 +468,98 @@ h3 {
   box-shadow: 0 0 0 3px var(--success-bg);
 }
 
+.compose {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 13px;
+  padding: 13px;
+  font: inherit;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  resize: vertical;
+  min-height: 150px;
+  outline: 0;
+  color: var(--ink);
+}
+.compose::placeholder {
+  color: var(--ink-soft);
+}
+.compose:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--success-bg);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--ink-soft);
+  box-shadow: inset 0 0 0 1px var(--border);
+  border: none;
+  cursor: default;
+}
+button.chip {
+  cursor: pointer;
+}
+
+.varchip {
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: var(--font-mono), monospace;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  padding: 5px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.varchip:hover {
+  background: var(--success-bg);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.fnrule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.78rem;
+}
+
+.kbd {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.72rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.progress {
+  height: 7px;
+  border-radius: 20px;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--border);
+  overflow: hidden;
+}
+.progress > span {
+  display: block;
+  height: 100%;
+  border-radius: 20px;
+  background: var(--primary-gradient);
+}
+
 .toggle {
   width: 34px;
   height: 19px;
@@ -485,6 +591,58 @@ h3 {
 :focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
+}
+
+/* ---------- layout utilities ---------- */
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.grid4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.cpad {
+  padding: 18px;
+}
+.mb16 {
+  margin-bottom: 16px;
+}
+/* card-header row: title (+ optional subtitle) on the left, actions on the right */
+.ch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+.ch .chttl {
+  display: block;
+}
+.chttl {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.chsub {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  font-weight: 500;
+  margin-top: 2px;
+}
+@media (max-width: 720px) {
+  .grid2,
+  .grid3,
+  .grid4 {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ---------- stat cards (dashboard) ---------- */
@@ -1243,4 +1401,41 @@ table.dtable .actions-cell button {
 }
 .login-card .field-group {
   margin-bottom: 16px;
+}
+
+/* Generic logo lockup — used standalone on auth pages (register, payment)
+ * that aren't wrapped in .login-card. .sidebar .brand / .login-card .brand
+ * are more specific and still win in those contexts. */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.brand .mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--sun-gradient);
+  color: #0a3d36;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  box-shadow: 0 6px 16px rgba(255, 138, 61, 0.3);
+  flex-shrink: 0;
+}
+.sub {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.field-group {
+  margin-bottom: 16px;
+}
+.field-group label {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  display: block;
+  margin-bottom: 6px;
 }
