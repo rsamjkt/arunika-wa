@@ -1439,3 +1439,103 @@ table.dtable .actions-cell button {
   display: block;
   margin-bottom: 6px;
 }
+
+/* ---------- auth split-screen (login/forgot/reset) ---------- */
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  background: var(--bg);
+}
+.auth-hero {
+  flex: 1 1 46%;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg, #0a3d36 0%, #0f5245 55%, #137a5e 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 64px 56px;
+}
+.auth-hero::before {
+  content: "";
+  position: absolute;
+  top: -140px;
+  right: -140px;
+  width: 440px;
+  height: 440px;
+  border-radius: 50%;
+  background: var(--sun-gradient);
+  opacity: 0.16;
+}
+.auth-hero::after {
+  content: "";
+  position: absolute;
+  bottom: -160px;
+  left: -100px;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: var(--primary-gradient);
+  opacity: 0.14;
+}
+.auth-hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 420px;
+}
+.auth-hero .brand {
+  color: #fff;
+  margin-bottom: 44px;
+  font-size: 1.05rem;
+}
+.auth-hero h1 {
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 14px;
+}
+.auth-hero .lead {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  margin-bottom: 36px;
+}
+.auth-hero-features {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.auth-hero-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.88);
+}
+.auth-hero-feature .ic {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+.auth-form-side {
+  flex: 1 1 54%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+@media (max-width: 860px) {
+  .auth-hero {
+    display: none;
+  }
+  .auth-form-side {
+    flex: 1 1 100%;
+  }
+}
