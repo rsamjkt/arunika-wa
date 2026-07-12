@@ -197,6 +197,19 @@ export function adminPasswordResetNotifyEmail(username: string, userEmail: strin
   };
 }
 
+export function referralRewardEmail(username: string, days: number, planName: string): { subject: string; html: string } {
+  return {
+    subject: `Bonus ${days} hari karena mengajak teman! 🎁`,
+    html: WRAPPER(
+      "Terima Kasih Sudah Mengajak Teman! 🎁",
+      `<p>Halo <b>${username}</b>,</p>
+       <p>Ada yang baru saja mendaftar Arunika-WA pakai kode referral Anda. Sebagai terima kasih, kami tambahkan
+       <b>${days} hari</b> masa aktif paket <b>${planName}</b> ke akun Anda — otomatis, tanpa perlu klaim.</p>
+       <p style="color:#8a9a94;font-size:13px">Terus ajak teman lain dan kumpulkan lebih banyak bonus hari aktif. Cek halaman Program Referral untuk lihat kode dan riwayat Anda.</p>`,
+    ),
+  };
+}
+
 export function subscriptionExpiringEmail(username: string, planName: string, expiresAt: string): { subject: string; html: string } {
   return {
     subject: `Paket ${planName} Anda akan berakhir`,

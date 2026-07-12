@@ -41,6 +41,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +55,8 @@ export default function RegisterPage() {
         const free = data.find((p) => p.isFree);
         if (free) setPlanId(free.id);
       });
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) setReferralCode(ref.toUpperCase());
   }, []);
 
   const selectedPlan = plans.find((p) => p.id === planId) ?? null;
@@ -81,6 +84,7 @@ export default function RegisterPage() {
           email: email.trim(),
           phone: phone.trim() || undefined,
           planId,
+          referralCode: referralCode.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -247,6 +251,16 @@ export default function RegisterPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 autoComplete="tel"
                 placeholder="08xxxxxxxxxx"
+              />
+            </div>
+            <div className="field-group">
+              <label htmlFor="referralCode">Kode referral (opsional)</label>
+              <input
+                id="referralCode"
+                className="field mono"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                placeholder="mis. A1B2C3D4"
               />
             </div>
             {error && <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14 }}>{error}</p>}

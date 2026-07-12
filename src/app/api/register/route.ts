@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
-import { createTenant, deleteUser } from "@/lib/users";
+import { createTenant, deleteUser, findUserByReferralCode } from "@/lib/users";
 import { getPlan } from "@/lib/plans";
 import { createTransaction, KlikQrisError } from "@/lib/klikqris";
 import { createTransactionRecord } from "@/lib/transactions";
 import { invoicePendingEmail, sendEmail, welcomeEmail } from "@/lib/email";
+import { applyReferralReward, recordReferral } from "@/lib/referrals";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
-  const { username, password, email, phone, planId } = await req.json();
+  const { username, password, email, phone, planId, referralCode } = await req.json();
 
   if (!username || typeof username !== "string" || username.trim().length < 3) {
     return NextResponse.json({ error: "Username minimal 3 karakter" }, { status: 400 });
@@ -37,6 +38,15 @@ export async function POST(req: NextRequest) {
     );
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal mendaftar" }, { status: 409 });
+  }
+
+  // Never block registration on a bad/missing referral code — best-effort only.
+  if (typeof referralCode === "string" && referralCode.trim()) {
+    const referrer = findUserByReferralCode(referralCode);
+    if (referrer && referrer.id !== tenant.id) {
+      recordReferral(referrer.id, referrer.username, tenant.id, tenant.username);
+      applyReferralReward(referrer.id);
+    }
   }
 
   if (plan.isFree) {
