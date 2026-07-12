@@ -25,6 +25,7 @@ const COOKIE_ONLY_PREFIXES = [
   "/api/webhook-config",
   "/api/autoreply",
   "/api/account",
+  "/api/team",
 ];
 // Called by an external service, not a browser or an app-issued API key —
 // each authenticates the request itself (HMAC / stored signature) instead.
@@ -37,6 +38,10 @@ const SELF_VERIFIED_PATHS = new Set([
 // /settings/users manages platform-staff accounts, not tenant data, so it
 // belongs here too even though it isn't under /admin.
 const ADMIN_PREFIXES = ["/admin", "/settings/users"];
+// Tenant-owner-only area — billing and team membership stay off-limits to
+// staff logins, which share the owner's plan/quota/devices but not control
+// over them.
+const TENANT_OWNER_PREFIXES = ["/settings/team", "/api/team", "/account/plan", "/api/account"];
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -57,6 +62,14 @@ export function proxy(req: NextRequest) {
       const user = getFullUser(session.userId);
       if (user?.role !== "superadmin") {
         return NextResponse.redirect(new URL("/", req.url));
+      }
+    }
+    if (TENANT_OWNER_PREFIXES.some((p) => pathname.startsWith(p))) {
+      const user = getFullUser(session.userId);
+      if (user?.role !== "tenant" && user?.role !== "superadmin") {
+        return pathname.startsWith("/api/")
+          ? NextResponse.json({ error: "Forbidden" }, { status: 403 })
+          : NextResponse.redirect(new URL("/", req.url));
       }
     }
     return NextResponse.next();

@@ -53,7 +53,10 @@ const NAV_GROUPS: NavGroup[] = [
 
 const TENANT_GROUP: NavGroup = {
   label: "Akun",
-  items: [{ href: "/account/plan", label: "Paket Saya", icon: "💳" }],
+  items: [
+    { href: "/account/plan", label: "Paket Saya", icon: "💳" },
+    { href: "/settings/team", label: "Kelola Tim", icon: "👥" },
+  ],
 };
 
 const SUPERADMIN_GROUP: NavGroup = {
@@ -65,7 +68,8 @@ const SUPERADMIN_GROUP: NavGroup = {
 };
 
 interface Me {
-  role: "superadmin" | "tenant";
+  role: "superadmin" | "tenant" | "tenant_staff";
+  isOwner: boolean;
   plan: { features: string[] } | null;
 }
 
@@ -87,6 +91,7 @@ export default function Sidebar({
   }, []);
 
   const isSuperadmin = me?.role === "superadmin";
+  const isTenantOwner = me?.role === "tenant";
   const features = me?.plan?.features ?? [];
 
   const groups: NavGroup[] = [
@@ -94,7 +99,7 @@ export default function Sidebar({
       ...group,
       items: group.items.filter((item) => !item.feature || isSuperadmin || features.includes(item.feature)),
     })),
-    ...(me && !isSuperadmin ? [TENANT_GROUP] : []),
+    ...(isTenantOwner ? [TENANT_GROUP] : []),
     ...(isSuperadmin ? [SUPERADMIN_GROUP] : []),
   ];
 

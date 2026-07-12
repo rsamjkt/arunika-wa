@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deleteRule, updateRule } from "@/lib/autoreply";
 import { requireFeature } from "@/lib/authz";
+import { getEffectiveTenantId } from "@/lib/users";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { user, response } = await requireFeature("autoreply");
@@ -9,7 +10,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const body = await req.json();
   const { keywords, reply, enabled } = body;
-  updateRule(user!.id, id, {
+  updateRule(getEffectiveTenantId(user!), id, {
     keywords: Array.isArray(keywords) ? keywords : undefined,
     reply: typeof reply === "string" ? reply : undefined,
     enabled: typeof enabled === "boolean" ? enabled : undefined,
@@ -22,6 +23,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (response) return response;
 
   const { id } = await params;
-  deleteRule(user!.id, id);
+  deleteRule(getEffectiveTenantId(user!), id);
   return NextResponse.json({ ok: true });
 }

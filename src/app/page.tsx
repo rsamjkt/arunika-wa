@@ -59,7 +59,8 @@ interface UpdateStatus {
 }
 
 interface Me {
-  role: "superadmin" | "tenant";
+  role: "superadmin" | "tenant" | "tenant_staff";
+  isOwner: boolean;
   plan: { name: string; deviceLimit: number; monthlyMessageQuota: number | null } | null;
   usage: { messagesSent: number; devices: number };
 }
@@ -145,16 +146,18 @@ export default function DashboardPage() {
           pas (proses ini akan memutus WA sebentar). Dicek otomatis setiap hari.
         </div>
       )}
-      {me?.role === "tenant" && me.plan && (
+      {me?.role !== "superadmin" && me?.plan && (
         <div className="card cpad mb16" style={{ padding: 18 }}>
           <div className="ch">
             <div>
               <span className="chttl">Paket: {me.plan.name}</span>
               <div className="chsub">Pantau pemakaian atau ganti paket kapan saja</div>
             </div>
-            <Link href="/account/plan" className="btn secondary" style={{ marginLeft: "auto" }}>
-              Kelola Paket
-            </Link>
+            {me.isOwner && (
+              <Link href="/account/plan" className="btn secondary" style={{ marginLeft: "auto" }}>
+                Kelola Paket
+              </Link>
+            )}
           </div>
           <div className="grid2">
             <div>

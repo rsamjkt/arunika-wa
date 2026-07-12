@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentFullUser } from "./currentUser";
 import { getPlan, hasFeature as planHasFeature, type FeatureKey } from "./plans";
-import { getEffectiveQuotaUsage, type User } from "./users";
+import { getEffectiveQuotaUsage, getGoverningUser, type User } from "./users";
 
 export async function requireSuperadmin(): Promise<{ user: User | null; response: NextResponse | null }> {
   const user = await getCurrentFullUser();
@@ -15,9 +15,10 @@ export async function requireSuperadmin(): Promise<{ user: User | null; response
  * Superadmin and unlimited-quota plans always pass. */
 export function hasQuotaRemaining(user: User): boolean {
   if (user.role === "superadmin") return true;
-  const plan = getPlan(user.planId);
+  const governing = getGoverningUser(user);
+  const plan = getPlan(governing.planId);
   if (!plan || plan.monthlyMessageQuota === null) return true;
-  return getEffectiveQuotaUsage(user.id) < plan.monthlyMessageQuota;
+  return getEffectiveQuotaUsage(governing.id) < plan.monthlyMessageQuota;
 }
 
 export function quotaExceededResponse(): NextResponse {
@@ -37,7 +38,8 @@ export async function requireFeature(
   if (user.role === "superadmin") {
     return { user, response: null };
   }
-  const plan = getPlan(user.planId);
+  const governing = getGoverningUser(user);
+  const plan = getPlan(governing.planId);
   if (!plan || !planHasFeature(plan, key)) {
     return {
       user,

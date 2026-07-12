@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { readJson, writeJson } from "./store";
 import { getCurrentFullUser } from "./currentUser";
-import type { User } from "./users";
+import { getEffectiveTenantId, type User } from "./users";
 
 const FILE = "session-owners.json";
 
@@ -62,7 +62,7 @@ export async function requireSessionAccess(
     return { user: null, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
   try {
-    assertOwnsSession(user.id, user.role, sessionName);
+    assertOwnsSession(getEffectiveTenantId(user), user.role, sessionName);
   } catch {
     return {
       user,
