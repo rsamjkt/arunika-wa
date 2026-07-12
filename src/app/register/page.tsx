@@ -173,12 +173,18 @@ export default function RegisterPage() {
                 {error}
               </p>
             )}
-            <button className="btn" type="button" disabled={!planId} style={{ width: "100%" }} onClick={goToAccountStep}>
+            <button
+              className="btn"
+              type="button"
+              disabled={!planId}
+              style={{ width: "100%", background: "#0b0d10", color: "#fff", boxShadow: "none" }}
+              onClick={goToAccountStep}
+            >
               Lanjut
             </button>
             <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
               Sudah punya akun?{" "}
-              <a href="/login" style={{ color: "var(--primary)" }}>
+              <a href="/login" style={{ color: "#0b0d10", fontWeight: 700 }}>
                 Masuk
               </a>
             </p>
@@ -268,13 +274,13 @@ export default function RegisterPage() {
               className="btn"
               type="submit"
               disabled={busy || !planId || username.trim().length < 3 || password.length < 6 || !emailValid}
-              style={{ width: "100%" }}
+              style={{ width: "100%", background: "#0b0d10", color: "#fff", boxShadow: "none" }}
             >
               {busy ? "Memproses…" : "Daftar"}
             </button>
             <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
               Sudah punya akun?{" "}
-              <a href="/login" style={{ color: "var(--primary)" }}>
+              <a href="/login" style={{ color: "#0b0d10", fontWeight: 700 }}>
                 Masuk
               </a>
             </p>

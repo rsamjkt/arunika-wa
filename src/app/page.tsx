@@ -41,6 +41,9 @@ const WHY = [
   { icon: Zap, title: "Setup dalam hitungan menit", body: "Scan QR seperti WhatsApp Web — tidak perlu proses verifikasi bisnis yang panjang." },
 ];
 
+const ACCENT = "#f97316";
+const INK_DARK = "#0b0d10";
+
 function IconBadge({ icon: Icon, tone = "dark" }: { icon: typeof MessageSquare; tone?: "dark" | "light" }) {
   const dark = tone === "dark";
   return (
@@ -49,14 +52,14 @@ function IconBadge({ icon: Icon, tone = "dark" }: { icon: typeof MessageSquare; 
         width: 40,
         height: 40,
         borderRadius: 11,
-        background: dark ? "#0a3d36" : "rgba(255,255,255,0.14)",
+        background: dark ? INK_DARK : "rgba(255,255,255,0.14)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         marginBottom: 14,
       }}
     >
-      <Icon size={19} color={dark ? "#5eead4" : "#ffffff"} strokeWidth={2} />
+      <Icon size={19} color={dark ? ACCENT : "#ffffff"} strokeWidth={2} />
     </div>
   );
 }
@@ -97,7 +100,7 @@ export default function LandingPage() {
           <Link href="/login" className="btn secondary">
             Masuk
           </Link>
-          <Link href="/register" className="btn">
+          <Link href="/register" className="btn" style={{ background: INK_DARK, color: "#fff", boxShadow: "none" }}>
             Daftar Gratis
           </Link>
         </div>
@@ -106,7 +109,7 @@ export default function LandingPage() {
       {/* Hero */}
       <section
         style={{
-          background: "linear-gradient(160deg, #0a3d36 0%, #0f5245 55%, #137a5e 100%)",
+          background: `linear-gradient(160deg, ${INK_DARK} 0%, #14171c 100%)`,
           color: "#fff",
           padding: "80px 20px 96px",
           position: "relative",
@@ -152,7 +155,16 @@ export default function LandingPage() {
             <Link
               href="/register"
               className="btn"
-              style={{ padding: "13px 26px", fontSize: "0.95rem", display: "inline-flex", alignItems: "center", gap: 8 }}
+              style={{
+                padding: "13px 26px",
+                fontSize: "0.95rem",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                background: ACCENT,
+                color: "#fff",
+                boxShadow: "0 8px 20px rgba(249,115,22,0.28)",
+              }}
             >
               Mulai Gratis Sekarang
               <ArrowRight size={17} />
@@ -235,8 +247,8 @@ export default function LandingPage() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 7,
-                  background: "var(--success-bg)",
-                  color: "var(--success)",
+                  background: "rgba(249,115,22,0.1)",
+                  color: "#c2410c",
                   fontSize: "0.78rem",
                   fontWeight: 700,
                   padding: "6px 14px",
@@ -268,7 +280,7 @@ export default function LandingPage() {
             <div style={{ textAlign: "center", marginTop: 26 }}>
               <Link
                 href="/help"
-                style={{ fontSize: "0.85rem", color: "var(--primary)", display: "inline-flex", alignItems: "center", gap: 5 }}
+                style={{ fontSize: "0.85rem", color: INK_DARK, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}
               >
                 Lihat detail fitur &amp; FAQ
                 <ArrowRight size={14} />
@@ -283,28 +295,29 @@ export default function LandingPage() {
           style={{
             padding: 48,
             textAlign: "center",
-            background: "var(--primary-gradient)",
+            background: `linear-gradient(160deg, ${INK_DARK} 0%, #14171c 100%)`,
             border: "none",
           }}
         >
-          <CheckCircle2 size={30} color="#04271f" style={{ marginBottom: 14 }} />
-          <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginBottom: 10, color: "#04271f" }}>
+          <CheckCircle2 size={30} color={ACCENT} style={{ marginBottom: 14 }} />
+          <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginBottom: 10, color: "#fff" }}>
             Siap mulai? Daftar gratis dalam 2 menit.
           </h2>
-          <p style={{ color: "#0a3d36", fontSize: "0.88rem", marginBottom: 24 }}>
+          <p style={{ color: "rgba(255,255,255,0.72)", fontSize: "0.88rem", marginBottom: 24 }}>
             Tidak perlu kartu kredit. Upgrade kapan saja saat bisnis Anda berkembang.
           </p>
           <Link
             href="/register"
             className="btn"
             style={{
-              background: "#04271f",
+              background: ACCENT,
               color: "#fff",
               padding: "13px 30px",
               fontSize: "0.95rem",
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
+              boxShadow: "0 8px 20px rgba(249,115,22,0.28)",
             }}
           >
             Daftar Sekarang
@@ -323,7 +336,7 @@ export default function LandingPage() {
         }}
       >
         Arunika · WA — WhatsApp Gateway Platform ·{" "}
-        <Link href="/help" style={{ color: "var(--primary)" }}>
+        <Link href="/help" style={{ color: INK_DARK, fontWeight: 700 }}>
           Pusat Bantuan
         </Link>
       </footer>
