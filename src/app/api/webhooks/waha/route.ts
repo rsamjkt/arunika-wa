@@ -4,6 +4,7 @@ import { sendText } from "@/lib/waha";
 import { logEvent } from "@/lib/messageLog";
 import { deliverOutboundWebhook } from "@/lib/webhookConfig";
 import { getSessionOwner } from "@/lib/tenancy";
+import { checkLeadOptOut } from "@/lib/leadOutreach";
 import {
   getSettings,
   hasSeenContact,
@@ -116,6 +117,7 @@ export async function POST(req: NextRequest) {
       status: "received",
     });
     if (chatId) {
+      checkLeadOptOut(data.session, chatId, text);
       runAutoReply(ownerId, data.session, chatId, text).catch((err) => {
         console.error("[autoreply] failed:", err);
       });

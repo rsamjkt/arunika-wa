@@ -249,3 +249,20 @@ export function subscriptionExpiringEmail(username: string, planName: string, ex
     ),
   };
 }
+
+/** Cold-outreach offer sent to a business/school/hospital lead — not tied
+ * to any tenant account. Keep it short and always include an opt-out path. */
+export function leadOfferEmail(leadName: string, helpUrl: string): { subject: string; html: string } {
+  return {
+    subject: `${leadName} — WhatsApp Gateway untuk bisnis Anda`,
+    html: WRAPPER(
+      "Kelola WhatsApp Bisnis Anda Lebih Rapi",
+      `<p>Halo Tim <b>${leadName}</b>,</p>
+       <p>Kami dari Arunika · WA — platform WhatsApp Gateway untuk kirim pesan, broadcast, auto-reply,
+       dan integrasi API ke sistem Anda sendiri, dengan staf/tim tak terbatas di setiap paket.</p>
+       <p>Mulai dari <b>Rp0/bulan</b> (paket gratis tersedia), paket berbayar dibayar mudah lewat QRIS.</p>
+       ${BUTTON(helpUrl, "Lihat Info Lengkap")}
+       <p style="color:#8a9a94;font-size:12px">Email ini adalah penawaran satu kali. Balas email ini dengan kata "STOP" bila tidak ingin menerima info dari kami lagi.</p>`,
+    ),
+  };
+}

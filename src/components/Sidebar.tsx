@@ -66,6 +66,7 @@ const SUPERADMIN_GROUP: NavGroup = {
   items: [
     { href: "/admin/plans", label: "Kelola Paket", icon: "📦" },
     { href: "/admin/tenants", label: "Kelola Tenant", icon: "🏢" },
+    { href: "/admin/leads", label: "Leads & Marketing", icon: "🎯" },
   ],
 };
 
