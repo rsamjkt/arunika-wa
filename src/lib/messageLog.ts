@@ -5,6 +5,9 @@ export type LogEntry = {
   id: string;
   timestamp: string;
   ownerId: string;
+  /** The specific user (owner or staff) who triggered a manual send —
+   * left undefined for automated sends (campaign/autoreply). */
+  actorId?: string;
   direction: "out" | "in";
   session: string;
   chatId: string;
@@ -68,4 +71,26 @@ export function getStats(ownerId: string, days = 14) {
     totalReceived,
     successRate,
   };
+}
+
+/** Per-agent breakdown of manual sends over the window — entries with
+ * no actorId (campaign/autoreply) are bucketed under "system". */
+export function getAgentStats(ownerId: string, days = 14): { actorId: string; sent: number; failed: number }[] {
+  const log = readJson<LogEntry[]>(FILE, []).filter((e) => e.ownerId === ownerId && e.direction === "out");
+  const now = Date.now();
+  const cutoff = now - days * 24 * 60 * 60 * 1000;
+  const recent = log.filter((e) => new Date(e.timestamp).getTime() >= cutoff);
+
+  const byActor = new Map<string, { sent: number; failed: number }>();
+  for (const e of recent) {
+    const key = e.actorId ?? "system";
+    const bucket = byActor.get(key) ?? { sent: 0, failed: 0 };
+    if (e.status === "failed") bucket.failed += 1;
+    else bucket.sent += 1;
+    byActor.set(key, bucket);
+  }
+
+  return Array.from(byActor.entries())
+    .map(([actorId, v]) => ({ actorId, ...v }))
+    .sort((a, b) => b.sent - a.sent);
 }

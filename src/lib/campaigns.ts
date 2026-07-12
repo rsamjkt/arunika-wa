@@ -5,6 +5,7 @@ import { logEvent } from "./messageLog";
 import { incrementUsage } from "./templates";
 import { getFullUser, incrementQuotaUsage } from "./users";
 import { hasQuotaRemaining } from "./authz";
+import { substituteVariables } from "./textVars";
 
 export type CampaignRecipient = {
   chatId: string;
@@ -120,11 +121,6 @@ function updateRecipient(id: string, chatId: string, patch: Partial<CampaignReci
         : c,
     ),
   );
-}
-
-function substituteVariables(body: string, recipient: { chatId: string; name?: string }) {
-  const digits = recipient.chatId.replace(/\D/g, "");
-  return body.replace(/\{nama\}/g, recipient.name || "Pelanggan").replace(/\{nomor\}/g, digits);
 }
 
 export function cancelCampaign(ownerId: string, id: string) {

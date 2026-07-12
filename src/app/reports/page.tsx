@@ -13,6 +13,12 @@ interface TopTemplate {
   name: string;
   usedCount: number;
 }
+interface AgentStat {
+  actorId: string;
+  name: string;
+  sent: number;
+  failed: number;
+}
 interface ReportStats {
   days: DayStat[];
   totalSent: number;
@@ -22,6 +28,7 @@ interface ReportStats {
   topTemplates: TopTemplate[];
   activeCampaigns: number;
   totalCampaigns: number;
+  agentStats: AgentStat[];
 }
 
 export default function ReportsPage() {
@@ -159,6 +166,39 @@ export default function ReportsPage() {
           </tbody>
         </table>
       </div>
+
+      {stats.agentStats.length > 0 && (
+        <div className="card cpad" style={{ padding: 18, marginTop: 16 }}>
+          <div className="ch">
+            <div>
+              <div className="chttl">Aktivitas Tim</div>
+              <div className="chsub">Pesan manual per anggota, 14 hari terakhir</div>
+            </div>
+          </div>
+          <table className="dtable">
+            <thead>
+              <tr>
+                <th>Anggota</th>
+                <th>Terkirim</th>
+                <th>Gagal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.agentStats.map((a) => (
+                <tr key={a.actorId}>
+                  <td style={{ fontWeight: 700 }}>{a.name}</td>
+                  <td className="mono" style={{ color: "var(--success)" }}>
+                    {a.sent}
+                  </td>
+                  <td className="mono" style={{ color: a.failed > 0 ? "var(--danger)" : "var(--ink-soft)" }}>
+                    {a.failed}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
