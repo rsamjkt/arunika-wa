@@ -66,7 +66,7 @@ export default function ForgotPasswordPage() {
                 className="btn"
                 type="submit"
                 disabled={busy || !email}
-                style={{ width: "100%", background: "#0b0d10", color: "#fff", boxShadow: "none" }}
+                style={{ width: "100%", background: "#0f172a", color: "#fff", boxShadow: "none" }}
               >
                 {busy ? "Mengirim…" : "Kirim Link Reset"}
               </button>
@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
           )}
 
           <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
-            <a href="/login" style={{ color: "#0b0d10", fontWeight: 700 }}>
+            <a href="/login" style={{ color: "#0f172a", fontWeight: 700 }}>
               Kembali ke halaman masuk
             </a>
           </p>

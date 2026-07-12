@@ -1444,40 +1444,19 @@ table.dtable .actions-cell button {
 .auth-shell {
   min-height: 100vh;
   display: flex;
-  background: var(--bg);
+  background: #fff;
 }
 .auth-hero {
   flex: 1 1 46%;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(160deg, #0b0d10 0%, #14171c 100%);
-  color: #fff;
+  background: #f8fafc;
+  border-right: 1px solid #e2e8f0;
+  color: #0f172a;
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding: 64px 56px;
-}
-.auth-hero::before {
-  content: "";
-  position: absolute;
-  top: -140px;
-  right: -140px;
-  width: 440px;
-  height: 440px;
-  border-radius: 50%;
-  background: var(--sun-gradient);
-  opacity: 0.16;
-}
-.auth-hero::after {
-  content: "";
-  position: absolute;
-  bottom: -160px;
-  left: -100px;
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  opacity: 1;
 }
 .auth-hero-inner {
   position: relative;
@@ -1485,7 +1464,7 @@ table.dtable .actions-cell button {
   max-width: 420px;
 }
 .auth-hero .brand {
-  color: #fff;
+  color: #0f172a;
   margin-bottom: 44px;
   font-size: 1.05rem;
 }
@@ -1496,7 +1475,7 @@ table.dtable .actions-cell button {
   margin-bottom: 14px;
 }
 .auth-hero .lead {
-  color: rgba(255, 255, 255, 0.72);
+  color: #64748b;
   font-size: 0.92rem;
   line-height: 1.6;
   margin-bottom: 36px;
@@ -1511,18 +1490,20 @@ table.dtable .actions-cell button {
   align-items: flex-start;
   gap: 12px;
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.88);
+  color: #334155;
 }
 .auth-hero-feature .ic {
   flex-shrink: 0;
   width: 26px;
   height: 26px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.14);
+  background: #fff;
+  border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.8rem;
+  color: #0f172a;
 }
 .auth-form-side {
   flex: 1 1 54%;

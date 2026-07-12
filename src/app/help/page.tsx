@@ -20,6 +20,22 @@ interface Plan {
   monthlyMessageQuota: number | null;
 }
 
+const INK = "#0f172a";
+const INK_SOFT = "#64748b";
+const BORDER = "#e2e8f0";
+
+const btnPrimary: React.CSSProperties = {
+  background: INK,
+  color: "#fff",
+  border: "1px solid " + INK,
+  borderRadius: 8,
+  padding: "10px 18px",
+  fontSize: "0.86rem",
+  fontWeight: 600,
+  textDecoration: "none",
+  boxShadow: "none",
+};
+
 const STEPS = [
   { title: "Daftar akun", body: "Pilih paket (bisa mulai gratis), buat username & password, verifikasi email." },
   { title: "Hubungkan perangkat WA", body: "Scan QR code dari menu Tambah Perangkat pakai WhatsApp di HP Anda — sama seperti WhatsApp Web." },
@@ -120,32 +136,32 @@ export default function HelpPage() {
   }, []);
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+    <div style={{ minHeight: "100vh", background: "#fff", color: INK }}>
       <header
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "18px 28px",
-          borderBottom: "1px solid var(--border)",
-          background: "var(--surface)",
+          padding: "16px 28px",
+          borderBottom: `1px solid ${BORDER}`,
+          background: "#fff",
         }}
       >
         <Link href="/" className="brand" style={{ textDecoration: "none", color: "inherit" }}>
           <span className="mark">A</span>
           Arunika · WA
         </Link>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
           {loggedIn ? (
-            <Link href="/dashboard" className="btn" style={{ background: "#0b0d10", color: "#fff", boxShadow: "none" }}>
+            <Link href="/dashboard" style={btnPrimary}>
               Ke Dashboard
             </Link>
           ) : (
             <>
-              <Link href="/login" className="btn secondary">
+              <Link href="/login" style={{ fontSize: "0.86rem", color: INK, fontWeight: 600, textDecoration: "none" }}>
                 Masuk
               </Link>
-              <Link href="/register" className="btn" style={{ background: "#0b0d10", color: "#fff", boxShadow: "none" }}>
+              <Link href="/register" style={btnPrimary}>
                 Daftar Gratis
               </Link>
             </>
@@ -155,30 +171,40 @@ export default function HelpPage() {
 
       <main style={{ maxWidth: 860, margin: "0 auto", padding: "48px 20px 80px" }}>
         <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <span className="badge pending" style={{ marginBottom: 14 }}>
+          <span
+            style={{
+              display: "inline-block",
+              color: INK_SOFT,
+              fontSize: "0.76rem",
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              marginBottom: 14,
+            }}
+          >
             Pusat Bantuan
           </span>
-          <h1 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "14px 0 10px" }}>
+          <h1 style={{ fontSize: "1.8rem", fontWeight: 800, margin: "14px 0 10px", color: INK }}>
             Semua yang perlu Anda tahu tentang Arunika-WA
           </h1>
-          <p style={{ color: "var(--ink-soft)", fontSize: "0.95rem" }}>
+          <p style={{ color: INK_SOFT, fontSize: "0.95rem" }}>
             WhatsApp Gateway untuk bisnis — kirim, otomasi, dan kelola WhatsApp bersama tim, dari satu dashboard.
           </p>
         </div>
 
         <section style={{ marginBottom: 48 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 18 }}>Cara Memulai</h2>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 18, color: INK }}>Cara Memulai</h2>
           <div className="grid2" style={{ gap: 14 }}>
             {STEPS.map((s, i) => (
-              <div className="card cpad" key={s.title} style={{ padding: 18 }}>
+              <div key={s.title} style={{ padding: 18, border: `1px solid ${BORDER}`, borderRadius: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                   <span
                     style={{
                       width: 26,
                       height: 26,
                       borderRadius: "50%",
-                      background: "#0b0d10",
-                      color: "#f97316",
+                      border: `1px solid ${BORDER}`,
+                      color: INK,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -189,35 +215,35 @@ export default function HelpPage() {
                   >
                     {i + 1}
                   </span>
-                  <strong style={{ fontSize: "0.9rem" }}>{s.title}</strong>
+                  <strong style={{ fontSize: "0.9rem", color: INK }}>{s.title}</strong>
                 </div>
-                <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", margin: 0 }}>{s.body}</p>
+                <p style={{ fontSize: "0.82rem", color: INK_SOFT, margin: 0 }}>{s.body}</p>
               </div>
             ))}
           </div>
         </section>
 
         <section style={{ marginBottom: 48 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 18 }}>Fitur</h2>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 18, color: INK }}>Fitur</h2>
           <div className="grid3" style={{ gap: 14 }}>
             {FEATURES.map((f) => (
-              <div className="card cpad" key={f.title} style={{ padding: 18 }}>
+              <div key={f.title} style={{ padding: 18, border: `1px solid ${BORDER}`, borderRadius: 12 }}>
                 <div
                   style={{
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    background: "#0b0d10",
+                    border: `1px solid ${BORDER}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: 10,
                   }}
                 >
-                  <f.icon size={17} color="#f97316" strokeWidth={2} />
+                  <f.icon size={17} color={INK} strokeWidth={1.8} />
                 </div>
-                <strong style={{ fontSize: "0.88rem", display: "block", marginBottom: 6 }}>{f.title}</strong>
-                <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", margin: 0 }}>{f.body}</p>
+                <strong style={{ fontSize: "0.88rem", display: "block", marginBottom: 6, color: INK }}>{f.title}</strong>
+                <p style={{ fontSize: "0.8rem", color: INK_SOFT, margin: 0 }}>{f.body}</p>
               </div>
             ))}
           </div>
@@ -267,7 +293,7 @@ export default function HelpPage() {
             : (
               <>
                 Hubungi kami lewat WhatsApp atau email yang tertera di dashboard setelah Anda masuk, atau langsung{" "}
-                <Link href="/register" style={{ color: "#0b0d10", fontWeight: 700 }}>
+                <Link href="/register" style={{ color: "#0f172a", fontWeight: 700 }}>
                   coba gratis
                 </Link>{" "}
                 — tidak perlu kartu kredit.

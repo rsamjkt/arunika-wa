@@ -22,12 +22,24 @@ interface Plan {
   isFree: boolean;
 }
 
+function stepPillStyle(active: boolean): React.CSSProperties {
+  return {
+    fontSize: "0.76rem",
+    fontWeight: 700,
+    padding: "5px 12px",
+    borderRadius: 100,
+    border: active ? "1px solid #0f172a" : "1px solid var(--border)",
+    color: active ? "#0f172a" : "var(--ink-soft)",
+    background: active ? "#f8fafc" : "transparent",
+  };
+}
+
 function StepHeader({ step }: { step: 1 | 2 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 26 }}>
-      <span className={`badge ${step === 1 ? "pending" : "good"}`}>1. Pilih Paket</span>
+      <span style={stepPillStyle(step === 1)}>1. Pilih Paket</span>
       <span style={{ width: 24, height: 1, background: "var(--border)" }} />
-      <span className={`badge ${step === 2 ? "pending" : "off"}`}>2. Buat Akun</span>
+      <span style={stepPillStyle(step === 2)}>2. Buat Akun</span>
     </div>
   );
 }
@@ -135,13 +147,26 @@ export default function RegisterPage() {
                       textAlign: "left",
                       padding: 18,
                       cursor: "pointer",
-                      background: selected ? "var(--success-bg)" : "var(--surface)",
-                      border: selected ? "2px solid var(--primary)" : "1px solid var(--border)",
+                      background: selected ? "#f8fafc" : "var(--surface)",
+                      border: selected ? "1.5px solid #0f172a" : "1px solid var(--border)",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                       <span style={{ fontWeight: 800, fontSize: "0.95rem" }}>{p.name}</span>
-                      {selected && <span className="badge good">Dipilih</span>}
+                      {selected && (
+                        <span
+                          style={{
+                            fontSize: "0.68rem",
+                            fontWeight: 700,
+                            color: "#fff",
+                            background: "#0f172a",
+                            padding: "2px 8px",
+                            borderRadius: 100,
+                          }}
+                        >
+                          Dipilih
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: 10 }}>
                       {p.priceRp === 0 ? "Gratis" : `Rp${p.priceRp.toLocaleString("id-ID")}`}
@@ -159,7 +184,7 @@ export default function RegisterPage() {
                       {p.features.map((f) => (
                         <li key={f}>{FEATURE_LABELS[f] ?? f}</li>
                       ))}
-                      <li style={{ fontWeight: 700, color: "var(--success)" }}>Staf/tim tak terbatas</li>
+                      <li style={{ fontWeight: 700, color: "#0f172a" }}>Staf/tim tak terbatas</li>
                     </ul>
                   </button>
                 );
@@ -177,14 +202,14 @@ export default function RegisterPage() {
               className="btn"
               type="button"
               disabled={!planId}
-              style={{ width: "100%", background: "#0b0d10", color: "#fff", boxShadow: "none" }}
+              style={{ width: "100%", background: "#0f172a", color: "#fff", boxShadow: "none" }}
               onClick={goToAccountStep}
             >
               Lanjut
             </button>
             <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
               Sudah punya akun?{" "}
-              <a href="/login" style={{ color: "#0b0d10", fontWeight: 700 }}>
+              <a href="/login" style={{ color: "#0f172a", fontWeight: 700 }}>
                 Masuk
               </a>
             </p>
@@ -274,13 +299,13 @@ export default function RegisterPage() {
               className="btn"
               type="submit"
               disabled={busy || !planId || username.trim().length < 3 || password.length < 6 || !emailValid}
-              style={{ width: "100%", background: "#0b0d10", color: "#fff", boxShadow: "none" }}
+              style={{ width: "100%", background: "#0f172a", color: "#fff", boxShadow: "none" }}
             >
               {busy ? "Memproses…" : "Daftar"}
             </button>
             <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
               Sudah punya akun?{" "}
-              <a href="/login" style={{ color: "#0b0d10", fontWeight: 700 }}>
+              <a href="/login" style={{ color: "#0f172a", fontWeight: 700 }}>
                 Masuk
               </a>
             </p>
