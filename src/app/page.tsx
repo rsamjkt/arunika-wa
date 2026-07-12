@@ -58,12 +58,19 @@ interface UpdateStatus {
   checkOk: boolean;
 }
 
+interface Me {
+  role: "superadmin" | "tenant";
+  plan: { name: string; deviceLimit: number; monthlyMessageQuota: number | null } | null;
+  usage: { messagesSent: number; devices: number };
+}
+
 export default function DashboardPage() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [server, setServer] = useState<ServerInfo | null>(null);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/sessions");
@@ -88,6 +95,13 @@ export default function DashboardPage() {
     fetch("/api/waha-update")
       .then((r) => r.json())
       .then(setUpdateStatus)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setMe)
       .catch(() => {});
   }, []);
 
@@ -129,6 +143,49 @@ export default function DashboardPage() {
           , tapi server ini masih menjalankan versi lama. Update tidak dilakukan otomatis — jalankan{" "}
           <span className="mono">docker pull devlikeapro/waha:latest</span> lalu recreate container saat waktunya
           pas (proses ini akan memutus WA sebentar). Dicek otomatis setiap hari.
+        </div>
+      )}
+      {me?.role === "tenant" && me.plan && (
+        <div className="card cpad mb16" style={{ padding: 18 }}>
+          <div className="ch">
+            <div>
+              <span className="chttl">Paket: {me.plan.name}</span>
+              <div className="chsub">Pantau pemakaian atau ganti paket kapan saja</div>
+            </div>
+            <Link href="/account/plan" className="btn secondary" style={{ marginLeft: "auto" }}>
+              Kelola Paket
+            </Link>
+          </div>
+          <div className="grid2">
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: "0.8rem" }}>
+                <span>Perangkat</span>
+                <strong>
+                  {me.usage.devices} / {me.plan.deviceLimit}
+                </strong>
+              </div>
+              <div className="progress">
+                <span style={{ width: `${Math.min(100, (me.usage.devices / me.plan.deviceLimit) * 100)}%` }} />
+              </div>
+            </div>
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: "0.8rem" }}>
+                <span>Pesan bulan ini</span>
+                <strong>
+                  {me.usage.messagesSent} / {me.plan.monthlyMessageQuota ?? "∞"}
+                </strong>
+              </div>
+              <div className="progress">
+                <span
+                  style={{
+                    width: me.plan.monthlyMessageQuota
+                      ? `${Math.min(100, (me.usage.messagesSent / me.plan.monthlyMessageQuota) * 100)}%`
+                      : "4%",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
       {server?.version && (
