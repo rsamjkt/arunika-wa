@@ -47,6 +47,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/settings", label: "Pengaturan", icon: "🛠" },
       { href: "/docs", label: "Dokumentasi API", icon: "📄" },
+      { href: "/help", label: "Pusat Bantuan", icon: "❓" },
     ],
   },
 ];

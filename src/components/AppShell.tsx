@@ -37,7 +37,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     pathname === "/login" ||
     pathname.startsWith("/register") ||
     pathname === "/forgot-password" ||
-    pathname.startsWith("/reset-password")
+    pathname.startsWith("/reset-password") ||
+    pathname === "/help"
   ) {
     return <>{children}</>;
   }
