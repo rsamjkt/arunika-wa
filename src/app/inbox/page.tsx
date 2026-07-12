@@ -152,6 +152,9 @@ function InboxPageInner() {
   const [noteSaved, setNoteSaved] = useState(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const msgsEndRef = useRef<HTMLDivElement | null>(null);
+  const msgsBoxRef = useRef<HTMLDivElement | null>(null);
+  const lastMsgIdRef = useRef<string | null>(null);
+  const forceScrollRef = useRef(true);
   const typingRef = useRef(false);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const seenForChat = useRef<string | null>(null);
@@ -259,14 +262,39 @@ function InboxPageInner() {
   useEffect(() => {
     setMessagesLoading(true);
     setReplyTo(null);
+    setMessages([]);
+    lastMsgIdRef.current = null;
+    forceScrollRef.current = true;
     if (!activeChatId) return;
     loadMessages();
     const id = setInterval(loadMessages, 4_000);
     return () => clearInterval(id);
   }, [activeChatId, loadMessages]);
 
+  // Auto-scroll only when a genuinely new message just arrived (or the chat
+  // was just opened) and the user isn't mid-scroll reading older history —
+  // polling every 4s used to force-scroll on every single poll regardless,
+  // which yanked the view back to the bottom while scrolling up.
   useEffect(() => {
-    msgsEndRef.current?.scrollIntoView({ block: "end" });
+    // The chat-switch effect clears messages to [] first, before the real
+    // fetch resolves — skip that transient empty render entirely so it
+    // can't consume forceScrollRef before the actual messages arrive.
+    if (messages.length === 0) return;
+
+    const latest = messages[messages.length - 1];
+    const isNewMessage = !!latest && latest.id !== lastMsgIdRef.current;
+    lastMsgIdRef.current = latest?.id ?? lastMsgIdRef.current;
+
+    const box = msgsBoxRef.current;
+    const nearBottom = !box || box.scrollHeight - box.scrollTop - box.clientHeight < 150;
+
+    if (forceScrollRef.current || (isNewMessage && nearBottom)) {
+      // Deferred: calling scrollIntoView synchronously inside this effect is
+      // unreliable here (observed no-op in production even though layout
+      // numbers already look final) — a macrotask delay lets it settle.
+      setTimeout(() => msgsEndRef.current?.scrollIntoView({ block: "end" }), 50);
+      forceScrollRef.current = false;
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -703,7 +731,7 @@ function InboxPageInner() {
                 </span>
               </div>
             )}
-            <div className="msgs">
+            <div className="msgs" ref={msgsBoxRef}>
               {messagesLoading && messages.length === 0 && (
                 <div style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>Memuat pesan…</div>
               )}
