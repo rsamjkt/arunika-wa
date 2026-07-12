@@ -87,7 +87,7 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
                 className="btn"
                 type="submit"
                 disabled={busy || password.length < 6 || !confirm}
-                style={{ width: "100%", background: "#0b0d10", color: "#fff", boxShadow: "none" }}
+                style={{ width: "100%", background: "#0f172a", color: "#fff", boxShadow: "none" }}
               >
                 {busy ? "Menyimpan…" : "Simpan Password Baru"}
               </button>

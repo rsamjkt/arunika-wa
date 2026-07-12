@@ -78,7 +78,7 @@ function LoginPageInner() {
         <div className="field-group">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <label htmlFor="password">Password</label>
-            <a href="/forgot-password" style={{ fontSize: "0.75rem", color: "#0b0d10", fontWeight: 700 }}>
+            <a href="/forgot-password" style={{ fontSize: "0.75rem", color: "#0f172a", fontWeight: 700 }}>
               Lupa password?
             </a>
           </div>
@@ -100,14 +100,14 @@ function LoginPageInner() {
           className="btn"
           type="submit"
           disabled={busy || !username || !password}
-          style={{ width: "100%", background: "#0b0d10", color: "#fff", boxShadow: "none" }}
+          style={{ width: "100%", background: "#0f172a", color: "#fff", boxShadow: "none" }}
         >
           {busy ? "Memproses…" : "Masuk"}
         </button>
 
           <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
             Belum punya akun?{" "}
-            <a href="/register" style={{ color: "#0b0d10", fontWeight: 700 }}>
+            <a href="/register" style={{ color: "#0f172a", fontWeight: 700 }}>
               Daftar
             </a>
           </p>
