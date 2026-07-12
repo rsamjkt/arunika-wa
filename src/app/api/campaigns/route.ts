@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const { response: featureResponse } = await requireFeature("broadcast");
   if (featureResponse) return featureResponse;
 
-  const { name, session, messageBody, templateId, recipients, startNow } = await req.json();
+  const { name, session, messageBody, templateId, recipients, startNow, scheduledAt } = await req.json();
 
   if (!name || typeof name !== "string") {
     return NextResponse.json({ error: "Nama campaign wajib diisi" }, { status: 400 });
@@ -28,6 +28,14 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(recipients) || recipients.length === 0) {
     return NextResponse.json({ error: "Audiens tidak boleh kosong" }, { status: 400 });
   }
+  let scheduledAtIso: string | null = null;
+  if (typeof scheduledAt === "string" && scheduledAt) {
+    const parsed = new Date(scheduledAt);
+    if (Number.isNaN(parsed.getTime()) || parsed.getTime() <= Date.now()) {
+      return NextResponse.json({ error: "Waktu jadwal harus di masa depan" }, { status: 400 });
+    }
+    scheduledAtIso = parsed.toISOString();
+  }
 
   const { user, response } = await requireSessionAccess(session);
   if (response) return response;
@@ -39,9 +47,10 @@ export async function POST(req: NextRequest) {
     messageBody,
     recipients,
     typeof templateId === "string" ? templateId : undefined,
+    scheduledAtIso,
   );
 
-  if (startNow) startCampaign(getEffectiveTenantId(user!), campaign.id);
+  if (startNow && !scheduledAtIso) startCampaign(getEffectiveTenantId(user!), campaign.id);
 
   return NextResponse.json(campaign, { status: 201 });
 }

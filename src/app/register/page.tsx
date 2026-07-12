@@ -99,7 +99,7 @@ export default function RegisterPage() {
 
   return (
     <div className="login-shell">
-      <div className="card login-card" style={{ width: "100%", maxWidth: step === 1 ? 900 : 420, padding: 36 }}>
+      <div className="card login-card" style={{ width: "100%", maxWidth: step === 1 ? 1140 : 420, padding: 36 }}>
         <div className="brand" style={{ justifyContent: "center", marginBottom: 8 }}>
           <span className="mark">A</span>
           Arunika · WA
@@ -146,16 +146,15 @@ export default function RegisterPage() {
                     <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 4 }}>
                       {p.deviceLimit} perangkat WA
                     </div>
-                    <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: p.features.length ? 10 : 0 }}>
+                    <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 10 }}>
                       {p.monthlyMessageQuota ? `${p.monthlyMessageQuota} pesan/bulan` : "Kuota pesan tanpa batas"}
                     </div>
-                    {p.features.length > 0 && (
-                      <ul style={{ fontSize: "0.75rem", color: "var(--ink-soft)", paddingLeft: 16, margin: 0 }}>
-                        {p.features.map((f) => (
-                          <li key={f}>{FEATURE_LABELS[f] ?? f}</li>
-                        ))}
-                      </ul>
-                    )}
+                    <ul style={{ fontSize: "0.75rem", color: "var(--ink-soft)", paddingLeft: 16, margin: 0 }}>
+                      {p.features.map((f) => (
+                        <li key={f}>{FEATURE_LABELS[f] ?? f}</li>
+                      ))}
+                      <li style={{ fontWeight: 700, color: "var(--success)" }}>Staf/tim tak terbatas</li>
+                    </ul>
                   </button>
                 );
               })}

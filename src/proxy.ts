@@ -34,6 +34,7 @@ const SELF_VERIFIED_PATHS = new Set([
   "/api/webhooks/waha",
   "/api/webhooks/klikqris",
   "/api/cron/downgrade-expired",
+  "/api/cron/run-scheduled-campaigns",
 ]);
 // Platform-owner-only area — a valid session isn't enough, role must be superadmin.
 // /settings/users manages platform-staff accounts, not tenant data, so it

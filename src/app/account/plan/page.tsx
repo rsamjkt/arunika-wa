@@ -162,13 +162,12 @@ export default function AccountPlanPage() {
               <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 10 }}>
                 {p.monthlyMessageQuota ? `${p.monthlyMessageQuota} pesan/bulan` : "Kuota pesan tanpa batas"}
               </div>
-              {p.features.length > 0 && (
-                <ul style={{ fontSize: "0.75rem", color: "var(--ink-soft)", paddingLeft: 16, marginBottom: 14 }}>
-                  {p.features.map((f) => (
-                    <li key={f}>{FEATURE_LABELS[f] ?? f}</li>
-                  ))}
-                </ul>
-              )}
+              <ul style={{ fontSize: "0.75rem", color: "var(--ink-soft)", paddingLeft: 16, marginBottom: 14 }}>
+                {p.features.map((f) => (
+                  <li key={f}>{FEATURE_LABELS[f] ?? f}</li>
+                ))}
+                <li style={{ fontWeight: 700, color: "var(--success)" }}>Staf/tim tak terbatas</li>
+              </ul>
               {isCurrent ? (
                 <span className="badge good">Paket aktif</span>
               ) : (

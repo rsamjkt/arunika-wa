@@ -30,6 +30,7 @@ interface Campaign {
   recipients: CampaignRecipient[];
   status: "draft" | "sending" | "completed" | "canceled";
   createdAt: string;
+  scheduledAt?: string | null;
 }
 
 export default function BroadcastPage() {
@@ -53,6 +54,7 @@ function BroadcastPageInner() {
   const [contactSearch, setContactSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [manualText, setManualText] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
 
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -150,11 +152,15 @@ function BroadcastPageInner() {
       });
   }
 
-  async function send(startNow: boolean) {
+  async function send(startNow: boolean, schedule?: string) {
     setMessage(null);
     const recipients = resolveRecipients();
     if (!name.trim() || !session || !body.trim() || recipients.length === 0) {
       setMessage({ ok: false, text: "Lengkapi nama, perangkat, pesan, dan audiens terlebih dahulu." });
+      return;
+    }
+    if (schedule && new Date(schedule).getTime() <= Date.now()) {
+      setMessage({ ok: false, text: "Waktu jadwal harus di masa depan." });
       return;
     }
     setSending(true);
@@ -169,27 +175,50 @@ function BroadcastPageInner() {
           templateId: templateId || undefined,
           recipients,
           startNow,
+          scheduledAt: schedule ? new Date(schedule).toISOString() : undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Gagal membuat campaign");
       setMessage({
         ok: true,
-        text: startNow
-          ? `Campaign "${data.name}" mulai dikirim ke ${recipients.length} kontak.`
-          : `Campaign "${data.name}" disimpan sebagai draft.`,
+        text: schedule
+          ? `Campaign "${data.name}" dijadwalkan ${new Date(schedule).toLocaleString("id-ID")}.`
+          : startNow
+            ? `Campaign "${data.name}" mulai dikirim ke ${recipients.length} kontak.`
+            : `Campaign "${data.name}" disimpan sebagai draft.`,
       });
       setName("");
       setBody("");
       setTemplateId("");
       setSelected(new Set());
       setManualText("");
+      setScheduledAt("");
       await loadCampaigns();
     } catch (err) {
       setMessage({ ok: false, text: err instanceof Error ? err.message : "Gagal mengirim" });
     } finally {
       setSending(false);
     }
+  }
+
+  function handleCsvUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result ?? "");
+      const lines = text
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean)
+        // Drop an optional header row like "nomor,nama" / "phone,name".
+        .filter((l, i) => !(i === 0 && /^(nomor|phone|nama|name|number)\b/i.test(l)));
+      setManualText((prev) => (prev ? `${prev}\n${lines.join("\n")}` : lines.join("\n")));
+      setAudienceMode("manual");
+    };
+    reader.readAsText(file);
+    e.target.value = "";
   }
 
   async function startDraft(c: Campaign) {
@@ -300,6 +329,10 @@ function BroadcastPageInner() {
                 >
                   Tempel Manual
                 </button>
+                <label className="btn secondary" style={{ cursor: "pointer", margin: 0 }}>
+                  Upload CSV
+                  <input type="file" accept=".csv,.txt" onChange={handleCsvUpload} style={{ display: "none" }} />
+                </label>
               </div>
             </div>
 
@@ -371,12 +404,26 @@ function BroadcastPageInner() {
               </>
             )}
 
-            <div style={{ display: "flex", gap: 10, marginTop: 18, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
+            <div style={{ display: "flex", gap: 10, marginTop: 18, paddingTop: 16, borderTop: "1px solid var(--border)", flexWrap: "wrap" }}>
               <button className="btn" disabled={sending} onClick={() => send(true)}>
                 {sending ? "Mengirim…" : "Kirim Sekarang"}
               </button>
               <button className="btn secondary" disabled={sending} onClick={() => send(false)}>
                 Simpan Draft
+              </button>
+              <input
+                type="datetime-local"
+                className="field"
+                style={{ width: 200 }}
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+              />
+              <button
+                className="btn secondary"
+                disabled={sending || !scheduledAt}
+                onClick={() => send(false, scheduledAt)}
+              >
+                Jadwalkan
               </button>
             </div>
             {message && (
@@ -404,6 +451,11 @@ function BroadcastPageInner() {
                     <strong style={{ fontSize: "0.85rem" }}>{c.name}</strong>
                     {statusBadge(c.status)}
                   </div>
+                  {c.status === "draft" && c.scheduledAt && (
+                    <p style={{ fontSize: "0.72rem", color: "var(--primary)", marginBottom: 6 }}>
+                      Terjadwal: {new Date(c.scheduledAt).toLocaleString("id-ID")}
+                    </p>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
                     <div className="progress" style={{ flex: 1 }}>
                       <span style={{ width: `${pct}%` }} />
