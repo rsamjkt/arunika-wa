@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import AuthHero from "@/components/AuthHero";
 
 export default function LoginPage() {
   return (
@@ -49,15 +50,20 @@ function LoginPageInner() {
   }
 
   return (
-    <div className="login-shell">
-      <form className="card login-card" onSubmit={submit}>
-        <div className="brand">
-          <span className="mark">A</span>
-          Arunika · WA
-        </div>
-        <p className="sub">Masuk untuk mengelola dashboard WhatsApp Gateway Anda.</p>
+    <div className="auth-shell">
+      <AuthHero
+        title="WhatsApp Gateway yang bisa dipakai satu tim."
+        lead="Kelola pesan, broadcast, dan otomasi WhatsApp bisnis Anda dari satu dashboard — dengan staf sebanyak yang Anda perlukan, tanpa biaya tambahan."
+      />
+      <div className="auth-form-side">
+        <form className="card login-card" onSubmit={submit}>
+          <div className="brand">
+            <span className="mark">A</span>
+            Arunika · WA
+          </div>
+          <p className="sub">Masuk untuk mengelola dashboard WhatsApp Gateway Anda.</p>
 
-        <div className="field-group">
+          <div className="field-group">
           <label htmlFor="username">Username</label>
           <input
             id="username"
@@ -94,13 +100,14 @@ function LoginPageInner() {
           {busy ? "Memproses…" : "Masuk"}
         </button>
 
-        <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
-          Belum punya akun?{" "}
-          <a href="/register" style={{ color: "var(--primary)" }}>
-            Daftar
-          </a>
-        </p>
-      </form>
+          <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
+            Belum punya akun?{" "}
+            <a href="/register" style={{ color: "var(--primary)" }}>
+              Daftar
+            </a>
+          </p>
+        </form>
+      </div>
     </div>
   );
 }

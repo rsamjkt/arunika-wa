@@ -2,6 +2,7 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
+import AuthHero from "@/components/AuthHero";
 
 export default function ResetPasswordPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
@@ -38,55 +39,61 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
   }
 
   return (
-    <div className="login-shell">
-      <div className="card login-card">
-        <div className="brand">
-          <span className="mark">A</span>
-          Arunika · WA
-        </div>
-        <p className="sub">Atur password baru untuk akun Anda.</p>
-
-        {done ? (
-          <div className="callout">
-            <b>Password berhasil diubah</b>
-            Mengarahkan ke halaman masuk…
+    <div className="auth-shell">
+      <AuthHero
+        title="Hampir selesai — atur password baru Anda."
+        lead="Pilih password yang kuat dan mudah Anda ingat. Semua sesi login lama otomatis diputus setelah ini."
+      />
+      <div className="auth-form-side">
+        <div className="card login-card">
+          <div className="brand">
+            <span className="mark">A</span>
+            Arunika · WA
           </div>
-        ) : (
-          <form onSubmit={submit}>
-            <div className="field-group">
-              <label htmlFor="password">Password baru</label>
-              <input
-                id="password"
-                type="password"
-                className="field"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-                autoFocus
-              />
+          <p className="sub">Atur password baru untuk akun Anda.</p>
+
+          {done ? (
+            <div className="callout">
+              <b>Password berhasil diubah</b>
+              Mengarahkan ke halaman masuk…
             </div>
-            <div className="field-group">
-              <label htmlFor="confirm">Ulangi password baru</label>
-              <input
-                id="confirm"
-                type="password"
-                className="field"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                autoComplete="new-password"
-              />
-            </div>
-            {error && <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14 }}>{error}</p>}
-            <button
-              className="btn"
-              type="submit"
-              disabled={busy || password.length < 6 || !confirm}
-              style={{ width: "100%" }}
-            >
-              {busy ? "Menyimpan…" : "Simpan Password Baru"}
-            </button>
-          </form>
-        )}
+          ) : (
+            <form onSubmit={submit}>
+              <div className="field-group">
+                <label htmlFor="password">Password baru</label>
+                <input
+                  id="password"
+                  type="password"
+                  className="field"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  autoFocus
+                />
+              </div>
+              <div className="field-group">
+                <label htmlFor="confirm">Ulangi password baru</label>
+                <input
+                  id="confirm"
+                  type="password"
+                  className="field"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  autoComplete="new-password"
+                />
+              </div>
+              {error && <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14 }}>{error}</p>}
+              <button
+                className="btn"
+                type="submit"
+                disabled={busy || password.length < 6 || !confirm}
+                style={{ width: "100%" }}
+              >
+                {busy ? "Menyimpan…" : "Simpan Password Baru"}
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
