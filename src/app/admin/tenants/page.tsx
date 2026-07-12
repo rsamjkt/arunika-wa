@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 interface Plan {
   id: string;
@@ -16,6 +17,7 @@ interface Tenant {
   createdAt: string;
   subscriptionStatus: "active" | "pending_payment";
   subscriptionExpiresAt: string | null;
+  suspended: boolean;
   plan: Plan | null;
   usage: { messagesSent: number; devices: number };
 }
@@ -34,6 +36,9 @@ export default function AdminTenantsPage() {
   }, []);
 
   function statusBadge(t: Tenant) {
+    if (t.suspended) {
+      return <span className="badge off">Nonaktif</span>;
+    }
     if (t.subscriptionStatus === "pending_payment") {
       return <span className="badge pending">Menunggu Bayar</span>;
     }
@@ -72,6 +77,7 @@ export default function AdminTenantsPage() {
               <th>Pesan Bulan Ini</th>
               <th>Berakhir</th>
               <th>Terdaftar</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -96,11 +102,16 @@ export default function AdminTenantsPage() {
                 <td className="mono" style={{ color: "var(--ink-soft)" }}>
                   {new Date(t.createdAt).toLocaleDateString("id-ID")}
                 </td>
+                <td className="actions-cell">
+                  <Link href={`/admin/tenants/${t.id}`} className="btn secondary">
+                    Kelola
+                  </Link>
+                </td>
               </tr>
             ))}
             {!loading && tenants.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ textAlign: "center", color: "var(--ink-soft)", padding: 24 }}>
+                <td colSpan={8} style={{ textAlign: "center", color: "var(--ink-soft)", padding: 24 }}>
                   Belum ada tenant yang mendaftar.
                 </td>
               </tr>

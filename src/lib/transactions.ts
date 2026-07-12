@@ -35,6 +35,12 @@ export function getTransaction(orderId: string): Transaction | null {
   return all().find((t) => t.orderId === orderId) ?? null;
 }
 
+export function listTransactionsForUser(userId: string): Transaction[] {
+  return all()
+    .filter((t) => t.userId === userId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
 export function markTransactionStatus(orderId: string, status: Transaction["status"], paidAt?: string) {
   const list = all();
   writeJson(

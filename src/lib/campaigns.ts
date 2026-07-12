@@ -122,6 +122,16 @@ export function cancelCampaign(ownerId: string, id: string) {
   }
 }
 
+/** Cascade delete — used when a tenant account is removed entirely.
+ * Cancels any still-sending campaign first so the background runner sees
+ * the cancellation flag before its data disappears out from under it. */
+export function deleteAllForOwner(ownerId: string): void {
+  for (const c of listCampaigns(ownerId)) {
+    if (c.status === "sending") cancelCampaign(ownerId, c.id);
+  }
+  save(all().filter((c) => c.ownerId !== ownerId));
+}
+
 /** Fire-and-forget: begins (or resumes) sending. Safe to call multiple times. */
 export function startCampaign(ownerId: string, id: string) {
   if (activeCampaigns.has(id)) return;

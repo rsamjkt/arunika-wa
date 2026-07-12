@@ -14,6 +14,7 @@ export async function GET() {
     createdAt: t.createdAt,
     subscriptionStatus: t.subscriptionStatus,
     subscriptionExpiresAt: t.subscriptionExpiresAt,
+    suspended: t.suspended,
     plan: getPlan(t.planId),
     usage: {
       messagesSent: getEffectiveQuotaUsage(t.id),

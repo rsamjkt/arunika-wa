@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyLogin } from "@/lib/users";
+import { getGoverningUser, verifyLogin } from "@/lib/users";
 import { createSession } from "@/lib/sessions";
 import { checkRateLimit, clientIp, recordFailure, recordSuccess } from "@/lib/rateLimit";
 
@@ -19,6 +19,13 @@ export async function POST(req: NextRequest) {
   if (!user) {
     recordFailure(ip);
     return NextResponse.json({ error: "Username atau password salah" }, { status: 401 });
+  }
+  if (getGoverningUser(user).suspended) {
+    recordFailure(ip);
+    return NextResponse.json(
+      { error: "Akun ini telah dinonaktifkan. Hubungi admin platform." },
+      { status: 403 },
+    );
   }
   recordSuccess(ip);
 
