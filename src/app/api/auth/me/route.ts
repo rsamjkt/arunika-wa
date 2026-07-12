@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getCurrentFullUser } from "@/lib/currentUser";
-import { getPlan } from "@/lib/plans";
+import { getEffectivePlan } from "@/lib/authz";
 import { getEffectiveQuotaUsage, getEffectiveTenantId, getGoverningUser } from "@/lib/users";
 import { countOwnedSessions } from "@/lib/tenancy";
+import { listTransactionsForUser } from "@/lib/transactions";
 
 export async function GET() {
   const user = await getCurrentFullUser();
@@ -10,7 +11,8 @@ export async function GET() {
 
   const governing = getGoverningUser(user);
   const tenantId = getEffectiveTenantId(user);
-  const plan = getPlan(governing.planId);
+  const plan = getEffectivePlan(user);
+  const pendingTx = listTransactionsForUser(governing.id).find((t) => t.status === "PENDING");
   return NextResponse.json({
     id: user.id,
     username: user.username,
@@ -19,6 +21,7 @@ export async function GET() {
     subscriptionStatus: governing.subscriptionStatus,
     subscriptionExpiresAt: governing.subscriptionExpiresAt,
     plan,
+    pendingOrderId: pendingTx?.orderId ?? null,
     usage: {
       messagesSent: getEffectiveQuotaUsage(tenantId),
       devices: countOwnedSessions(tenantId),
