@@ -22,8 +22,19 @@ interface Plan {
   isFree: boolean;
 }
 
+function StepHeader({ step }: { step: 1 | 2 }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 26 }}>
+      <span className={`badge ${step === 1 ? "pending" : "good"}`}>1. Pilih Paket</span>
+      <span style={{ width: 24, height: 1, background: "var(--border)" }} />
+      <span className={`badge ${step === 2 ? "pending" : "off"}`}>2. Buat Akun</span>
+    </div>
+  );
+}
+
 export default function RegisterPage() {
   const router = useRouter();
+  const [step, setStep] = useState<1 | 2>(1);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [planId, setPlanId] = useState("");
   const [username, setUsername] = useState("");
@@ -41,12 +52,19 @@ export default function RegisterPage() {
       });
   }, []);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  const selectedPlan = plans.find((p) => p.id === planId) ?? null;
+
+  function goToAccountStep() {
     if (!planId) {
       setError("Pilih paket terlebih dahulu.");
       return;
     }
+    setError(null);
+    setStep(2);
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
     setBusy(true);
     setError(null);
     try {
@@ -71,107 +89,146 @@ export default function RegisterPage() {
 
   return (
     <div className="login-shell">
-      <div className="card login-card" style={{ width: "100%", maxWidth: 900, padding: 36 }}>
+      <div className="card login-card" style={{ width: "100%", maxWidth: step === 1 ? 900 : 420, padding: 36 }}>
         <div className="brand" style={{ justifyContent: "center", marginBottom: 8 }}>
           <span className="mark">A</span>
           Arunika · WA
         </div>
-        <p className="sub" style={{ textAlign: "center" }}>
-          Daftar dan pilih paket untuk mulai pakai WhatsApp Gateway Anda sendiri.
-        </p>
+        <StepHeader step={step} />
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 14,
-            marginBottom: 28,
-          }}
-        >
-          {plans.map((p) => {
-            const selected = planId === p.id;
-            return (
-              <button
-                type="button"
-                key={p.id}
-                onClick={() => setPlanId(p.id)}
-                className="card"
-                style={{
-                  textAlign: "left",
-                  padding: 18,
-                  cursor: "pointer",
-                  background: selected ? "var(--success-bg)" : "var(--surface)",
-                  border: selected ? "2px solid var(--primary)" : "1px solid var(--border)",
-                }}
+        {step === 1 && (
+          <>
+            <p className="sub" style={{ textAlign: "center" }}>
+              Pilih paket untuk mulai pakai WhatsApp Gateway Anda sendiri.
+            </p>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 14,
+                marginBottom: 24,
+              }}
+            >
+              {plans.map((p) => {
+                const selected = planId === p.id;
+                return (
+                  <button
+                    type="button"
+                    key={p.id}
+                    onClick={() => setPlanId(p.id)}
+                    className="card"
+                    style={{
+                      textAlign: "left",
+                      padding: 18,
+                      cursor: "pointer",
+                      background: selected ? "var(--success-bg)" : "var(--surface)",
+                      border: selected ? "2px solid var(--primary)" : "1px solid var(--border)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                      <span style={{ fontWeight: 800, fontSize: "0.95rem" }}>{p.name}</span>
+                      {selected && <span className="badge good">Dipilih</span>}
+                    </div>
+                    <div style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: 10 }}>
+                      {p.priceRp === 0 ? "Gratis" : `Rp${p.priceRp.toLocaleString("id-ID")}`}
+                      {p.priceRp > 0 && <small style={{ fontSize: "0.68rem", fontWeight: 500 }}> /bulan</small>}
+                    </div>
+                    <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 4 }}>
+                      {p.deviceLimit} perangkat WA
+                    </div>
+                    <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: p.features.length ? 10 : 0 }}>
+                      {p.monthlyMessageQuota ? `${p.monthlyMessageQuota} pesan/bulan` : "Kuota pesan tanpa batas"}
+                    </div>
+                    {p.features.length > 0 && (
+                      <ul style={{ fontSize: "0.75rem", color: "var(--ink-soft)", paddingLeft: 16, margin: 0 }}>
+                        {p.features.map((f) => (
+                          <li key={f}>{FEATURE_LABELS[f] ?? f}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </button>
+                );
+              })}
+              {plans.length === 0 && (
+                <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem" }}>Memuat paket…</p>
+              )}
+            </div>
+            {error && (
+              <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14, textAlign: "center" }}>
+                {error}
+              </p>
+            )}
+            <button className="btn" type="button" disabled={!planId} style={{ width: "100%" }} onClick={goToAccountStep}>
+              Lanjut
+            </button>
+            <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
+              Sudah punya akun?{" "}
+              <a href="/login" style={{ color: "var(--primary)" }}>
+                Masuk
+              </a>
+            </p>
+          </>
+        )}
+
+        {step === 2 && (
+          <form onSubmit={submit}>
+            {selectedPlan && (
+              <div
+                className="chip"
+                style={{ width: "100%", justifyContent: "space-between", marginBottom: 20, padding: "8px 12px" }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontWeight: 800, fontSize: "0.95rem" }}>{p.name}</span>
-                  {selected && <span className="badge good">Dipilih</span>}
-                </div>
-                <div style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: 10 }}>
-                  {p.priceRp === 0 ? "Gratis" : `Rp${p.priceRp.toLocaleString("id-ID")}`}
-                  {p.priceRp > 0 && <small style={{ fontSize: "0.68rem", fontWeight: 500 }}> /bulan</small>}
-                </div>
-                <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 4 }}>
-                  {p.deviceLimit} perangkat WA
-                </div>
-                <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: p.features.length ? 10 : 0 }}>
-                  {p.monthlyMessageQuota ? `${p.monthlyMessageQuota} pesan/bulan` : "Kuota pesan tanpa batas"}
-                </div>
-                {p.features.length > 0 && (
-                  <ul style={{ fontSize: "0.75rem", color: "var(--ink-soft)", paddingLeft: 16, margin: 0 }}>
-                    {p.features.map((f) => (
-                      <li key={f}>{FEATURE_LABELS[f] ?? f}</li>
-                    ))}
-                  </ul>
-                )}
-              </button>
-            );
-          })}
-          {plans.length === 0 && (
-            <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem" }}>Memuat paket…</p>
-          )}
-        </div>
-
-        <form onSubmit={submit} style={{ maxWidth: 380, margin: "0 auto" }}>
-          <div className="field-group">
-            <label htmlFor="username">Username</label>
-            <input
-              id="username"
-              className="field"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              autoFocus
-            />
-          </div>
-          <div className="field-group">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              className="field"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-          </div>
-          {error && <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14 }}>{error}</p>}
-          <button
-            className="btn"
-            type="submit"
-            disabled={busy || !planId || username.trim().length < 3 || password.length < 6}
-            style={{ width: "100%" }}
-          >
-            {busy ? "Memproses…" : "Daftar"}
-          </button>
-          <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
-            Sudah punya akun?{" "}
-            <a href="/login" style={{ color: "var(--primary)" }}>
-              Masuk
-            </a>
-          </p>
-        </form>
+                <span>
+                  Paket: <strong>{selectedPlan.name}</strong>{" "}
+                  {selectedPlan.priceRp > 0 ? `(Rp${selectedPlan.priceRp.toLocaleString("id-ID")}/bulan)` : "(Gratis)"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  style={{ background: "none", border: "none", color: "var(--primary)", fontWeight: 700, cursor: "pointer" }}
+                >
+                  Ganti
+                </button>
+              </div>
+            )}
+            <div className="field-group">
+              <label htmlFor="username">Username</label>
+              <input
+                id="username"
+                className="field"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                autoFocus
+              />
+            </div>
+            <div className="field-group">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                className="field"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </div>
+            {error && <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14 }}>{error}</p>}
+            <button
+              className="btn"
+              type="submit"
+              disabled={busy || !planId || username.trim().length < 3 || password.length < 6}
+              style={{ width: "100%" }}
+            >
+              {busy ? "Memproses…" : "Daftar"}
+            </button>
+            <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
+              Sudah punya akun?{" "}
+              <a href="/login" style={{ color: "var(--primary)" }}>
+                Masuk
+              </a>
+            </p>
+          </form>
+        )}
       </div>
     </div>
   );
