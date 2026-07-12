@@ -3,6 +3,7 @@ import { findUserByEmail } from "@/lib/users";
 import { createResetToken } from "@/lib/passwordResets";
 import { passwordResetEmail, sendEmail } from "@/lib/email";
 import { notifyAdminPasswordReset } from "@/lib/adminNotify";
+import { getAppUrl } from "@/lib/appUrl";
 
 export async function POST(req: NextRequest) {
   const { email } = await req.json();
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
   const user = findUserByEmail(email.trim());
   if (user) {
     const token = createResetToken(user.id);
-    const resetUrl = `${req.nextUrl.origin}/reset-password/${token}`;
+    const resetUrl = `${getAppUrl()}/reset-password/${token}`;
     const { subject, html } = passwordResetEmail(resetUrl);
     sendEmail(user.email!, subject, html).catch(() => {});
     notifyAdminPasswordReset(user.username, user.email!);

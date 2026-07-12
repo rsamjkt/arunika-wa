@@ -6,6 +6,7 @@ import { createTransaction, KlikQrisError } from "@/lib/klikqris";
 import { createTransactionRecord } from "@/lib/transactions";
 import { invoicePendingEmail, sendEmail, welcomeEmail } from "@/lib/email";
 import { applyReferralReward, recordReferral } from "@/lib/referrals";
+import { getAppUrl } from "@/lib/appUrl";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -70,16 +71,16 @@ export async function POST(req: NextRequest) {
       createdAt: tx.created_at,
     });
 
-    const { subject, html } = invoicePendingEmail(
+    const { subject, html, attachments } = invoicePendingEmail(
       tenant.username,
       plan.name,
       tx.order_id,
       Number(tx.total_amount),
       tx.qris_image ?? "",
       tx.expired_at,
-      `${req.nextUrl.origin}/register/pay/${tx.order_id}`,
+      `${getAppUrl()}/register/pay/${tx.order_id}`,
     );
-    sendEmail(email.trim(), subject, html).catch(() => {});
+    sendEmail(email.trim(), subject, html, attachments).catch(() => {});
 
     return NextResponse.json({
       ok: true,
