@@ -33,7 +33,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const title = TITLES[pathname] ?? "Arunika · WA";
 
-  if (pathname === "/login" || pathname.startsWith("/register")) {
+  if (
+    pathname === "/login" ||
+    pathname.startsWith("/register") ||
+    pathname === "/forgot-password" ||
+    pathname.startsWith("/reset-password")
+  ) {
     return <>{children}</>;
   }
 

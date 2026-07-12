@@ -4,15 +4,21 @@ import { createTenant, deleteUser } from "@/lib/users";
 import { getPlan } from "@/lib/plans";
 import { createTransaction, KlikQrisError } from "@/lib/klikqris";
 import { createTransactionRecord } from "@/lib/transactions";
+import { sendEmail, welcomeEmail } from "@/lib/email";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
-  const { username, password, planId } = await req.json();
+  const { username, password, email, phone, planId } = await req.json();
 
   if (!username || typeof username !== "string" || username.trim().length < 3) {
     return NextResponse.json({ error: "Username minimal 3 karakter" }, { status: 400 });
   }
   if (!password || typeof password !== "string" || password.length < 6) {
     return NextResponse.json({ error: "Password minimal 6 karakter" }, { status: 400 });
+  }
+  if (!email || typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
+    return NextResponse.json({ error: "Email tidak valid" }, { status: 400 });
   }
   const plan = typeof planId === "string" ? getPlan(planId) : null;
   if (!plan) {
@@ -21,12 +27,21 @@ export async function POST(req: NextRequest) {
 
   let tenant;
   try {
-    tenant = createTenant(username.trim(), password, plan.id, plan.isFree ? "active" : "pending_payment");
+    tenant = createTenant(
+      username.trim(),
+      password,
+      email.trim(),
+      typeof phone === "string" && phone.trim() ? phone.trim() : null,
+      plan.id,
+      plan.isFree ? "active" : "pending_payment",
+    );
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Gagal mendaftar" }, { status: 409 });
   }
 
   if (plan.isFree) {
+    const { subject, html } = welcomeEmail(tenant.username, plan.name);
+    sendEmail(email.trim(), subject, html).catch(() => {});
     return NextResponse.json({ ok: true, requiresPayment: false });
   }
 

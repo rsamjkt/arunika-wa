@@ -1,6 +1,7 @@
 import { readJson, writeJson } from "./store";
 import { getPlan } from "./plans";
-import { activateSubscription } from "./users";
+import { activateSubscription, getFullUser } from "./users";
+import { paymentConfirmedEmail, sendEmail } from "./email";
 
 export type Transaction = {
   orderId: string;
@@ -56,6 +57,12 @@ export function activateFromPaidTransaction(orderId: string, paidAt?: string): b
     ? new Date(Date.now() + plan.durationDays * 24 * 60 * 60 * 1000).toISOString()
     : null;
   activateSubscription(tx.userId, plan.id, expiresAt);
+
+  const user = getFullUser(tx.userId);
+  if (user?.email) {
+    const { subject, html } = paymentConfirmedEmail(user.username, plan.name);
+    sendEmail(user.email, subject, html).catch(() => {});
+  }
   return true;
 }
 
