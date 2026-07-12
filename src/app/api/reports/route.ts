@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { getAgentStats, getStats } from "@/lib/messageLog";
+import { getAgentStats, getApiKeyStats, getStats } from "@/lib/messageLog";
 import { listTemplates } from "@/lib/templates";
 import { listCampaigns } from "@/lib/campaigns";
+import { listApiKeys } from "@/lib/apikeys";
 import { getCurrentFullUser } from "@/lib/currentUser";
 import { getEffectiveTenantId, listTeamMembers } from "@/lib/users";
 
@@ -27,11 +28,18 @@ export async function GET() {
         }))
       : [];
 
+  const apiKeys = listApiKeys(tenantId);
+  const apiKeyStats = getApiKeyStats(tenantId, 14).map((s) => ({
+    ...s,
+    name: s.apiKeyId === "dashboard" ? "Dashboard" : apiKeys.find((k) => k.id === s.apiKeyId)?.name ?? "Key dihapus",
+  }));
+
   return NextResponse.json({
     ...stats,
     topTemplates: templates.map((t) => ({ id: t.id, name: t.name, usedCount: t.usedCount })),
     activeCampaigns,
     totalCampaigns,
     agentStats,
+    apiKeyStats,
   });
 }

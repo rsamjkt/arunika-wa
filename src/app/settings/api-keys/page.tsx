@@ -9,6 +9,8 @@ interface ApiKeyRecord {
   createdAt: string;
   lastUsedAt: string | null;
   revoked: boolean;
+  sentCount: number;
+  failedCount: number;
 }
 
 export default function ApiKeysSettingsPage() {
@@ -116,6 +118,7 @@ export default function ApiKeysSettingsPage() {
               <th>Nama</th>
               <th>API Key</th>
               <th>Status</th>
+              <th>Pesan Terkirim</th>
               <th>Terakhir dipakai</th>
               <th>Aksi</th>
             </tr>
@@ -153,6 +156,12 @@ export default function ApiKeysSettingsPage() {
                     {k.revoked ? "Nonaktif" : "Aktif"}
                   </span>
                 </td>
+                <td className="mono">
+                  {k.sentCount}
+                  {k.failedCount > 0 && (
+                    <span style={{ color: "var(--danger)" }}> ({k.failedCount} gagal)</span>
+                  )}
+                </td>
                 <td className="mono" style={{ color: "var(--ink-soft)" }}>
                   {k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString("id-ID") : "Belum pernah"}
                 </td>
@@ -170,7 +179,7 @@ export default function ApiKeysSettingsPage() {
             ))}
             {!loading && keys.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ textAlign: "center", color: "var(--ink-soft)", padding: 24 }}>
+                <td colSpan={6} style={{ textAlign: "center", color: "var(--ink-soft)", padding: 24 }}>
                   Belum ada API key.
                 </td>
               </tr>

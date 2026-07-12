@@ -2,11 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiKey, listApiKeys } from "@/lib/apikeys";
 import { requireFeature } from "@/lib/authz";
 import { getEffectiveTenantId } from "@/lib/users";
+import { getApiKeyStats } from "@/lib/messageLog";
+
+const ALL_TIME_DAYS = 3650;
 
 export async function GET() {
   const { user, response } = await requireFeature("apikeys");
   if (response) return response;
-  return NextResponse.json(listApiKeys(getEffectiveTenantId(user!)));
+  const tenantId = getEffectiveTenantId(user!);
+
+  const keys = listApiKeys(tenantId);
+  const usage = getApiKeyStats(tenantId, ALL_TIME_DAYS);
+  return NextResponse.json(
+    keys.map((k) => {
+      const stat = usage.find((u) => u.apiKeyId === k.id);
+      return { ...k, sentCount: stat?.sent ?? 0, failedCount: stat?.failed ?? 0 };
+    }),
+  );
 }
 
 export async function POST(req: NextRequest) {

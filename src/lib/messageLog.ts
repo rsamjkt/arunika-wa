@@ -8,6 +8,9 @@ export type LogEntry = {
   /** The specific user (owner or staff) who triggered a manual send —
    * left undefined for automated sends (campaign/autoreply). */
   actorId?: string;
+  /** Set when the send was authenticated via an external API key
+   * rather than the browser dashboard — which key, specifically. */
+  apiKeyId?: string;
   direction: "out" | "in";
   session: string;
   chatId: string;
@@ -92,5 +95,29 @@ export function getAgentStats(ownerId: string, days = 14): { actorId: string; se
 
   return Array.from(byActor.entries())
     .map(([actorId, v]) => ({ actorId, ...v }))
+    .sort((a, b) => b.sent - a.sent);
+}
+
+/** Per-API-key breakdown of manual sends over the window — entries with
+ * no apiKeyId (dashboard/browser sends) are bucketed under "dashboard". */
+export function getApiKeyStats(ownerId: string, days = 14): { apiKeyId: string; sent: number; failed: number }[] {
+  const log = readJson<LogEntry[]>(FILE, []).filter(
+    (e) => e.ownerId === ownerId && e.direction === "out" && e.source === "manual",
+  );
+  const now = Date.now();
+  const cutoff = now - days * 24 * 60 * 60 * 1000;
+  const recent = log.filter((e) => new Date(e.timestamp).getTime() >= cutoff);
+
+  const byKey = new Map<string, { sent: number; failed: number }>();
+  for (const e of recent) {
+    const key = e.apiKeyId ?? "dashboard";
+    const bucket = byKey.get(key) ?? { sent: 0, failed: 0 };
+    if (e.status === "failed") bucket.failed += 1;
+    else bucket.sent += 1;
+    byKey.set(key, bucket);
+  }
+
+  return Array.from(byKey.entries())
+    .map(([apiKeyId, v]) => ({ apiKeyId, ...v }))
     .sort((a, b) => b.sent - a.sent);
 }
