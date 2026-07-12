@@ -26,6 +26,9 @@ export type Campaign = {
   createdAt: string;
   startedAt?: string;
   completedAt?: string;
+  /** Set when the campaign should auto-start at a future time instead of
+   * immediately — stays "draft" until run-scheduled-campaigns fires it. */
+  scheduledAt?: string | null;
 };
 
 const FILE = "campaigns.json";
@@ -73,6 +76,7 @@ export function createCampaign(
   messageBody: string,
   recipients: { chatId: string; name?: string }[],
   templateId?: string,
+  scheduledAt?: string | null,
 ): Campaign {
   const campaign: Campaign = {
     id: crypto.randomUUID(),
@@ -84,11 +88,21 @@ export function createCampaign(
     recipients: recipients.map((r) => ({ ...r, status: "pending" as const })),
     status: "draft",
     createdAt: new Date().toISOString(),
+    scheduledAt: scheduledAt ?? null,
   };
   const campaigns = all();
   campaigns.push(campaign);
   save(campaigns);
   return campaign;
+}
+
+/** Draft campaigns whose scheduled time has arrived — picked up by the
+ * run-scheduled-campaigns cron endpoint. */
+export function listDueCampaigns(): Campaign[] {
+  const now = Date.now();
+  return all().filter(
+    (c) => c.status === "draft" && c.scheduledAt && new Date(c.scheduledAt).getTime() <= now,
+  );
 }
 
 function updateCampaign(id: string, patch: Partial<Campaign>) {
