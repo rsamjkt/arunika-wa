@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { findUserByEmail } from "@/lib/users";
 import { createResetToken } from "@/lib/passwordResets";
 import { passwordResetEmail, sendEmail } from "@/lib/email";
+import { notifyAdminPasswordReset } from "@/lib/adminNotify";
 
 export async function POST(req: NextRequest) {
   const { email } = await req.json();
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest) {
     const resetUrl = `${req.nextUrl.origin}/reset-password/${token}`;
     const { subject, html } = passwordResetEmail(resetUrl);
     sendEmail(user.email!, subject, html).catch(() => {});
+    notifyAdminPasswordReset(user.username, user.email!);
   }
 
   return NextResponse.json({ ok: true });

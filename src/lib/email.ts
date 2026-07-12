@@ -179,6 +179,24 @@ export function passwordResetEmail(resetUrl: string): { subject: string; html: s
   };
 }
 
+/** Internal — notifies the platform admin whenever any tenant requests a
+ * password reset, so it can be monitored (not sent to the tenant). */
+export function adminPasswordResetNotifyEmail(username: string, userEmail: string): { subject: string; html: string } {
+  const when = new Date().toLocaleString("id-ID");
+  return {
+    subject: `[Admin] Permintaan reset password — ${username}`,
+    html: WRAPPER(
+      "Permintaan Reset Password 🔐",
+      `<p>Ada permintaan reset password di platform.</p>
+       ${INVOICE_TABLE([
+         ["Username", username],
+         ["Email", userEmail],
+         ["Waktu", when],
+       ])}`,
+    ),
+  };
+}
+
 export function subscriptionExpiringEmail(username: string, planName: string, expiresAt: string): { subject: string; html: string } {
   return {
     subject: `Paket ${planName} Anda akan berakhir`,
