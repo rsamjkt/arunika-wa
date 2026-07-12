@@ -130,7 +130,7 @@ export function welcomeEmail(username: string, planName: string): { subject: str
   return {
     subject: "Selamat datang di Arunika · WA",
     html: WRAPPER(
-      "Akun Anda aktif! 🎉",
+      "Akun Anda Aktif",
       `<p>Halo <b>${username}</b>,</p>
        <p>Akun Arunika-WA Anda sudah aktif dengan paket <b>${planName}</b>. Silakan masuk dan hubungkan perangkat WhatsApp pertama Anda.</p>`,
     ),
@@ -152,12 +152,13 @@ export function invoicePendingEmail(
   return {
     subject: `Invoice ${orderId} — selesaikan pembayaran paket ${planName}`,
     html: WRAPPER(
-      "Selesaikan Pembayaran 🧾",
+      "Selesaikan Pembayaran",
       `<p>Halo <b>${username}</b>,</p>
        <p>Berikut invoice untuk paket <b>${planName}</b>. Scan QRIS di bawah dengan aplikasi e-wallet/mobile banking Anda — bayar tepat sesuai nominal (termasuk kode unik) supaya otomatis terverifikasi.</p>
        ${INVOICE_TABLE([
          ["No. Invoice", orderId],
          ["Paket", planName],
+         ["Metode Pembayaran", "QRIS"],
          ["Total Bayar", RP(totalAmount)],
          ["Kedaluwarsa", new Date(expiredAt).toLocaleString("id-ID")],
        ])}
@@ -179,12 +180,13 @@ export function paymentConfirmedEmail(
   return {
     subject: `Invoice ${orderId} — pembayaran berhasil, paket Anda aktif`,
     html: WRAPPER(
-      "Pembayaran Diterima ✅",
+      "Pembayaran Diterima",
       `<p>Halo <b>${username}</b>,</p>
        <p>Pembayaran Anda berhasil diverifikasi. Paket <b>${planName}</b> sudah aktif di akun Anda.</p>
        ${INVOICE_TABLE([
          ["No. Invoice", orderId],
          ["Paket", planName],
+         ["Metode Pembayaran", "QRIS"],
          ["Total Dibayar", RP(totalAmount)],
          ["Dibayar pada", new Date(paidAt).toLocaleString("id-ID")],
          ["Status", "LUNAS"],
@@ -213,7 +215,7 @@ export function adminPasswordResetNotifyEmail(username: string, userEmail: strin
   return {
     subject: `[Admin] Permintaan reset password — ${username}`,
     html: WRAPPER(
-      "Permintaan Reset Password 🔐",
+      "Permintaan Reset Password",
       `<p>Ada permintaan reset password di platform.</p>
        ${INVOICE_TABLE([
          ["Username", username],
@@ -226,9 +228,9 @@ export function adminPasswordResetNotifyEmail(username: string, userEmail: strin
 
 export function referralRewardEmail(username: string, days: number, planName: string): { subject: string; html: string } {
   return {
-    subject: `Bonus ${days} hari karena mengajak teman! 🎁`,
+    subject: `Bonus ${days} hari karena mengajak teman`,
     html: WRAPPER(
-      "Terima Kasih Sudah Mengajak Teman! 🎁",
+      "Terima Kasih Sudah Mengajak Teman",
       `<p>Halo <b>${username}</b>,</p>
        <p>Ada yang baru saja mendaftar Arunika-WA pakai kode referral Anda. Sebagai terima kasih, kami tambahkan
        <b>${days} hari</b> masa aktif paket <b>${planName}</b> ke akun Anda — otomatis, tanpa perlu klaim.</p>
@@ -241,7 +243,7 @@ export function subscriptionExpiringEmail(username: string, planName: string, ex
   return {
     subject: `Paket ${planName} Anda akan berakhir`,
     html: WRAPPER(
-      "Segera perpanjang paket Anda ⏰",
+      "Segera Perpanjang Paket Anda",
       `<p>Halo <b>${username}</b>,</p>
        <p>Paket <b>${planName}</b> Anda akan berakhir pada <b>${new Date(expiresAt).toLocaleDateString("id-ID")}</b>. Perpanjang sekarang di halaman Paket Saya supaya perangkat dan fitur Anda tidak turun ke paket Free.</p>`,
     ),

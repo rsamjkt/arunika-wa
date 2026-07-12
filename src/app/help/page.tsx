@@ -2,6 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import {
+  ArrowRight,
+  Bot,
+  ChartColumn,
+  MessageSquare,
+  Megaphone,
+  Users,
+  Webhook,
+} from "lucide-react";
 
 interface Plan {
   id: string;
@@ -19,12 +28,12 @@ const STEPS = [
 ];
 
 const FEATURES = [
-  { icon: "📤", title: "Kirim Pesan", body: "Kirim teks, gambar, file, lokasi, dan kontak dari dashboard atau API." },
-  { icon: "📣", title: "Broadcast", body: "Kirim ke banyak kontak sekaligus, terjadwal atau langsung, dengan variabel nama/nomor." },
-  { icon: "🤖", title: "Auto-Reply", body: "Balasan otomatis berbasis kata kunci, jam operasional, dan pesan sambutan." },
-  { icon: "👥", title: "Tim & Kolaborasi", body: "Staf/agent login terpisah, percakapan bisa ditugaskan, riwayat aktivitas per anggota." },
-  { icon: "🔌", title: "API & Webhook", body: "Integrasikan ke aplikasi Anda sendiri lewat API key, atau terima event real-time via webhook." },
-  { icon: "📊", title: "Laporan", body: "Pantau volume pesan, performa tim, dan penggunaan API dari satu halaman." },
+  { icon: MessageSquare, title: "Kirim Pesan", body: "Kirim teks, gambar, file, lokasi, dan kontak dari dashboard atau API." },
+  { icon: Megaphone, title: "Broadcast", body: "Kirim ke banyak kontak sekaligus, terjadwal atau langsung, dengan variabel nama/nomor." },
+  { icon: Bot, title: "Auto-Reply", body: "Balasan otomatis berbasis kata kunci, jam operasional, dan pesan sambutan." },
+  { icon: Users, title: "Tim & Kolaborasi", body: "Staf/agent login terpisah, percakapan bisa ditugaskan, riwayat aktivitas per anggota." },
+  { icon: Webhook, title: "API & Webhook", body: "Integrasikan ke aplikasi Anda sendiri lewat API key, atau terima event real-time via webhook." },
+  { icon: ChartColumn, title: "Laporan", body: "Pantau volume pesan, performa tim, dan penggunaan API dari satu halaman." },
 ];
 
 const FAQS = [
@@ -55,6 +64,10 @@ const FAQS = [
   {
     q: "Ada program referral?",
     a: "Ada — setiap tenant punya kode referral sendiri (lihat menu Program Referral setelah login). Setiap orang yang mendaftar pakai kode Anda memberi bonus 7 hari masa aktif paket, otomatis.",
+  },
+  {
+    q: "Metode pembayaran apa yang didukung?",
+    a: "QRIS — bisa dibayar dari aplikasi e-wallet atau mobile banking apa pun (GoPay, OVO, Dana, ShopeePay, semua bank). Setelah membuat pesanan, Anda akan menerima invoice berisi kode QRIS lewat email (dan WhatsApp bila nomor HP diisi saat daftar); status pembayaran terverifikasi otomatis begitu dibayar.",
   },
 ];
 
@@ -189,7 +202,20 @@ export default function HelpPage() {
           <div className="grid3" style={{ gap: 14 }}>
             {FEATURES.map((f) => (
               <div className="card cpad" key={f.title} style={{ padding: 18 }}>
-                <div style={{ fontSize: "1.4rem", marginBottom: 8 }}>{f.icon}</div>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "#0a3d36",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 10,
+                  }}
+                >
+                  <f.icon size={17} color="#5eead4" strokeWidth={2} />
+                </div>
                 <strong style={{ fontSize: "0.88rem", display: "block", marginBottom: 6 }}>{f.title}</strong>
                 <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", margin: 0 }}>{f.body}</p>
               </div>
