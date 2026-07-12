@@ -20,6 +20,7 @@ import { deleteAllForOwner as deleteCampaignsForOwner } from "@/lib/campaigns";
 import { deleteAllForOwner as deleteApiKeysForOwner } from "@/lib/apikeys";
 import { deleteSettingsForOwner } from "@/lib/autoreply";
 import { deleteConfigForOwner } from "@/lib/webhookConfig";
+import { deleteWebhookLogForOwner } from "@/lib/webhookLog";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -121,6 +122,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   deleteApiKeysForOwner(id);
   deleteSettingsForOwner(id);
   deleteConfigForOwner(id);
+  deleteWebhookLogForOwner(id);
 
   for (const s of staff) {
     deleteStaff(id, s.id);
