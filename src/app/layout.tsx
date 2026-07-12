@@ -16,7 +16,7 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Arunika · WA",
-  description: "Dashboard WhatsApp Gateway berbasis WAHA.",
+  description: "Dashboard WhatsApp Gateway untuk bisnis Anda.",
 };
 
 const THEME_INIT_SCRIPT = `

@@ -134,9 +134,9 @@ export default function DashboardPage() {
 
   return (
     <div>
-      {updateStatus?.updateAvailable && (
+      {me?.role === "superadmin" && updateStatus?.updateAvailable && (
         <div className="callout warn">
-          <b>🔔 Update WAHA tersedia</b>
+          <b>Update engine tersedia</b>
           Image <span className="mono">devlikeapro/waha:latest</span> di Docker Hub sudah diperbarui
           {updateStatus.remotePushedAt
             ? ` pada ${new Date(updateStatus.remotePushedAt).toLocaleString("id-ID")}`
@@ -191,9 +191,9 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-      {server?.version && (
+      {me?.role === "superadmin" && server?.version && (
         <p style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 14 }}>
-          Mesin: <strong className="mono">{server.version.engine ?? "WEBJS"}</strong> · WAHA{" "}
+          Mesin: <strong className="mono">{server.version.engine ?? "WEBJS"}</strong> · Engine{" "}
           <span className="mono">{server.version.version}</span>
         </p>
       )}

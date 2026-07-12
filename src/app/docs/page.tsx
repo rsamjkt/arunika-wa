@@ -543,8 +543,8 @@ const TAGS: Tag[] = [
         id: "server",
         method: "GET",
         path: "/api/server",
-        summary: "Info server WAHA",
-        description: "Versi WAHA dan engine yang sedang dipakai — ditampilkan di bagian atas Dashboard.",
+        summary: "Info server engine",
+        description: "Versi dan engine pesan yang sedang dipakai — ditampilkan di bagian atas Dashboard.",
         example: `curl http://10.10.1.7:4000/api/server`,
         tryIt: { pathTemplate: "/api/server" },
       },
@@ -579,8 +579,8 @@ export default function DocsPage() {
             Arunika·WA API<span className="ver">v1</span>
           </h1>
           <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem", maxWidth: "56ch" }}>
-            Lapisan API milik Arunika·WA sendiri yang meneruskan permintaan ke WAHA (mesin
-            WhatsApp). WAHA punya API key sendiri yang disimpan aman di server dan tidak pernah
+            Lapisan API milik Arunika·WA sendiri yang meneruskan permintaan ke mesin pengirim pesan
+            WhatsApp internal kami. Kredensial mesin disimpan aman di server dan tidak pernah
             keluar ke client. {totalEndpoints} endpoint di {TAGS.length} kategori.
           </p>
         </div>

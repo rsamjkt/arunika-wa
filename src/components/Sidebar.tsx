@@ -135,7 +135,7 @@ export default function Sidebar({
           </div>
         ))}
       </nav>
-      <div className="foot mono">WAHA · WEBJS engine</div>
+      <div className="foot mono">Arunika Engine · WEBJS</div>
     </aside>
   );
 }
