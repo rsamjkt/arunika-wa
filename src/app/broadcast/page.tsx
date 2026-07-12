@@ -288,16 +288,14 @@ function BroadcastPageInner() {
               <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
                 <button
                   type="button"
-                  className={`btn secondary${audienceMode === "contacts" ? "" : ""}`}
-                  style={audienceMode === "contacts" ? { boxShadow: "inset 0 0 0 2px var(--primary)" } : undefined}
+                  className={audienceMode === "contacts" ? "btn" : "btn secondary"}
                   onClick={() => setAudienceMode("contacts")}
                 >
                   Dari Kontak
                 </button>
                 <button
                   type="button"
-                  className="btn secondary"
-                  style={audienceMode === "manual" ? { boxShadow: "inset 0 0 0 2px var(--primary)" } : undefined}
+                  className={audienceMode === "manual" ? "btn" : "btn secondary"}
                   onClick={() => setAudienceMode("manual")}
                 >
                   Tempel Manual
