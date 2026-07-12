@@ -9,6 +9,8 @@ export type QuotaUsage = { month: string; sent: number };
 export type User = {
   id: string;
   username: string;
+  email: string | null;
+  phone: string | null;
   passwordHash: string;
   salt: string;
   createdAt: string;
@@ -43,6 +45,8 @@ function seed(): User[] {
   const seeded: User = {
     id: crypto.randomUUID(),
     username: process.env.ADMIN_USERNAME || "admin",
+    email: null,
+    phone: null,
     passwordHash: hashPassword(process.env.ADMIN_PASSWORD || "admin", salt),
     salt,
     createdAt: new Date().toISOString(),
@@ -59,10 +63,12 @@ function seed(): User[] {
 function migrate(users: User[]): User[] {
   let changed = false;
   const migrated = users.map((u) => {
-    if (u.role && u.planId && u.subscriptionStatus && u.quotaUsage) return u;
+    if (u.role && u.planId && u.subscriptionStatus && u.quotaUsage && "email" in u && "phone" in u) return u;
     changed = true;
     return {
       ...u,
+      email: u.email ?? null,
+      phone: u.phone ?? null,
       role: u.role ?? ("superadmin" as const),
       planId: u.planId ?? getFreePlan().id,
       subscriptionStatus: u.subscriptionStatus ?? ("active" as const),
@@ -104,6 +110,8 @@ export function createUser(username: string, password: string): PublicUser {
   const user: User = {
     id: crypto.randomUUID(),
     username,
+    email: null,
+    phone: null,
     passwordHash: hashPassword(password, salt),
     salt,
     createdAt: new Date().toISOString(),
@@ -122,6 +130,8 @@ export function createUser(username: string, password: string): PublicUser {
 export function createTenant(
   username: string,
   password: string,
+  email: string,
+  phone: string | null,
   planId: string,
   subscriptionStatus: "active" | "pending_payment",
 ): PublicUser {
@@ -129,10 +139,15 @@ export function createTenant(
   if (users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
     throw new Error("Username sudah dipakai");
   }
+  if (users.some((u) => u.email && u.email.toLowerCase() === email.toLowerCase())) {
+    throw new Error("Email sudah terdaftar");
+  }
   const salt = crypto.randomBytes(16).toString("hex");
   const user: User = {
     id: crypto.randomUUID(),
     username,
+    email,
+    phone,
     passwordHash: hashPassword(password, salt),
     salt,
     createdAt: new Date().toISOString(),
@@ -168,6 +183,10 @@ export function changePassword(id: string, password: string) {
 export function findUserById(id: string): PublicUser | null {
   const user = all().find((u) => u.id === id);
   return user ? toPublic(user) : null;
+}
+
+export function findUserByEmail(email: string): User | null {
+  return all().find((u) => u.email && u.email.toLowerCase() === email.toLowerCase()) ?? null;
 }
 
 export function listTenants(): PublicUser[] {
@@ -207,6 +226,21 @@ export function listExpiredSubscriptions(): User[] {
       u.subscriptionStatus === "active" &&
       u.subscriptionExpiresAt &&
       new Date(u.subscriptionExpiresAt).getTime() < now,
+  );
+}
+
+/** Tenants whose subscription expires within `days` days (and hasn't
+ * already expired — that's listExpiredSubscriptions' job). */
+export function listSubscriptionsExpiringSoon(days: number): User[] {
+  const now = Date.now();
+  const horizon = now + days * 24 * 60 * 60 * 1000;
+  return all().filter(
+    (u) =>
+      u.role === "tenant" &&
+      u.subscriptionStatus === "active" &&
+      u.subscriptionExpiresAt &&
+      new Date(u.subscriptionExpiresAt).getTime() > now &&
+      new Date(u.subscriptionExpiresAt).getTime() <= horizon,
   );
 }
 

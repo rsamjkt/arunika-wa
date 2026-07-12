@@ -3,12 +3,19 @@ import { getSession } from "@/lib/sessions";
 import { validateApiKey } from "@/lib/apikeys";
 import { getFullUser } from "@/lib/users";
 
-const PUBLIC_PATHS = new Set(["/login", "/api/auth/login", "/api/register"]);
+const PUBLIC_PATHS = new Set([
+  "/login",
+  "/api/auth/login",
+  "/api/register",
+  "/forgot-password",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+]);
 // GET is a public plan catalog (needed for the registration page); the
 // route itself gates POST/PATCH/DELETE behind requireSuperadmin().
-// /register(/pay/...) and /api/qris/status/... must be reachable before
-// a session/account exists, during sign-up and while paying for a plan.
-const PUBLIC_PREFIXES = ["/api/plans", "/register", "/api/qris/status"];
+// /register(/pay/...), /api/qris/status/..., and /reset-password/[token]
+// must be reachable before a session/account exists.
+const PUBLIC_PREFIXES = ["/api/plans", "/register", "/api/qris/status", "/reset-password"];
 const SESSION_COOKIE = "arunika_session";
 // User & API-key management must only ever be reachable from a logged-in
 // browser session — never via X-Api-Key, even though it lives under /api/.

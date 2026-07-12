@@ -39,8 +39,12 @@ export default function RegisterPage() {
   const [planId, setPlanId] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   useEffect(() => {
     fetch("/api/plans")
@@ -71,7 +75,13 @@ export default function RegisterPage() {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, planId }),
+        body: JSON.stringify({
+          username,
+          password,
+          email: email.trim(),
+          phone: phone.trim() || undefined,
+          planId,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Gagal mendaftar");
@@ -212,11 +222,37 @@ export default function RegisterPage() {
                 autoComplete="new-password"
               />
             </div>
+            <div className="field-group">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                className="field"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+              />
+              <p style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginTop: 4 }}>
+                Untuk notifikasi pembayaran dan reset password.
+              </p>
+            </div>
+            <div className="field-group">
+              <label htmlFor="phone">Nomor HP (opsional)</label>
+              <input
+                id="phone"
+                type="tel"
+                className="field"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                autoComplete="tel"
+                placeholder="08xxxxxxxxxx"
+              />
+            </div>
             {error && <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14 }}>{error}</p>}
             <button
               className="btn"
               type="submit"
-              disabled={busy || !planId || username.trim().length < 3 || password.length < 6}
+              disabled={busy || !planId || username.trim().length < 3 || password.length < 6 || !emailValid}
               style={{ width: "100%" }}
             >
               {busy ? "Memproses…" : "Daftar"}

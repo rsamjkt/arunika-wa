@@ -64,7 +64,12 @@ function LoginPageInner() {
         </div>
 
         <div className="field-group">
-          <label htmlFor="password">Password</label>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <label htmlFor="password">Password</label>
+            <a href="/forgot-password" style={{ fontSize: "0.75rem", color: "var(--primary)" }}>
+              Lupa password?
+            </a>
+          </div>
           <input
             id="password"
             type="password"
