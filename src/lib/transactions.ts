@@ -58,7 +58,8 @@ export function activateFromPaidTransaction(orderId: string, paidAt?: string): b
   const plan = getPlan(tx.planId);
   if (!plan) return false;
 
-  markTransactionStatus(orderId, "PAID", paidAt ?? new Date().toISOString());
+  const resolvedPaidAt = paidAt ?? new Date().toISOString();
+  markTransactionStatus(orderId, "PAID", resolvedPaidAt);
   const expiresAt = plan.durationDays
     ? new Date(Date.now() + plan.durationDays * 24 * 60 * 60 * 1000).toISOString()
     : null;
@@ -66,7 +67,13 @@ export function activateFromPaidTransaction(orderId: string, paidAt?: string): b
 
   const user = getFullUser(tx.userId);
   if (user?.email) {
-    const { subject, html } = paymentConfirmedEmail(user.username, plan.name);
+    const { subject, html } = paymentConfirmedEmail(
+      user.username,
+      plan.name,
+      tx.orderId,
+      tx.totalAmount,
+      resolvedPaidAt,
+    );
     sendEmail(user.email, subject, html).catch(() => {});
   }
   return true;

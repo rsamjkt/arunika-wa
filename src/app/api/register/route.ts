@@ -4,7 +4,7 @@ import { createTenant, deleteUser } from "@/lib/users";
 import { getPlan } from "@/lib/plans";
 import { createTransaction, KlikQrisError } from "@/lib/klikqris";
 import { createTransactionRecord } from "@/lib/transactions";
-import { sendEmail, welcomeEmail } from "@/lib/email";
+import { invoicePendingEmail, sendEmail, welcomeEmail } from "@/lib/email";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -59,6 +59,18 @@ export async function POST(req: NextRequest) {
       expiredAt: tx.expired_at,
       createdAt: tx.created_at,
     });
+
+    const { subject, html } = invoicePendingEmail(
+      tenant.username,
+      plan.name,
+      tx.order_id,
+      Number(tx.total_amount),
+      tx.qris_image ?? "",
+      tx.expired_at,
+      `${req.nextUrl.origin}/register/pay/${tx.order_id}`,
+    );
+    sendEmail(email.trim(), subject, html).catch(() => {});
+
     return NextResponse.json({
       ok: true,
       requiresPayment: true,
