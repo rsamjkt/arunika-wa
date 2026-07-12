@@ -284,6 +284,19 @@ export function findUserByEmail(email: string): User | null {
   return all().find((u) => u.email && u.email.toLowerCase() === email.toLowerCase()) ?? null;
 }
 
+/** Derived, not stored — short, stable, and unique since it's a slice of
+ * the user's own id. Only tenant owners can be referrers (not staff/
+ * superadmin — staff share the owner's plan, referring under their own
+ * code wouldn't mean anything). */
+export function getReferralCode(user: { id: string }): string {
+  return user.id.slice(0, 8).toUpperCase();
+}
+
+export function findUserByReferralCode(code: string): User | null {
+  const normalized = code.trim().toUpperCase();
+  return all().find((u) => u.role === "tenant" && getReferralCode(u) === normalized) ?? null;
+}
+
 export function listTenants(): PublicUser[] {
   return all()
     .filter((u) => u.role === "tenant")

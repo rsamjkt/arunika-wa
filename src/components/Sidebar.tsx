@@ -56,6 +56,7 @@ const TENANT_GROUP: NavGroup = {
   items: [
     { href: "/account/plan", label: "Paket Saya", icon: "💳" },
     { href: "/settings/team", label: "Kelola Tim", icon: "👥" },
+    { href: "/account/referral", label: "Program Referral", icon: "🎁" },
   ],
 };
 

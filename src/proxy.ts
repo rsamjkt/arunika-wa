@@ -27,6 +27,7 @@ const COOKIE_ONLY_PREFIXES = [
   "/api/account",
   "/api/team",
   "/api/admin",
+  "/api/referrals",
 ];
 // Called by an external service, not a browser or an app-issued API key —
 // each authenticates the request itself (HMAC / stored signature) instead.
@@ -43,7 +44,14 @@ const ADMIN_PREFIXES = ["/admin", "/settings/users"];
 // Tenant-owner-only area — billing and team membership stay off-limits to
 // staff logins, which share the owner's plan/quota/devices but not control
 // over them.
-const TENANT_OWNER_PREFIXES = ["/settings/team", "/api/team", "/account/plan", "/api/account"];
+const TENANT_OWNER_PREFIXES = [
+  "/settings/team",
+  "/api/team",
+  "/account/plan",
+  "/api/account",
+  "/account/referral",
+  "/api/referrals",
+];
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
