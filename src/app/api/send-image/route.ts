@@ -5,6 +5,7 @@ import { getCurrentApiKey } from "@/lib/currentUser";
 import { getSessionOwner, requireSessionAccess } from "@/lib/tenancy";
 import { hasQuotaRemaining, quotaExceededResponse } from "@/lib/authz";
 import { incrementQuotaUsage } from "@/lib/users";
+import { isSafeExternalUrl } from "@/lib/urlSafety";
 
 export async function POST(req: NextRequest) {
   const { session, chatId, file, caption } = await req.json();
@@ -16,6 +17,9 @@ export async function POST(req: NextRequest) {
       },
       { status: 400 },
     );
+  }
+  if (file.url && !isSafeExternalUrl(file.url)) {
+    return NextResponse.json({ error: "URL file tidak valid atau menunjuk ke alamat internal" }, { status: 400 });
   }
   const { user, response } = await requireSessionAccess(session);
   if (response) return response;

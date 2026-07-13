@@ -11,6 +11,7 @@ import {
   type LeadCategory,
 } from "./leads";
 import { getPlaceDetails, searchPlaces } from "./googlePlaces";
+import { isSafeExternalUrl } from "./urlSafety";
 
 const SESSION = process.env.ADMIN_NOTIFY_SESSION ?? "";
 const MIN_DELAY_MS = 5000;
@@ -68,22 +69,7 @@ export async function searchAndSaveLeads(
   return { found: results.length, added };
 }
 
-// "website" comes from Google Places' own data, not a random end user, but
-// it's still a third-party-supplied URL we fetch server-side — reject
-// anything pointing at loopback/private/link-local addresses so a crafted
-// listing can't turn this into an internal-network probe (this same
-// server also runs the WA engine on localhost:3000).
-const PRIVATE_HOST_RE = /^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|0\.0\.0\.0$|\[?::1\]?$)/i;
 const MAX_FETCH_BYTES = 512 * 1024;
-
-function isSafeExternalUrl(raw: string): boolean {
-  try {
-    const url = new URL(raw);
-    return (url.protocol === "http:" || url.protocol === "https:") && !PRIVATE_HOST_RE.test(url.hostname);
-  } catch {
-    return false;
-  }
-}
 
 async function readCapped(body: ReadableStream<Uint8Array>, maxBytes: number): Promise<string> {
   const reader = body.getReader();
