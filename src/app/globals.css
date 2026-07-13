@@ -943,6 +943,7 @@ table.dtable .actions-cell button {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  position: relative;
 }
 .thread .head {
   display: flex;
@@ -1025,6 +1026,59 @@ table.dtable .actions-cell button {
 }
 a.media-fallback:hover {
   text-decoration: underline;
+}
+.ack {
+  margin-left: 4px;
+  letter-spacing: -1px;
+  opacity: 0.75;
+}
+.ack.read {
+  color: #53bdeb;
+  opacity: 1;
+}
+.new-msgs-pill {
+  position: absolute;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--surface);
+  border: none;
+  border-radius: 100px;
+  padding: 7px 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  z-index: 5;
+}
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: zoom-out;
+}
+.lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 8px;
+}
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 1rem;
+  cursor: pointer;
 }
 .msg-row {
   display: flex;
