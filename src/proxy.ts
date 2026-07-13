@@ -24,6 +24,7 @@ const COOKIE_ONLY_PREFIXES = [
   "/api/api-keys",
   "/api/webhook-config",
   "/api/autoreply",
+  "/api/ai-autoreply",
   "/api/account",
   "/api/team",
   "/api/admin",

@@ -18,6 +18,14 @@ interface AutoReplySettings {
   rules: KeywordRule[];
 }
 
+interface AISettings {
+  enabled: boolean;
+  businessName: string;
+  knowledgeBase: string;
+  tone: string;
+  configured: boolean;
+}
+
 const DAY_LABELS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
 export default function FlowPage() {
@@ -30,6 +38,9 @@ export default function FlowPage() {
   const [ruleReply, setRuleReply] = useState("");
   const [addingRule, setAddingRule] = useState(false);
 
+  const [ai, setAi] = useState<AISettings | null>(null);
+  const [aiSaving, setAiSaving] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -40,9 +51,36 @@ export default function FlowPage() {
     }
   }, []);
 
+  const loadAI = useCallback(async () => {
+    const res = await fetch("/api/ai-autoreply");
+    if (res.ok) setAi(await res.json());
+  }, []);
+
   useEffect(() => {
     load();
-  }, [load]);
+    loadAI();
+  }, [load, loadAI]);
+
+  async function saveAI(patch: Partial<AISettings>, key: string) {
+    if (!ai) return;
+    const next = { ...ai, ...patch };
+    setAi(next);
+    setAiSaving(key);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/ai-autoreply", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) throw new Error("Gagal menyimpan");
+      setMessage({ ok: true, text: "Perubahan disimpan." });
+    } catch (err) {
+      setMessage({ ok: false, text: err instanceof Error ? err.message : "Gagal menyimpan" });
+    } finally {
+      setAiSaving(null);
+    }
+  }
 
   async function saveSettings(patch: Partial<AutoReplySettings>, key: string) {
     if (!settings) return;
@@ -121,6 +159,58 @@ export default function FlowPage() {
   return (
     <div className="grid2" style={{ gridTemplateColumns: "1.3fr 1fr", alignItems: "start", gap: 22 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {ai && (
+          <div className="card cpad" style={{ padding: 20 }}>
+            <div className="ch">
+              <div>
+                <h2 style={{ fontSize: "1rem" }}>
+                  Balasan AI <span className="chip">Baru</span>
+                </h2>
+                <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 4 }}>
+                  Balas pesan pelanggan pakai AI berdasarkan info bisnis Anda sendiri — bukan cuma cocokkan kata kunci.
+                  Dipakai kalau tidak ada aturan kata kunci di bawah yang cocok.
+                </p>
+              </div>
+              <button
+                className={`toggle${ai.enabled ? " on" : ""}`}
+                style={{ marginLeft: "auto", flexShrink: 0 }}
+                onClick={() => saveAI({ enabled: !ai.enabled }, "aiEnabled")}
+                disabled={aiSaving === "aiEnabled" || !ai.configured}
+                aria-label="Aktifkan balasan AI"
+              />
+            </div>
+            {!ai.configured && (
+              <p style={{ fontSize: "0.78rem", color: "var(--warning)", marginBottom: 12 }}>
+                Fitur ini belum diaktifkan di server platform — hubungi admin.
+              </p>
+            )}
+            <label className="lbl">Nama bisnis Anda</label>
+            <input
+              className="field"
+              style={{ marginBottom: 10 }}
+              value={ai.businessName}
+              onChange={(e) => setAi({ ...ai, businessName: e.target.value })}
+              onBlur={() => saveAI({ businessName: ai.businessName }, "aiName")}
+              placeholder="mis. Toko Kue Bahagia"
+              disabled={!ai.configured}
+            />
+            <label className="lbl">Info bisnis / FAQ (dipakai AI untuk jawab pelanggan)</label>
+            <textarea
+              className="compose"
+              style={{ minHeight: 140 }}
+              value={ai.knowledgeBase}
+              onChange={(e) => setAi({ ...ai, knowledgeBase: e.target.value })}
+              onBlur={() => saveAI({ knowledgeBase: ai.knowledgeBase }, "aiKb")}
+              placeholder={"Contoh:\nJam buka: Senin-Sabtu 09.00-20.00\nProduk: kue ulang tahun custom mulai Rp150.000\nPengiriman: Gojek/Grab area Jakarta, ongkir ditanggung pembeli\nPembayaran: transfer BCA atau QRIS"}
+              disabled={!ai.configured}
+            />
+            <p style={{ fontSize: "0.75rem", color: "var(--ink-soft)", marginTop: 8 }}>
+              AI hanya menjawab berdasarkan info di atas — kalau tidak tahu, dia bilang jujur akan menghubungkan ke
+              tim, tidak mengarang jawaban.
+            </p>
+          </div>
+        )}
+
         <div className="card cpad" style={{ padding: 20 }}>
           <div className="ch">
             <div>

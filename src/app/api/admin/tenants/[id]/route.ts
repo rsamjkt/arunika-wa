@@ -19,6 +19,7 @@ import { deleteAllForOwner as deleteTemplatesForOwner } from "@/lib/templates";
 import { deleteAllForOwner as deleteCampaignsForOwner } from "@/lib/campaigns";
 import { deleteAllForOwner as deleteApiKeysForOwner } from "@/lib/apikeys";
 import { deleteSettingsForOwner } from "@/lib/autoreply";
+import { deleteAISettingsForOwner } from "@/lib/aiAutoReply";
 import { deleteConfigForOwner } from "@/lib/webhookConfig";
 import { deleteWebhookLogForOwner } from "@/lib/webhookLog";
 import { deleteReferralsForOwner } from "@/lib/referrals";
@@ -122,6 +123,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   deleteCampaignsForOwner(id);
   deleteApiKeysForOwner(id);
   deleteSettingsForOwner(id);
+  deleteAISettingsForOwner(id);
   deleteConfigForOwner(id);
   deleteWebhookLogForOwner(id);
   deleteReferralsForOwner(id);
