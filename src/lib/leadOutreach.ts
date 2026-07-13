@@ -68,17 +68,52 @@ export async function searchAndSaveLeads(
   return { found: results.length, added };
 }
 
+// "website" comes from Google Places' own data, not a random end user, but
+// it's still a third-party-supplied URL we fetch server-side — reject
+// anything pointing at loopback/private/link-local addresses so a crafted
+// listing can't turn this into an internal-network probe (this same
+// server also runs the WA engine on localhost:3000).
+const PRIVATE_HOST_RE = /^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|0\.0\.0\.0$|\[?::1\]?$)/i;
+const MAX_FETCH_BYTES = 512 * 1024;
+
+function isSafeExternalUrl(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    return (url.protocol === "http:" || url.protocol === "https:") && !PRIVATE_HOST_RE.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+async function readCapped(body: ReadableStream<Uint8Array>, maxBytes: number): Promise<string> {
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.length;
+    chunks.push(value);
+    if (total >= maxBytes) {
+      reader.cancel().catch(() => {});
+      break;
+    }
+  }
+  return Buffer.concat(chunks.map((c) => Buffer.from(c))).toString("utf8");
+}
+
 /** Fetches a business's homepage and regex-scans for a contact email.
  * Best-effort only — Google Places has no email field, most sites won't
  * yield a match, and that's fine: the WA offer still goes out regardless. */
 async function bestEffortEmailFromWebsite(website: string): Promise<string | null> {
+  if (!isSafeExternalUrl(website)) return null;
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 6000);
     const res = await fetch(website, { signal: controller.signal });
     clearTimeout(timeout);
-    if (!res.ok) return null;
-    const html = await res.text();
+    if (!res.ok || !res.body) return null;
+    const html = await readCapped(res.body, MAX_FETCH_BYTES);
     const matches = html.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) ?? [];
     const blocked = /\.(png|jpg|jpeg|gif|svg|webp)$|sentry|wixpress|schema\.org|example\.com/i;
     const found = matches.find((m) => !blocked.test(m));
