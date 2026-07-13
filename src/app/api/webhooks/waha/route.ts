@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { sendText } from "@/lib/waha";
+import { getMessages, sendText } from "@/lib/waha";
 import { logEvent } from "@/lib/messageLog";
 import { deliverOutboundWebhook } from "@/lib/webhookConfig";
 import { getSessionOwner } from "@/lib/tenancy";
@@ -12,6 +12,8 @@ import {
   markSeenContact,
   matchKeywordRule,
 } from "@/lib/autoreply";
+import { canUseAIToday, getAISettings, recordAIUsage, type AIAutoReplySettings } from "@/lib/aiAutoReply";
+import { generateAIReply, isAIConfigured } from "@/lib/aiClient";
 
 const WEBHOOK_SECRET = process.env.WAHA_WEBHOOK_SECRET ?? "";
 
@@ -39,26 +41,70 @@ interface WahaWebhookPayload {
 
 async function runAutoReply(ownerId: string, session: string, chatId: string, text: string) {
   const settings = getSettings(ownerId);
-  if (!settings.enabled) return;
+  const aiSettings = getAISettings(ownerId);
+  if (!settings.enabled && !aiSettings.enabled) return;
 
   const isNewContact = !hasSeenContact(session, chatId);
   markSeenContact(session, chatId);
 
-  if (isNewContact && settings.welcomeEnabled) {
-    await sendReply(ownerId, session, chatId, settings.welcomeMessage);
-    return;
-  }
-
-  if (!isWithinBusinessHours(settings)) {
-    if (settings.outsideHoursEnabled) {
-      await sendReply(ownerId, session, chatId, settings.outsideHoursMessage);
+  if (settings.enabled) {
+    if (isNewContact && settings.welcomeEnabled) {
+      await sendReply(ownerId, session, chatId, settings.welcomeMessage);
+      return;
     }
-    return;
+
+    if (!isWithinBusinessHours(settings)) {
+      if (settings.outsideHoursEnabled) {
+        await sendReply(ownerId, session, chatId, settings.outsideHoursMessage);
+      }
+      return;
+    }
+
+    const rule = matchKeywordRule(settings, text);
+    if (rule) {
+      await sendReply(ownerId, session, chatId, rule.reply);
+      return;
+    }
   }
 
-  const rule = matchKeywordRule(settings, text);
-  if (rule) {
-    await sendReply(ownerId, session, chatId, rule.reply);
+  // AI auto-reply is a fallback layer, independent of the keyword bot's own
+  // on/off switch — only reached when no keyword rule matched (or keyword
+  // auto-reply is off entirely).
+  if (aiSettings.enabled) {
+    await runAIAutoReply(ownerId, session, chatId, aiSettings);
+  }
+}
+
+function buildSystemPrompt(settings: AIAutoReplySettings): string {
+  return [
+    `Anda adalah asisten customer service WhatsApp untuk ${settings.businessName || "sebuah bisnis"}.`,
+    `Gaya bicara: ${settings.tone}.`,
+    `Jawab HANYA berdasarkan informasi bisnis di bawah ini. Jika pertanyaan pelanggan tidak bisa dijawab dari informasi tersebut, katakan dengan jujur bahwa Anda akan menghubungkan ke tim, jangan mengarang jawaban.`,
+    `--- Informasi bisnis ---`,
+    settings.knowledgeBase.trim() || "(belum ada informasi tambahan yang diberikan)",
+    `--- selesai ---`,
+    `Jawab singkat (maksimal 3-4 kalimat pendek), dalam Bahasa Indonesia, gaya percakapan WhatsApp — bukan email formal.`,
+  ].join("\n");
+}
+
+async function runAIAutoReply(ownerId: string, session: string, chatId: string, aiSettings: AIAutoReplySettings) {
+  if (!isAIConfigured() || !canUseAIToday(ownerId)) return;
+  try {
+    const history = await getMessages(session, chatId, 10).catch(() => []);
+    const transcript = history
+      .slice()
+      .reverse()
+      .map((m) => `${m.fromMe ? "Anda" : "Pelanggan"}: ${m.body || (m.hasMedia ? "[mengirim media]" : "")}`)
+      .join("\n");
+
+    const reply = await generateAIReply(
+      buildSystemPrompt(aiSettings),
+      `${transcript}\n\nBalas pesan terakhir dari pelanggan di atas.`,
+    );
+    recordAIUsage(ownerId);
+    await sendReply(ownerId, session, chatId, reply);
+  } catch (err) {
+    console.error("[ai-autoreply] failed:", err);
   }
 }
 
