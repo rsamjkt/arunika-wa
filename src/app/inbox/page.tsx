@@ -38,6 +38,7 @@ interface WAMessage {
   body: string;
   hasMedia?: boolean;
   media?: WAMediaInfo | null;
+  ack?: number;
 }
 
 interface TeamMember {
@@ -90,15 +91,26 @@ function formatTime(ts?: number) {
   return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
 }
 
-function MediaContent({ media }: { media: WAMediaInfo }) {
+function AckTicks({ ack }: { ack?: number }) {
+  if (ack === undefined || ack < 0) return null;
+  if (ack === 0) return <span className="ack">🕐</span>;
+  if (ack === 1) return <span className="ack">✓</span>;
+  return <span className={`ack${ack >= 3 ? " read" : ""}`}>✓✓</span>;
+}
+
+function MediaContent({ media, onOpen }: { media: WAMediaInfo; onOpen: (url: string) => void }) {
   if (media.error) {
     return <div className="media-fallback">Media gagal dimuat</div>;
   }
   if (media.mimetype.startsWith("image/")) {
     return (
-      <a href={media.url} target="_blank" rel="noopener noreferrer">
-        <img src={media.url} alt="Gambar" className="bub-media" loading="lazy" />
-      </a>
+      <img
+        src={media.url}
+        alt="Gambar"
+        className="bub-media"
+        loading="lazy"
+        onClick={() => onOpen(media.url)}
+      />
     );
   }
   if (media.mimetype.startsWith("video/")) {
@@ -138,6 +150,8 @@ function InboxPageInner() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<WAMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [hasNewBelow, setHasNewBelow] = useState(false);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [sendingImage, setSendingImage] = useState(false);
@@ -263,6 +277,7 @@ function InboxPageInner() {
     setMessagesLoading(true);
     setReplyTo(null);
     setMessages([]);
+    setHasNewBelow(false);
     lastMsgIdRef.current = null;
     forceScrollRef.current = true;
     if (!activeChatId) return;
@@ -288,12 +303,17 @@ function InboxPageInner() {
     const box = msgsBoxRef.current;
     const nearBottom = !box || box.scrollHeight - box.scrollTop - box.clientHeight < 150;
 
+    if (isNewMessage && !nearBottom && !forceScrollRef.current) {
+      setHasNewBelow(true);
+    }
+
     if (forceScrollRef.current || (isNewMessage && nearBottom)) {
       // Deferred: calling scrollIntoView synchronously inside this effect is
       // unreliable here (observed no-op in production even though layout
       // numbers already look final) — a macrotask delay lets it settle.
       setTimeout(() => msgsEndRef.current?.scrollIntoView({ block: "end" }), 50);
       forceScrollRef.current = false;
+      setHasNewBelow(false);
     }
   }, [messages]);
 
@@ -546,6 +566,7 @@ function InboxPageInner() {
   const activeChat = chats.find((c) => c.id === activeChatId);
 
   return (
+    <>
     <div className="inbox-shell">
       <div className="inbox-left">
         <div className="sess-switch">
@@ -731,17 +752,29 @@ function InboxPageInner() {
                 </span>
               </div>
             )}
-            <div className="msgs" ref={msgsBoxRef}>
+            <div
+              className="msgs"
+              ref={msgsBoxRef}
+              onScroll={(e) => {
+                const box = e.currentTarget;
+                if (box.scrollHeight - box.scrollTop - box.clientHeight < 150) {
+                  setHasNewBelow(false);
+                }
+              }}
+            >
               {messagesLoading && messages.length === 0 && (
                 <div style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>Memuat pesan…</div>
               )}
               {messages.map((m) => (
                 <div key={m.id} className={`msg-row ${m.fromMe ? "out" : "in"}`}>
                   <div className={`bub ${m.fromMe ? "out" : "in"}`}>
-                    {m.hasMedia && m.media && <MediaContent media={m.media} />}
+                    {m.hasMedia && m.media && <MediaContent media={m.media} onOpen={setLightbox} />}
                     {m.hasMedia && !m.media && <div className="media-fallback">📎 Media tidak tersedia</div>}
                     {m.body && <div className={m.hasMedia ? "bub-caption" : undefined}>{m.body}</div>}
-                    <span className="t mono">{formatTime(m.timestamp)}</span>
+                    <span className="t mono">
+                      {formatTime(m.timestamp)}
+                      {m.fromMe && <AckTicks ack={m.ack} />}
+                    </span>
                   </div>
                   <div className="msg-actions">
                     <button
@@ -782,6 +815,18 @@ function InboxPageInner() {
               ))}
               <div ref={msgsEndRef} />
             </div>
+            {hasNewBelow && (
+              <button
+                type="button"
+                className="new-msgs-pill"
+                onClick={() => {
+                  msgsEndRef.current?.scrollIntoView({ block: "end" });
+                  setHasNewBelow(false);
+                }}
+              >
+                ↓ Pesan baru
+              </button>
+            )}
             {imageError && (
               <p style={{ color: "var(--danger)", fontSize: "0.78rem", padding: "0 18px" }}>
                 {imageError}
@@ -889,5 +934,14 @@ function InboxPageInner() {
         )}
       </div>
     </div>
+    {lightbox && (
+      <div className="lightbox" onClick={() => setLightbox(null)}>
+        <img src={lightbox} alt="Gambar" />
+        <button type="button" className="lightbox-close" onClick={() => setLightbox(null)}>
+          ✕
+        </button>
+      </div>
+    )}
+    </>
   );
 }
