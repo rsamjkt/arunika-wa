@@ -71,8 +71,31 @@ async function runAutoReply(ownerId: string, session: string, chatId: string, te
   // on/off switch — only reached when no keyword rule matched (or keyword
   // auto-reply is off entirely).
   if (aiSettings.enabled) {
-    await runAIAutoReply(ownerId, session, chatId, aiSettings);
+    scheduleAIAutoReply(ownerId, session, chatId, aiSettings);
   }
+}
+
+// Debounces rapid-fire messages from the same chat (very common on
+// WhatsApp — people send 2-3 short messages in a row instead of one).
+// Without this, each message would independently trigger its own paid AI
+// call and its own reply, producing disjointed multi-message bursts and
+// multiplying cost for what should be a single coherent answer. Keyed by
+// session+chat; in-memory is fine since this is a persistent `next start`
+// process (same pattern as campaigns.ts's activeCampaigns Set).
+const aiDebounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const AI_DEBOUNCE_MS = 3000;
+
+function scheduleAIAutoReply(ownerId: string, session: string, chatId: string, aiSettings: AIAutoReplySettings) {
+  const key = `${session}:${chatId}`;
+  const existing = aiDebounceTimers.get(key);
+  if (existing) clearTimeout(existing);
+  const timer = setTimeout(() => {
+    aiDebounceTimers.delete(key);
+    runAIAutoReply(ownerId, session, chatId, aiSettings).catch((err) => {
+      console.error("[ai-autoreply] failed:", err);
+    });
+  }, AI_DEBOUNCE_MS);
+  aiDebounceTimers.set(key, timer);
 }
 
 function buildSystemPrompt(settings: AIAutoReplySettings): string {
