@@ -56,6 +56,7 @@ const TENANT_OWNER_PREFIXES = [
   "/account/plan",
   "/api/account",
   "/account/referral",
+  "/account/billing",
   "/api/referrals",
 ];
 
