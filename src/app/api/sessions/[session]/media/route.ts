@@ -8,16 +8,25 @@ type Params = { params: Promise<{ session: string }> };
 
 /** Streams a media file from the WA engine's internal file server through
  * this app, since that server isn't reachable from the browser and its
- * files require an API key we never expose client-side. `path` is
- * restricted to the engine's own /api/files/ prefix to prevent this from
- * becoming an open proxy to arbitrary internal URLs. */
+ * files require an API key we never expose client-side.
+ *
+ * `path` must be pinned to *this* session's own file namespace
+ * (/api/files/<session>/...) — requireSessionAccess only proves the
+ * caller owns `session` from the URL, it says nothing about `path`, which
+ * is a separate attacker-controlled query param. Without this check a
+ * tenant could pass any *other* session's name in `path` and read that
+ * tenant's private media through their own legitimately-owned session's
+ * auth check. Also reject ".." outright: a prefix check alone doesn't
+ * stop "/api/files/<session>/../<other-session>/x.jpg", which URL
+ * normalization would resolve out of this session's namespace anyway. */
 export async function GET(req: NextRequest, { params }: Params) {
   const { session } = await params;
   const { response } = await requireSessionAccess(session);
   if (response) return response;
 
   const path = req.nextUrl.searchParams.get("path");
-  if (!path || !path.startsWith("/api/files/")) {
+  const allowedPrefix = `/api/files/${encodeURIComponent(session)}/`;
+  if (!path || path.includes("..") || !path.startsWith(allowedPrefix)) {
     return NextResponse.json({ error: "Path media tidak valid" }, { status: 400 });
   }
 
