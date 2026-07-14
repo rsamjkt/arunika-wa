@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createUser, listUsers } from "@/lib/users";
 import { requireSuperadmin } from "@/lib/authz";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function GET() {
   const { response } = await requireSuperadmin();
@@ -14,7 +15,9 @@ export async function POST(req: NextRequest) {
   const { response } = await requireSuperadmin();
   if (response) return response;
 
-  const { username, password } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { username, password } = body!;
 
   if (!username || typeof username !== "string" || username.trim().length < 3) {
     return NextResponse.json({ error: "Username minimal 3 karakter" }, { status: 400 });

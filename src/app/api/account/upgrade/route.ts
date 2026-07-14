@@ -8,6 +8,7 @@ import { createTransactionRecord } from "@/lib/transactions";
 import { invoicePendingEmail, sendEmail } from "@/lib/email";
 import { getAppUrl } from "@/lib/appUrl";
 import { sendInvoiceWhatsApp } from "@/lib/customerNotify";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentFullUser();
@@ -16,7 +17,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Hanya pemilik akun yang bisa mengubah paket" }, { status: 403 });
   }
 
-  const { planId } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { planId } = body!;
   const plan = typeof planId === "string" ? getPlan(planId) : null;
   if (!plan) return NextResponse.json({ error: "Paket tidak ditemukan" }, { status: 400 });
 

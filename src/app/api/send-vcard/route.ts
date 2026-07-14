@@ -5,9 +5,12 @@ import { getCurrentApiKey } from "@/lib/currentUser";
 import { getSessionOwner, requireSessionAccess } from "@/lib/tenancy";
 import { hasQuotaRemaining, quotaExceededResponse } from "@/lib/authz";
 import { incrementQuotaUsage } from "@/lib/users";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function POST(req: NextRequest) {
-  const { session, chatId, contacts } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { session, chatId, contacts } = body!;
   if (!session || !chatId || !Array.isArray(contacts) || contacts.length === 0) {
     return NextResponse.json(
       { error: "session, chatId, dan contacts (array vcard) wajib diisi" },

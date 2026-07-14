@@ -3,6 +3,7 @@ import { requireSessionAccess } from "@/lib/tenancy";
 import { getEffectiveTenantId, listTeamMembers } from "@/lib/users";
 import { listAssignmentsForSession, setAssignment } from "@/lib/chatAssignments";
 import { parseJsonBody } from "@/lib/parseJsonBody";
+import { createNotification } from "@/lib/notifications";
 
 export async function GET(req: NextRequest) {
   const session = req.nextUrl.searchParams.get("session");
@@ -42,5 +43,17 @@ export async function PUT(req: NextRequest) {
     assignedTo: assignedTo === null ? null : typeof assignedTo === "string" ? assignedTo : undefined,
     status: status === "open" || status === "resolved" ? status : undefined,
   });
+
+  if (typeof assignedTo === "string" && assignedTo && assignedTo !== user!.id) {
+    const contactNumber = String(chatId).replace(/@.*/, "");
+    createNotification(
+      assignedTo,
+      "chat_assigned",
+      "Percakapan baru ditugaskan ke Anda",
+      `Percakapan dengan ${contactNumber} ditugaskan untuk Anda tangani.`,
+      `/inbox?session=${encodeURIComponent(session)}`,
+    );
+  }
+
   return NextResponse.json(next);
 }

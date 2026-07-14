@@ -4,6 +4,7 @@ import { getCurrentFullUser } from "@/lib/currentUser";
 import { getEffectivePlan } from "@/lib/authz";
 import { countOwnedSessions, getOwnedSessionNames, getSessionOwner, recordSessionOwner } from "@/lib/tenancy";
 import { getEffectiveTenantId } from "@/lib/users";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function GET() {
   const user = await getCurrentFullUser();
@@ -29,7 +30,9 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentFullUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { name } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { name } = body!;
   if (!name || typeof name !== "string") {
     return NextResponse.json({ error: "Nama sesi wajib diisi" }, { status: 400 });
   }

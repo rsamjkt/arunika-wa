@@ -2,6 +2,24 @@ import { NextResponse } from "next/server";
 import { getCurrentFullUser } from "./currentUser";
 import { getFreePlan, getPlan, hasFeature as planHasFeature, type FeatureKey, type Plan } from "./plans";
 import { getEffectiveQuotaUsage, getGoverningUser, type User } from "./users";
+import { createNotification, hasRecentNotification } from "./notifications";
+
+const QUOTA_WARNING_THRESHOLD = 0.8;
+
+function maybeNotifyQuotaNearLimit(userId: string, usage: number, limit: number) {
+  if (limit <= 0 || usage / limit < QUOTA_WARNING_THRESHOLD) return;
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  if (hasRecentNotification(userId, "quota_near_limit", startOfMonth)) return;
+  createNotification(
+    userId,
+    "quota_near_limit",
+    "Kuota pesan bulanan hampir habis",
+    `Sudah terpakai ${usage} dari ${limit} pesan bulan ini (${Math.round((usage / limit) * 100)}%). Upgrade paket agar pengiriman tidak terhenti.`,
+    "/account/plan",
+  );
+}
 
 export async function requireSuperadmin(): Promise<{ user: User | null; response: NextResponse | null }> {
   const user = await getCurrentFullUser();
@@ -28,7 +46,9 @@ export function hasQuotaRemaining(user: User): boolean {
   const governing = getGoverningUser(user);
   const plan = getEffectivePlan(user);
   if (plan.monthlyMessageQuota === null) return true;
-  return getEffectiveQuotaUsage(governing.id) < plan.monthlyMessageQuota;
+  const usage = getEffectiveQuotaUsage(governing.id);
+  maybeNotifyQuotaNearLimit(governing.id, usage, plan.monthlyMessageQuota);
+  return usage < plan.monthlyMessageQuota;
 }
 
 export function quotaExceededResponse(): NextResponse {

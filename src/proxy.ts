@@ -29,6 +29,7 @@ const COOKIE_ONLY_PREFIXES = [
   "/api/team",
   "/api/admin",
   "/api/referrals",
+  "/api/notifications",
 ];
 // Called by an external service, not a browser or an app-issued API key —
 // each authenticates the request itself (HMAC / stored signature) instead.

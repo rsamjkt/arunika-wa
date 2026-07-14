@@ -8,11 +8,14 @@ import { invoicePendingEmail, sendEmail, welcomeEmail } from "@/lib/email";
 import { applyReferralReward, recordReferral } from "@/lib/referrals";
 import { getAppUrl } from "@/lib/appUrl";
 import { sendInvoiceWhatsApp } from "@/lib/customerNotify";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
-  const { username, password, email, phone, planId, referralCode } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { username, password, email, phone, planId, referralCode } = body!;
 
   if (!username || typeof username !== "string" || username.trim().length < 3) {
     return NextResponse.json({ error: "Username minimal 3 karakter" }, { status: 400 });

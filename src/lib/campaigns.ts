@@ -6,6 +6,7 @@ import { incrementUsage } from "./templates";
 import { getFullUser, incrementQuotaUsage } from "./users";
 import { hasQuotaRemaining } from "./authz";
 import { substituteVariables } from "./textVars";
+import { createNotification } from "./notifications";
 
 export type CampaignRecipient = {
   chatId: string;
@@ -214,6 +215,15 @@ async function runCampaign(id: string) {
   campaign = getCampaignUnscoped(id);
   if (campaign && campaign.status === "sending") {
     updateCampaign(id, { status: "completed", completedAt: new Date().toISOString() });
+    const sent = campaign.recipients.filter((r) => r.status === "sent").length;
+    const failed = campaign.recipients.filter((r) => r.status === "failed").length;
+    createNotification(
+      campaign.ownerId,
+      "campaign_completed",
+      `Campaign "${campaign.name}" selesai`,
+      `Terkirim ke ${sent} penerima${failed > 0 ? `, ${failed} gagal` : ""}.`,
+      "/broadcast",
+    );
   }
   canceledCampaigns.delete(id);
 }

@@ -3,6 +3,7 @@ import { requireSuperadmin } from "@/lib/authz";
 import { isGooglePlacesConfigured } from "@/lib/googlePlaces";
 import { searchAndSaveLeads } from "@/lib/leadOutreach";
 import type { LeadCategory } from "@/lib/leads";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 const CATEGORIES: LeadCategory[] = ["company", "school", "hospital"];
 
@@ -17,7 +18,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { category, area } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { category, area } = body!;
   if (!CATEGORIES.includes(category)) {
     return NextResponse.json({ error: "Kategori tidak valid" }, { status: 400 });
   }
