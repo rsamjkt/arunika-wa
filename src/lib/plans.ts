@@ -1,13 +1,14 @@
 import crypto from "node:crypto";
 import { readJson, writeJson } from "./store";
 
-export const FEATURE_KEYS = ["broadcast", "templates", "autoreply", "apikeys", "webhook"] as const;
+export const FEATURE_KEYS = ["broadcast", "templates", "autoreply", "ai_autoreply", "apikeys", "webhook"] as const;
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
 
 export const FEATURE_LABELS: Record<FeatureKey, string> = {
   broadcast: "Broadcast / Campaign",
   templates: "Template Pesan",
   autoreply: "Auto-Reply Bot",
+  ai_autoreply: "Balasan AI",
   apikeys: "API Key",
   webhook: "Webhook Keluar",
 };

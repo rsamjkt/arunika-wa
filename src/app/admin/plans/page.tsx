@@ -6,6 +6,7 @@ const FEATURE_OPTIONS: { key: string; label: string }[] = [
   { key: "broadcast", label: "Broadcast / Campaign" },
   { key: "templates", label: "Template Pesan" },
   { key: "autoreply", label: "Auto-Reply Bot" },
+  { key: "ai_autoreply", label: "Balasan AI" },
   { key: "apikeys", label: "API Key" },
   { key: "webhook", label: "Webhook Keluar" },
 ];

@@ -58,6 +58,14 @@ export function quotaExceededResponse(): NextResponse {
   );
 }
 
+/** Request-independent feature check — for places that already have a
+ * `User` record (e.g. resolved from an ownerId in a webhook handler) but
+ * have no HTTP request/session to pull one from via getCurrentFullUser(). */
+export function userHasFeature(user: User, key: FeatureKey): boolean {
+  if (user.role === "superadmin") return true;
+  return planHasFeature(getEffectivePlan(user), key);
+}
+
 export async function requireFeature(
   key: FeatureKey,
 ): Promise<{ user: User | null; response: NextResponse | null }> {
@@ -65,11 +73,7 @@ export async function requireFeature(
   if (!user) {
     return { user: null, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
-  if (user.role === "superadmin") {
-    return { user, response: null };
-  }
-  const plan = getEffectivePlan(user);
-  if (!planHasFeature(plan, key)) {
+  if (!userHasFeature(user, key)) {
     return {
       user,
       response: NextResponse.json(
