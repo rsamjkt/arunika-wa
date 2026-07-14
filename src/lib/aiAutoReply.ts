@@ -1,6 +1,6 @@
 import { readJson, writeJson } from "./store";
 
-export type AIProvider = "anthropic" | "deepseek" | "openai";
+export type AIProvider = "anthropic" | "deepseek" | "openai" | "gemini" | "groq" | "mistral" | "qwen";
 
 export type AIModel =
   | "claude-haiku-4-5-20251001"
@@ -9,7 +9,15 @@ export type AIModel =
   | "deepseek-chat"
   | "deepseek-reasoner"
   | "gpt-4o-mini"
-  | "gpt-4o";
+  | "gpt-4o"
+  | "gemini-2.5-flash"
+  | "gemini-2.5-pro"
+  | "llama-3.3-70b-versatile"
+  | "llama-3.1-8b-instant"
+  | "mistral-small-latest"
+  | "mistral-large-latest"
+  | "qwen-turbo"
+  | "qwen-plus";
 
 export const AI_MODELS: { id: AIModel; provider: AIProvider; label: string; description: string }[] = [
   {
@@ -53,6 +61,54 @@ export const AI_MODELS: { id: AIModel; provider: AIProvider; label: string; desc
     provider: "openai",
     label: "GPT-4o",
     description: "Model OpenAI yang lebih pintar, biaya lebih tinggi.",
+  },
+  {
+    id: "gemini-2.5-flash",
+    provider: "gemini",
+    label: "Gemini 2.5 Flash",
+    description: "Model Google — sangat cepat dan murah, cocok untuk volume tinggi.",
+  },
+  {
+    id: "gemini-2.5-pro",
+    provider: "gemini",
+    label: "Gemini 2.5 Pro",
+    description: "Model Google yang lebih pintar untuk pertanyaan kompleks.",
+  },
+  {
+    id: "llama-3.3-70b-versatile",
+    provider: "groq",
+    label: "Llama 3.3 70B (Groq)",
+    description: "Model open-source Meta, dijalankan di Groq — balasan sangat cepat, biaya rendah.",
+  },
+  {
+    id: "llama-3.1-8b-instant",
+    provider: "groq",
+    label: "Llama 3.1 8B Instant (Groq)",
+    description: "Versi paling ringan & tercepat di Groq — untuk balasan singkat volume tinggi.",
+  },
+  {
+    id: "mistral-small-latest",
+    provider: "mistral",
+    label: "Mistral Small",
+    description: "Model Mistral AI yang ringan dan hemat biaya.",
+  },
+  {
+    id: "mistral-large-latest",
+    provider: "mistral",
+    label: "Mistral Large",
+    description: "Model Mistral AI paling pintar untuk kasus yang lebih kompleks.",
+  },
+  {
+    id: "qwen-turbo",
+    provider: "qwen",
+    label: "Qwen Turbo",
+    description: "Model Alibaba Qwen — cepat dan sangat murah.",
+  },
+  {
+    id: "qwen-plus",
+    provider: "qwen",
+    label: "Qwen Plus",
+    description: "Model Alibaba Qwen yang lebih pintar, biaya masih terjangkau.",
   },
 ];
 
