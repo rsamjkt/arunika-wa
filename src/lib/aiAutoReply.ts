@@ -2,6 +2,18 @@ import { readJson, writeJson } from "./store";
 
 export type AIProvider = "anthropic" | "deepseek" | "openai" | "gemini" | "groq" | "mistral" | "qwen";
 
+export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
+  anthropic: "Anthropic (Claude)",
+  deepseek: "DeepSeek",
+  openai: "OpenAI (GPT)",
+  gemini: "Google Gemini",
+  groq: "Groq (Llama)",
+  mistral: "Mistral AI",
+  qwen: "Alibaba Qwen",
+};
+
+export const AI_PROVIDERS: AIProvider[] = ["anthropic", "deepseek", "openai", "gemini", "groq", "mistral", "qwen"];
+
 export type AIModel =
   | "claude-haiku-4-5-20251001"
   | "claude-sonnet-5"

@@ -1,9 +1,9 @@
 import { providerForModel, type AIModel, type AIProvider } from "./aiAutoReply";
+import { getProviderKey, isProviderConfigured } from "./aiProviderKeys";
 
 const MAX_TOKENS = 400;
 
 type ProviderConfig = {
-  envKey: string;
   shape: "anthropic" | "openai-compatible";
   baseUrl: string; // unused for the anthropic shape, which hardcodes its own endpoint
   label: string;
@@ -14,40 +14,34 @@ type ProviderConfig = {
 // differ, so adding a new provider here is usually a one-line addition
 // rather than a new call function.
 const PROVIDERS: Record<AIProvider, ProviderConfig> = {
-  anthropic: { envKey: "ANTHROPIC_API_KEY", shape: "anthropic", baseUrl: "", label: "Anthropic" },
-  deepseek: { envKey: "DEEPSEEK_API_KEY", shape: "openai-compatible", baseUrl: "https://api.deepseek.com", label: "DeepSeek" },
-  openai: { envKey: "OPENAI_API_KEY", shape: "openai-compatible", baseUrl: "https://api.openai.com/v1", label: "OpenAI" },
+  anthropic: { shape: "anthropic", baseUrl: "", label: "Anthropic" },
+  deepseek: { shape: "openai-compatible", baseUrl: "https://api.deepseek.com", label: "DeepSeek" },
+  openai: { shape: "openai-compatible", baseUrl: "https://api.openai.com/v1", label: "OpenAI" },
   gemini: {
-    envKey: "GEMINI_API_KEY",
     shape: "openai-compatible",
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
     label: "Gemini",
   },
-  groq: { envKey: "GROQ_API_KEY", shape: "openai-compatible", baseUrl: "https://api.groq.com/openai/v1", label: "Groq" },
-  mistral: { envKey: "MISTRAL_API_KEY", shape: "openai-compatible", baseUrl: "https://api.mistral.ai/v1", label: "Mistral" },
+  groq: { shape: "openai-compatible", baseUrl: "https://api.groq.com/openai/v1", label: "Groq" },
+  mistral: { shape: "openai-compatible", baseUrl: "https://api.mistral.ai/v1", label: "Mistral" },
   qwen: {
-    envKey: "QWEN_API_KEY",
     shape: "openai-compatible",
     baseUrl: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
     label: "Qwen",
   },
 };
 
-function apiKeyFor(provider: AIProvider): string {
-  return process.env[PROVIDERS[provider].envKey] ?? "";
-}
-
 /** True if ANY provider has a key set — used to decide whether the AI
  * auto-reply feature exists at all on this platform. */
 export function isAIConfigured(): boolean {
-  return (Object.keys(PROVIDERS) as AIProvider[]).some((p) => apiKeyFor(p).length > 0);
+  return (Object.keys(PROVIDERS) as AIProvider[]).some((p) => isProviderConfigured(p));
 }
 
 /** True for the specific model a tenant has picked — a tenant could select
  * a model whose provider key isn't set, so this is checked separately from
  * the platform-wide isAIConfigured(). */
 export function isModelConfigured(model: AIModel): boolean {
-  return apiKeyFor(providerForModel(model)).length > 0;
+  return isProviderConfigured(providerForModel(model));
 }
 
 async function callAnthropic(systemPrompt: string, userContent: string, model: AIModel, apiKey: string): Promise<string> {
@@ -106,7 +100,7 @@ async function callOpenAICompatible(
 export async function generateAIReply(systemPrompt: string, userContent: string, model: AIModel): Promise<string> {
   const provider = providerForModel(model);
   const cfg = PROVIDERS[provider];
-  const apiKey = apiKeyFor(provider);
+  const apiKey = getProviderKey(provider);
   if (!apiKey) throw new Error(`API key untuk provider "${cfg.label}" belum diatur di server`);
 
   if (cfg.shape === "anthropic") return callAnthropic(systemPrompt, userContent, model, apiKey);
