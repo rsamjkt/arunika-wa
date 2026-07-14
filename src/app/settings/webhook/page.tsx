@@ -34,6 +34,7 @@ export default function WebhookSettingsPage() {
   const [testing, setTesting] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -95,8 +96,17 @@ export default function WebhookSettingsPage() {
 
   async function regenerateSecret() {
     if (!confirm("Buat ulang secret webhook? Endpoint penerima Anda perlu diperbarui untuk memverifikasi signature baru.")) return;
-    await fetch("/api/webhook-config", { method: "POST" });
-    await load();
+    setRegenerating(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/webhook-config", { method: "POST" });
+      if (!res.ok) throw new Error("Gagal membuat ulang secret");
+      await load();
+    } catch (err) {
+      setMessage({ ok: false, text: err instanceof Error ? err.message : "Gagal membuat ulang secret" });
+    } finally {
+      setRegenerating(false);
+    }
   }
 
   function copySecret() {
@@ -125,7 +135,7 @@ export default function WebhookSettingsPage() {
             className={`toggle${config.enabled ? " on" : ""}`}
             style={{ marginLeft: "auto" }}
             onClick={() => setConfig({ ...config, enabled: !config.enabled })}
-            aria-label="Aktifkan webhook"
+            aria-label={config.enabled ? "Nonaktifkan webhook" : "Aktifkan webhook"}
           />
         </div>
 
@@ -208,8 +218,8 @@ export default function WebhookSettingsPage() {
           <button className="btn secondary" onClick={copySecret}>
             {copied ? "Tersalin!" : "Salin"}
           </button>
-          <button className="btn secondary" onClick={regenerateSecret}>
-            Buat Ulang
+          <button className="btn secondary" disabled={regenerating} onClick={regenerateSecret}>
+            {regenerating ? "Membuat…" : "Buat Ulang"}
           </button>
         </div>
       </div>

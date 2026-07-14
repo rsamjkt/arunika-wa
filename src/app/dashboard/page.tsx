@@ -72,11 +72,15 @@ export default function DashboardPage() {
   const [server, setServer] = useState<ServerInfo | null>(null);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [me, setMe] = useState<Me | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/sessions");
-    if (res.ok) setSessions(await res.json());
-    setLoaded(true);
+    try {
+      const res = await fetch("/api/sessions");
+      if (res.ok) setSessions(await res.json());
+    } finally {
+      setLoaded(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -108,9 +112,16 @@ export default function DashboardPage() {
 
   async function action(name: string, verb: "start" | "stop" | "restart") {
     setBusy(name + verb);
+    setActionError(null);
     try {
-      await fetch(`/api/sessions/${encodeURIComponent(name)}/${verb}`, { method: "POST" });
+      const res = await fetch(`/api/sessions/${encodeURIComponent(name)}/${verb}`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? `Gagal menjalankan aksi pada "${name}"`);
+      }
       await load();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Gagal menjalankan aksi");
     } finally {
       setBusy(null);
     }
@@ -119,9 +130,16 @@ export default function DashboardPage() {
   async function remove(name: string) {
     if (!confirm(`Hapus perangkat "${name}"? Nomor ini harus dipasangkan ulang dari awal.`)) return;
     setBusy(name + "delete");
+    setActionError(null);
     try {
-      await fetch(`/api/sessions/${encodeURIComponent(name)}`, { method: "DELETE" });
+      const res = await fetch(`/api/sessions/${encodeURIComponent(name)}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? `Gagal menghapus "${name}"`);
+      }
       await load();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Gagal menghapus perangkat");
     } finally {
       setBusy(null);
     }
@@ -229,6 +247,10 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      {actionError && (
+        <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 12 }}>{actionError}</p>
+      )}
+
       <div className="table-wrap">
         <table className="dtable">
           <thead>
@@ -240,6 +262,13 @@ export default function DashboardPage() {
             </tr>
           </thead>
           <tbody>
+            {!loaded && (
+              <tr>
+                <td colSpan={4} style={{ color: "var(--ink-soft)", textAlign: "center", padding: "32px 16px" }}>
+                  Memuat perangkat…
+                </td>
+              </tr>
+            )}
             {loaded && sessions.length === 0 && (
               <tr>
                 <td colSpan={4} style={{ color: "var(--ink-soft)", textAlign: "center", padding: "32px 16px" }}>

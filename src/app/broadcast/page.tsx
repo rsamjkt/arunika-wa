@@ -59,7 +59,10 @@ function BroadcastPageInner() {
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [campaignsLoaded, setCampaignsLoaded] = useState(false);
+  const [contactsLoaded, setContactsLoaded] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [campaignError, setCampaignError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/sessions")
@@ -76,15 +79,21 @@ function BroadcastPageInner() {
 
   useEffect(() => {
     if (!session) return;
+    setContactsLoaded(false);
     fetch(`/api/sessions/${encodeURIComponent(session)}/contacts?limit=1000`)
       .then((r) => r.json())
       .then((data) => setContacts(Array.isArray(data) ? data : []))
-      .catch(() => setContacts([]));
+      .catch(() => setContacts([]))
+      .finally(() => setContactsLoaded(true));
   }, [session]);
 
   const loadCampaigns = useCallback(async () => {
-    const res = await fetch("/api/campaigns");
-    if (res.ok) setCampaigns(await res.json());
+    try {
+      const res = await fetch("/api/campaigns");
+      if (res.ok) setCampaigns(await res.json());
+    } finally {
+      setCampaignsLoaded(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -163,6 +172,9 @@ function BroadcastPageInner() {
       setMessage({ ok: false, text: "Waktu jadwal harus di masa depan." });
       return;
     }
+    if (startNow && !confirm(`Kirim broadcast ini sekarang ke ${recipients.length} kontak? Aksi ini tidak bisa dibatalkan setelah selesai.`)) {
+      return;
+    }
     setSending(true);
     try {
       const res = await fetch("/api/campaigns", {
@@ -223,9 +235,16 @@ function BroadcastPageInner() {
 
   async function startDraft(c: Campaign) {
     setBusy(c.id);
+    setCampaignError(null);
     try {
-      await fetch(`/api/campaigns/${c.id}/start`, { method: "POST" });
+      const res = await fetch(`/api/campaigns/${c.id}/start`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Gagal memulai campaign");
+      }
       await loadCampaigns();
+    } catch (err) {
+      setCampaignError(err instanceof Error ? err.message : "Gagal memulai campaign");
     } finally {
       setBusy(null);
     }
@@ -234,9 +253,16 @@ function BroadcastPageInner() {
   async function cancel(c: Campaign) {
     if (!confirm(`Batalkan campaign "${c.name}"? Sisa kontak yang belum terkirim tidak akan dikirim.`)) return;
     setBusy(c.id);
+    setCampaignError(null);
     try {
-      await fetch(`/api/campaigns/${c.id}/cancel`, { method: "POST" });
+      const res = await fetch(`/api/campaigns/${c.id}/cancel`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Gagal membatalkan campaign");
+      }
       await loadCampaigns();
+    } catch (err) {
+      setCampaignError(err instanceof Error ? err.message : "Gagal membatalkan campaign");
     } finally {
       setBusy(null);
     }
@@ -361,7 +387,10 @@ function BroadcastPageInner() {
                     borderRadius: 11,
                   }}
                 >
-                  {filteredContacts.map((c) => (
+                  {!contactsLoaded && (
+                    <p style={{ padding: 16, color: "var(--ink-soft)", fontSize: "0.82rem" }}>Memuat kontak…</p>
+                  )}
+                  {contactsLoaded && filteredContacts.map((c) => (
                     <label
                       key={c.id}
                       style={{
@@ -381,7 +410,7 @@ function BroadcastPageInner() {
                       </span>
                     </label>
                   ))}
-                  {filteredContacts.length === 0 && (
+                  {contactsLoaded && filteredContacts.length === 0 && (
                     <p style={{ padding: 16, color: "var(--ink-soft)", fontSize: "0.82rem" }}>Tidak ada kontak.</p>
                   )}
                 </div>
@@ -440,7 +469,13 @@ function BroadcastPageInner() {
         <div style={{ flex: "1 1 320px", minWidth: 300 }}>
           <div className="card cpad" style={{ padding: 18 }}>
             <h2 style={{ fontSize: "0.9rem", marginBottom: 12 }}>Riwayat Campaign</h2>
-            {campaigns.map((c) => {
+            {campaignError && (
+              <p style={{ fontSize: "0.78rem", color: "var(--danger)", marginBottom: 10 }}>{campaignError}</p>
+            )}
+            {!campaignsLoaded && (
+              <p style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>Memuat…</p>
+            )}
+            {campaignsLoaded && campaigns.map((c) => {
               const total = c.recipients.length;
               const sent = c.recipients.filter((r) => r.status === "sent").length;
               const failed = c.recipients.filter((r) => r.status === "failed").length;
@@ -482,7 +517,7 @@ function BroadcastPageInner() {
                 </div>
               );
             })}
-            {campaigns.length === 0 && (
+            {campaignsLoaded && campaigns.length === 0 && (
               <p style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>Belum ada campaign.</p>
             )}
           </div>

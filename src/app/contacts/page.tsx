@@ -190,7 +190,7 @@ function ContactsPageInner() {
             {!loading && filtered.length === 0 && (
               <tr>
                 <td colSpan={4} style={{ textAlign: "center", color: "var(--ink-soft)", padding: "28px 16px" }}>
-                  {loading ? "Memuat…" : "Tidak ada kontak yang cocok."}
+                  Tidak ada kontak yang cocok.
                 </td>
               </tr>
             )}

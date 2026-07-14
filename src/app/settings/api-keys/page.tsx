@@ -20,6 +20,7 @@ export default function ApiKeysSettingsPage() {
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -38,16 +39,19 @@ export default function ApiKeysSettingsPage() {
   async function createKey(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
+    setMessage(null);
     try {
       const res = await fetch("/api/api-keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
       });
-      if (res.ok) {
-        setName("");
-        await load();
-      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Gagal membuat API key");
+      setName("");
+      await load();
+    } catch (err) {
+      setMessage({ ok: false, text: err instanceof Error ? err.message : "Gagal membuat API key" });
     } finally {
       setCreating(false);
     }
@@ -56,9 +60,13 @@ export default function ApiKeysSettingsPage() {
   async function revoke(k: ApiKeyRecord) {
     if (!confirm(`Nonaktifkan API key "${k.name}"? Semua request yang memakai key ini akan ditolak.`)) return;
     setBusy(k.id + "revoke");
+    setMessage(null);
     try {
-      await fetch(`/api/api-keys/${k.id}`, { method: "PATCH" });
+      const res = await fetch(`/api/api-keys/${k.id}`, { method: "PATCH" });
+      if (!res.ok) throw new Error("Gagal menonaktifkan API key");
       await load();
+    } catch (err) {
+      setMessage({ ok: false, text: err instanceof Error ? err.message : "Gagal menonaktifkan API key" });
     } finally {
       setBusy(null);
     }
@@ -67,9 +75,13 @@ export default function ApiKeysSettingsPage() {
   async function remove(k: ApiKeyRecord) {
     if (!confirm(`Hapus permanen API key "${k.name}"?`)) return;
     setBusy(k.id + "del");
+    setMessage(null);
     try {
-      await fetch(`/api/api-keys/${k.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/api-keys/${k.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Gagal menghapus API key");
       await load();
+    } catch (err) {
+      setMessage({ ok: false, text: err instanceof Error ? err.message : "Gagal menghapus API key" });
     } finally {
       setBusy(null);
     }
@@ -109,6 +121,11 @@ export default function ApiKeysSettingsPage() {
             {creating ? "Membuat…" : "Generate API Key"}
           </button>
         </form>
+        {message && (
+          <p style={{ marginTop: 12, fontSize: "0.82rem", color: message.ok ? "var(--success)" : "var(--danger)" }}>
+            {message.text}
+          </p>
+        )}
       </div>
 
       <div className="table-wrap">
