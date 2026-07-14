@@ -6,7 +6,7 @@ import { getEffectiveTenantId } from "@/lib/users";
 import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function GET() {
-  const { user, response } = await requireFeature("autoreply");
+  const { user, response } = await requireFeature("ai_autoreply");
   if (response) return response;
 
   const settings = getAISettings(getEffectiveTenantId(user!));
@@ -19,7 +19,7 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
-  const { user, response } = await requireFeature("autoreply");
+  const { user, response } = await requireFeature("ai_autoreply");
   if (response) return response;
 
   const { body, response: parseError } = await parseJsonBody(req);

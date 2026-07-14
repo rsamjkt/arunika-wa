@@ -14,6 +14,8 @@ import {
 } from "@/lib/autoreply";
 import { canUseAIToday, getAISettings, recordAIUsage, type AIAutoReplySettings } from "@/lib/aiAutoReply";
 import { generateAIReply, isModelConfigured } from "@/lib/aiClient";
+import { getFullUser } from "@/lib/users";
+import { userHasFeature } from "@/lib/authz";
 
 const WEBHOOK_SECRET = process.env.WAHA_WEBHOOK_SECRET ?? "";
 
@@ -71,7 +73,13 @@ async function runAutoReply(ownerId: string, session: string, chatId: string, te
   // on/off switch — only reached when no keyword rule matched (or keyword
   // auto-reply is off entirely).
   if (aiSettings.enabled) {
-    scheduleAIAutoReply(ownerId, session, chatId, aiSettings);
+    // Re-verify the plan feature here, not just at settings-save time — a
+    // tenant could have enabled this while on a paid plan and since
+    // downgraded/expired, and the toggle in ai-autoreply.json wouldn't know.
+    const owner = getFullUser(ownerId);
+    if (owner && userHasFeature(owner, "ai_autoreply")) {
+      scheduleAIAutoReply(ownerId, session, chatId, aiSettings);
+    }
   }
 }
 
