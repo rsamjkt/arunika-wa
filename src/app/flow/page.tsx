@@ -18,12 +18,20 @@ interface AutoReplySettings {
   rules: KeywordRule[];
 }
 
+interface AIModelOption {
+  id: string;
+  label: string;
+  description: string;
+}
+
 interface AISettings {
   enabled: boolean;
   businessName: string;
   knowledgeBase: string;
   tone: string;
+  model: string;
   configured: boolean;
+  availableModels: AIModelOption[];
 }
 
 const DAY_LABELS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
@@ -194,6 +202,26 @@ export default function FlowPage() {
               placeholder="mis. Toko Kue Bahagia"
               disabled={!ai.configured}
             />
+            <label className="lbl">Model AI</label>
+            <select
+              style={{ marginBottom: 4 }}
+              value={ai.model}
+              onChange={(e) => {
+                const model = e.target.value;
+                setAi({ ...ai, model });
+                saveAI({ model }, "aiModel");
+              }}
+              disabled={!ai.configured}
+            >
+              {(ai.availableModels ?? []).map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <p style={{ fontSize: "0.75rem", color: "var(--ink-soft)", marginBottom: 14 }}>
+              {ai.availableModels?.find((m) => m.id === ai.model)?.description}
+            </p>
             <label className="lbl">Info bisnis / FAQ (dipakai AI untuk jawab pelanggan)</label>
             <textarea
               className="compose"

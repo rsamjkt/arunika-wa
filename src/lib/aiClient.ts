@@ -1,5 +1,6 @@
+import type { AIModel } from "./aiAutoReply";
+
 const API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
-const MODEL = process.env.AI_AUTOREPLY_MODEL || "claude-haiku-4-5-20251001";
 
 export function isAIConfigured(): boolean {
   return API_KEY.length > 0;
@@ -7,7 +8,7 @@ export function isAIConfigured(): boolean {
 
 /** One-shot completion against Anthropic's Messages API — no SDK, matches
  * this codebase's existing hand-rolled-fetch style (see waha.ts). */
-export async function generateAIReply(systemPrompt: string, userContent: string): Promise<string> {
+export async function generateAIReply(systemPrompt: string, userContent: string, model: AIModel): Promise<string> {
   if (!API_KEY) throw new Error("ANTHROPIC_API_KEY belum diatur di server");
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -18,7 +19,7 @@ export async function generateAIReply(systemPrompt: string, userContent: string)
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: MODEL,
+      model,
       max_tokens: 400,
       system: systemPrompt,
       messages: [{ role: "user", content: userContent }],
