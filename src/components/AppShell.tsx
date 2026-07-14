@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import ThemeToggle from "./ThemeToggle";
+import NotificationBell from "./NotificationBell";
 
 const TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -24,7 +25,10 @@ const TITLES: Record<string, string> = {
   "/reports": "Laporan",
   "/admin/plans": "Kelola Paket",
   "/admin/tenants": "Kelola Tenant",
+  "/admin/leads": "Leads & Marketing",
   "/account/plan": "Paket Saya",
+  "/account/billing": "Riwayat Tagihan",
+  "/account/referral": "Program Referral",
 };
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -73,6 +77,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <h1>{title}</h1>
           </div>
           <div className="actions">
+            <NotificationBell />
             <ThemeToggle />
             <button className="btn secondary" onClick={logout} style={{ padding: "6px 12px" }}>
               Keluar

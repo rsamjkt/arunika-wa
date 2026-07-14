@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { replyMessage, WahaError } from "@/lib/waha";
 import { requireSessionAccess } from "@/lib/tenancy";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function POST(req: NextRequest) {
-  const { session, chatId, replyTo, text } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { session, chatId, replyTo, text } = body!;
   if (!session || !chatId || !replyTo || !text) {
     return NextResponse.json(
       { error: "session, chatId, replyTo, dan text wajib diisi" },

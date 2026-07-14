@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentFullUser } from "@/lib/currentUser";
 import { createStaff, listStaffForTenant } from "@/lib/users";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 async function requireOwner() {
   const user = await getCurrentFullUser();
@@ -23,7 +24,9 @@ export async function POST(req: NextRequest) {
   const { user, response } = await requireOwner();
   if (response) return response;
 
-  const { username, password, email } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { username, password, email } = body!;
 
   if (!username || typeof username !== "string" || username.trim().length < 3) {
     return NextResponse.json({ error: "Username minimal 3 karakter" }, { status: 400 });

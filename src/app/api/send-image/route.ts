@@ -6,9 +6,12 @@ import { getSessionOwner, requireSessionAccess } from "@/lib/tenancy";
 import { hasQuotaRemaining, quotaExceededResponse } from "@/lib/authz";
 import { incrementQuotaUsage } from "@/lib/users";
 import { isSafeExternalUrl } from "@/lib/urlSafety";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function POST(req: NextRequest) {
-  const { session, chatId, file, caption } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { session, chatId, file, caption } = body!;
   if (!session || !chatId || !file?.mimetype || !(file.url || file.data)) {
     return NextResponse.json(
       {

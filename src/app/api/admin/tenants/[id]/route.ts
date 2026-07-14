@@ -23,6 +23,8 @@ import { deleteAISettingsForOwner } from "@/lib/aiAutoReply";
 import { deleteConfigForOwner } from "@/lib/webhookConfig";
 import { deleteWebhookLogForOwner } from "@/lib/webhookLog";
 import { deleteReferralsForOwner } from "@/lib/referrals";
+import { deleteNotificationsForUser } from "@/lib/notifications";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -72,7 +74,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Tenant tidak ditemukan" }, { status: 404 });
   }
 
-  const { planId, subscriptionExpiresAt, suspended } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { planId, subscriptionExpiresAt, suspended } = body!;
 
   if (typeof planId === "string") {
     const plan = getPlan(planId);
@@ -127,10 +131,12 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   deleteConfigForOwner(id);
   deleteWebhookLogForOwner(id);
   deleteReferralsForOwner(id);
+  deleteNotificationsForUser(id);
 
   for (const s of staff) {
     deleteStaff(id, s.id);
     deleteSessionsForUser(s.id);
+    deleteNotificationsForUser(s.id);
   }
 
   deleteSessionsForUser(id);

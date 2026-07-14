@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { starMessage, WahaError } from "@/lib/waha";
 import { requireSessionAccess } from "@/lib/tenancy";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function POST(req: NextRequest) {
-  const { session, chatId, messageId, star } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { session, chatId, messageId, star } = body!;
   if (!session || !chatId || !messageId || typeof star !== "boolean") {
     return NextResponse.json(
       { error: "session, chatId, messageId, dan star (boolean) wajib diisi" },

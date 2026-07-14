@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deletePlan, updatePlan } from "@/lib/plans";
 import { requireSuperadmin } from "@/lib/authz";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { response } = await requireSuperadmin();
   if (response) return response;
 
   const { id } = await params;
-  const { name, priceRp, durationDays, deviceLimit, monthlyMessageQuota, features } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { name, priceRp, durationDays, deviceLimit, monthlyMessageQuota, features } = body!;
   updatePlan(id, {
     name: typeof name === "string" ? name : undefined,
     priceRp: typeof priceRp === "number" ? priceRp : undefined,

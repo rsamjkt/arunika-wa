@@ -5,14 +5,21 @@ import { getCurrentApiKey } from "@/lib/currentUser";
 import { getSessionOwner, requireSessionAccess } from "@/lib/tenancy";
 import { hasQuotaRemaining, quotaExceededResponse } from "@/lib/authz";
 import { incrementQuotaUsage } from "@/lib/users";
+import { parseJsonBody } from "@/lib/parseJsonBody";
+import { isSafeExternalUrl } from "@/lib/urlSafety";
 
 export async function POST(req: NextRequest) {
-  const { session, chatId, url, title } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { session, chatId, url, title } = body!;
   if (!session || !chatId || !url || !title) {
     return NextResponse.json(
       { error: "session, chatId, url, dan title wajib diisi" },
       { status: 400 },
     );
+  }
+  if (!isSafeExternalUrl(url)) {
+    return NextResponse.json({ error: "URL tidak valid atau menunjuk ke alamat internal" }, { status: 400 });
   }
   const { user, response } = await requireSessionAccess(session);
   if (response) return response;

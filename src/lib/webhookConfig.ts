@@ -1,6 +1,9 @@
 import crypto from "node:crypto";
 import { readJson, writeJson } from "./store";
 import { logWebhookDelivery } from "./webhookLog";
+import { createNotification } from "./notifications";
+
+const CONSECUTIVE_FAILURE_THRESHOLD = 3;
 
 export type OutboundWebhookConfig = {
   url: string;
@@ -9,6 +12,8 @@ export type OutboundWebhookConfig = {
   secret: string;
   lastDeliveryAt: string | null;
   lastDeliveryOk: boolean | null;
+  consecutiveFailures: number;
+  failureNotified: boolean;
 };
 
 const FILE = "webhook-config.json";
@@ -21,6 +26,8 @@ function defaults(): OutboundWebhookConfig {
     secret: crypto.randomBytes(24).toString("hex"),
     lastDeliveryAt: null,
     lastDeliveryOk: null,
+    consecutiveFailures: 0,
+    failureNotified: false,
   };
 }
 
@@ -74,9 +81,30 @@ export function regenerateWebhookSecret(ownerId: string): OutboundWebhookConfig 
 
 function recordDelivery(ownerId: string, ok: boolean) {
   const current = getWebhookConfig(ownerId);
+  const consecutiveFailures = ok ? 0 : current.consecutiveFailures + 1;
   const store = allConfigs();
-  store[ownerId] = { ...current, lastDeliveryAt: new Date().toISOString(), lastDeliveryOk: ok };
+  store[ownerId] = {
+    ...current,
+    lastDeliveryAt: new Date().toISOString(),
+    lastDeliveryOk: ok,
+    consecutiveFailures,
+    // Reset once it recovers, so a future run of failures notifies again
+    // instead of staying silent forever after the first alert.
+    failureNotified: ok ? false : current.failureNotified,
+  };
   writeJson(FILE, store);
+
+  if (!ok && consecutiveFailures >= CONSECUTIVE_FAILURE_THRESHOLD && !current.failureNotified) {
+    store[ownerId].failureNotified = true;
+    writeJson(FILE, store);
+    createNotification(
+      ownerId,
+      "webhook_failing",
+      "Webhook gagal berkali-kali",
+      `Pengiriman webhook ke ${current.url} gagal ${consecutiveFailures}x berturut-turut.`,
+      "/settings/webhook",
+    );
+  }
 }
 
 type SendResult = { ok: boolean; status?: number; error?: string };

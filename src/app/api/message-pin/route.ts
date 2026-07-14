@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pinMessage, WahaError } from "@/lib/waha";
 import { requireSessionAccess } from "@/lib/tenancy";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function POST(req: NextRequest) {
-  const { session, chatId, messageId, duration } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { session, chatId, messageId, duration } = body!;
   if (!session || !chatId || !messageId || !duration) {
     return NextResponse.json(
       { error: "session, chatId, messageId, dan duration (detik) wajib diisi" },
