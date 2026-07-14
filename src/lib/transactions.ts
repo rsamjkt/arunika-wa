@@ -2,6 +2,7 @@ import { readJson, writeJson } from "./store";
 import { getPlan } from "./plans";
 import { activateSubscription, getFullUser } from "./users";
 import { paymentConfirmedEmail, sendEmail } from "./email";
+import { rewardReferralIfPending } from "./referrals";
 
 export type Transaction = {
   orderId: string;
@@ -64,6 +65,7 @@ export function activateFromPaidTransaction(orderId: string, paidAt?: string): b
     ? new Date(Date.now() + plan.durationDays * 24 * 60 * 60 * 1000).toISOString()
     : null;
   activateSubscription(tx.userId, plan.id, expiresAt);
+  rewardReferralIfPending(tx.userId);
 
   const user = getFullUser(tx.userId);
   if (user?.email) {

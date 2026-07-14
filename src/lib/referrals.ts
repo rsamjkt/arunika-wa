@@ -11,6 +11,10 @@ export type Referral = {
   referredUserId: string;
   referredUsername: string;
   createdAt: string;
+  // Only true once the referred account has actually paid for a plan —
+  // recording the referral at signup is free, but the reward itself must
+  // wait for real money to avoid unlimited free-plan-time via fake signups.
+  rewarded: boolean;
 };
 
 const FILE = "referrals.json";
@@ -33,6 +37,7 @@ export function recordReferral(
     referredUserId,
     referredUsername,
     createdAt: new Date().toISOString(),
+    rewarded: false,
   };
   const list = all();
   list.push(record);
@@ -44,6 +49,18 @@ export function listReferralsFor(referrerId: string): Referral[] {
   return all()
     .filter((r) => r.referrerId === referrerId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/** Called when a referred account's payment is confirmed (not at signup) —
+ * grants the referrer's reward exactly once per referral, no matter how
+ * many transactions/upgrades the referred account pays for afterward. */
+export function rewardReferralIfPending(referredUserId: string): void {
+  const list = all();
+  const referral = list.find((r) => r.referredUserId === referredUserId && !r.rewarded);
+  if (!referral) return;
+  referral.rewarded = true;
+  writeJson(FILE, list);
+  applyReferralReward(referral.referrerId);
 }
 
 /** Cascade delete — used when a tenant account is removed entirely. */

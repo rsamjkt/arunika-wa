@@ -5,7 +5,7 @@ import { getPlan } from "@/lib/plans";
 import { createTransaction, KlikQrisError } from "@/lib/klikqris";
 import { createTransactionRecord } from "@/lib/transactions";
 import { invoicePendingEmail, sendEmail, welcomeEmail } from "@/lib/email";
-import { applyReferralReward, recordReferral } from "@/lib/referrals";
+import { recordReferral } from "@/lib/referrals";
 import { getAppUrl } from "@/lib/appUrl";
 import { sendInvoiceWhatsApp } from "@/lib/customerNotify";
 import { parseJsonBody } from "@/lib/parseJsonBody";
@@ -46,11 +46,14 @@ export async function POST(req: NextRequest) {
   }
 
   // Never block registration on a bad/missing referral code — best-effort only.
+  // The relationship is recorded now, but the reward itself only fires once
+  // this account's payment is actually confirmed (see rewardReferralIfPending
+  // in transactions.ts) — a Free-plan or never-paid signup earns nothing,
+  // closing off unlimited free-plan-time via scripted fake registrations.
   if (typeof referralCode === "string" && referralCode.trim()) {
     const referrer = findUserByReferralCode(referralCode);
     if (referrer && referrer.id !== tenant.id) {
       recordReferral(referrer.id, referrer.username, tenant.id, tenant.username);
-      applyReferralReward(referrer.id);
     }
   }
 
