@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import TryIt from "./TryIt";
 
 interface FieldDef {
@@ -35,12 +34,18 @@ function KV({ rows }: { rows: [string, string][] }) {
   );
 }
 
-export default function ApiEndpoint({ def }: { def: ApiEndpointDef }) {
-  const [open, setOpen] = useState(false);
-
+export default function ApiEndpoint({
+  def,
+  open,
+  onToggle,
+}: {
+  def: ApiEndpointDef;
+  open: boolean;
+  onToggle: () => void;
+}) {
   return (
     <div className="swagger-op" id={def.id}>
-      <button className="swagger-op-row" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+      <button className="swagger-op-row" onClick={onToggle} aria-expanded={open}>
         <span className={`swagger-method ${def.method.toLowerCase()}`}>{def.method}</span>
         <span className="swagger-path">{def.path}</span>
         <span className="swagger-summary">{def.summary}</span>
