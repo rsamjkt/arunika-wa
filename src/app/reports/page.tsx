@@ -41,16 +41,24 @@ interface ReportStats {
 export default function ReportsPage() {
   const [stats, setStats] = useState<ReportStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch("/api/reports")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("Gagal memuat laporan");
+        return r.json();
+      })
       .then(setStats)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading || !stats) {
+  if (loading) {
     return <p style={{ color: "var(--ink-soft)" }}>Memuat…</p>;
+  }
+  if (error || !stats) {
+    return <p style={{ color: "var(--danger)" }}>Gagal memuat laporan. Coba muat ulang halaman.</p>;
   }
 
   const maxVal = Math.max(1, ...stats.days.map((d) => d.sent + d.failed), ...stats.days.map((d) => d.received));

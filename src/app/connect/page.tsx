@@ -16,6 +16,7 @@ export default function ConnectPage() {
   const [session, setSession] = useState<string | null>(null);
   const [status, setStatus] = useState<SessionStatus | null>(null);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [qrBroken, setQrBroken] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -70,6 +71,7 @@ export default function ConnectPage() {
   }
 
   function refreshQr(sessionName: string) {
+    setQrBroken(false);
     setQrUrl(`/api/sessions/${encodeURIComponent(sessionName)}/qr?t=${Date.now()}`);
   }
 
@@ -143,9 +145,9 @@ export default function ConnectPage() {
             Buka WhatsApp di HP → Pengaturan → Perangkat Tertaut → Tautkan Perangkat
           </p>
           <div className="qr-frame">
-            {qrUrl ? (
+            {qrUrl && !qrBroken ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={qrUrl} alt="Kode QR WhatsApp" />
+              <img src={qrUrl} alt="Kode QR WhatsApp" onError={() => setQrBroken(true)} />
             ) : (
               <span className="placeholder">Memuat QR…</span>
             )}

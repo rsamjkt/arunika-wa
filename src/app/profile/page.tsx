@@ -59,13 +59,24 @@ function ProfilePageInner() {
         setProfile(data);
         setName(data.name ?? "");
         setStatus(data.status ?? "");
+      } else {
+        setProfile(null);
+        setName("");
+        setStatus("");
+        setMessage("Gagal memuat profil perangkat ini.");
       }
+    } catch {
+      setProfile(null);
+      setName("");
+      setStatus("");
+      setMessage("Gagal memuat profil perangkat ini.");
     } finally {
       setLoading(false);
     }
   }, [activeSession]);
 
   useEffect(() => {
+    setMessage(null);
     load();
   }, [load]);
 
