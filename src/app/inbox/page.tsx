@@ -567,7 +567,7 @@ function InboxPageInner() {
 
   return (
     <>
-    <div className="inbox-shell">
+    <div className={`inbox-shell${activeChatId ? " chat-open" : ""}`}>
       <div className="inbox-left">
         <div className="sess-switch">
           <select
@@ -671,6 +671,22 @@ function InboxPageInner() {
         ) : (
           <>
             <div className="head">
+              <button
+                type="button"
+                className="back-btn"
+                aria-label="Kembali ke daftar percakapan"
+                onClick={() => setActiveChatId(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "1.1rem",
+                  padding: "4px 8px 4px 0",
+                  color: "var(--ink)",
+                  flexShrink: 0,
+                }}
+              >
+                ←
+              </button>
               <div className="who">
                 {activeChat?.name ?? activeChatId.split("@")[0]}
                 <small className="mono">{activeChatId}</small>
