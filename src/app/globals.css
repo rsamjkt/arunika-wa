@@ -609,6 +609,15 @@ button.chip {
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
+/* Grid items default to min-width: auto, i.e. they refuse to shrink below
+ * their content's own min-content size — a card containing unshrinkable
+ * content (e.g. the reports bar chart's nowrap date labels) blows out the
+ * whole column, and the page, even though the track itself is 1fr. */
+.grid2 > *,
+.grid3 > *,
+.grid4 > * {
+  min-width: 0;
+}
 .cpad {
   padding: 18px;
 }
@@ -641,7 +650,11 @@ button.chip {
   .grid2,
   .grid3,
   .grid4 {
-    grid-template-columns: 1fr;
+    /* !important: some pages set an inline gridTemplateColumns (e.g. "1.6fr
+     * 1fr") for desktop column ratios, which otherwise beats this rule's
+     * specificity and leaves the page overflowing horizontally on mobile —
+     * same fix already applied to .send-grid below. */
+    grid-template-columns: 1fr !important;
   }
 }
 
@@ -682,16 +695,16 @@ button.chip {
   gap: 8px;
   height: 172px;
   padding-top: 8px;
+  overflow-x: auto;
 }
 .barcol {
-  flex: 1;
+  flex: 1 0 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
   height: 100%;
   justify-content: flex-end;
-  min-width: 0;
 }
 .barstack {
   width: 100%;
@@ -866,6 +879,27 @@ table.dtable .actions-cell button {
   flex-direction: column;
   min-height: 0;
   border-right: 1px solid var(--border);
+}
+.thread .back-btn {
+  display: none;
+}
+@media (max-width: 880px) {
+  /* Two fixed panes side by side don't fit a phone screen — show one at a
+   * time instead: the conversation list until a chat is picked, then the
+   * thread (with a back button to return), mirroring how every mobile
+   * messaging app handles this same layout. */
+  .inbox-shell {
+    grid-template-columns: 1fr;
+  }
+  .inbox-shell:not(.chat-open) .thread {
+    display: none;
+  }
+  .inbox-shell.chat-open .inbox-left {
+    display: none;
+  }
+  .thread .back-btn {
+    display: inline-flex;
+  }
 }
 .sess-switch {
   padding: 12px;

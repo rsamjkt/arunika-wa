@@ -233,39 +233,41 @@ export default function WebhookSettingsPage() {
             </p>
           </div>
         </div>
-        <table className="dtable">
-          <thead>
-            <tr>
-              <th>Waktu</th>
-              <th>Event</th>
-              <th>Status</th>
-              <th>Keterangan</th>
-            </tr>
-          </thead>
-          <tbody>
-            {config.recentDeliveries.map((d) => (
-              <tr key={d.id}>
-                <td className="mono" style={{ color: "var(--ink-soft)" }}>
-                  {new Date(d.timestamp).toLocaleString("id-ID")}
-                </td>
-                <td className="mono">{d.event}</td>
-                <td>
-                  <span className={`badge ${d.ok ? "good" : "bad"}`}>{d.ok ? "Berhasil" : "Gagal"}</span>
-                </td>
-                <td style={{ fontSize: "0.78rem", color: "var(--ink-soft)" }}>
-                  {d.status ? `HTTP ${d.status}` : d.error ?? "—"}
-                </td>
-              </tr>
-            ))}
-            {config.recentDeliveries.length === 0 && (
+        <div style={{ overflowX: "auto" }}>
+          <table className="dtable">
+            <thead>
               <tr>
-                <td colSpan={4} style={{ textAlign: "center", color: "var(--ink-soft)", padding: 24 }}>
-                  Belum ada pengiriman.
-                </td>
+                <th>Waktu</th>
+                <th>Event</th>
+                <th>Status</th>
+                <th>Keterangan</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {config.recentDeliveries.map((d) => (
+                <tr key={d.id}>
+                  <td className="mono" style={{ color: "var(--ink-soft)" }}>
+                    {new Date(d.timestamp).toLocaleString("id-ID")}
+                  </td>
+                  <td className="mono">{d.event}</td>
+                  <td>
+                    <span className={`badge ${d.ok ? "good" : "bad"}`}>{d.ok ? "Berhasil" : "Gagal"}</span>
+                  </td>
+                  <td style={{ fontSize: "0.78rem", color: "var(--ink-soft)" }}>
+                    {d.status ? `HTTP ${d.status}` : d.error ?? "—"}
+                  </td>
+                </tr>
+              ))}
+              {config.recentDeliveries.length === 0 && (
+                <tr>
+                  <td colSpan={4} style={{ textAlign: "center", color: "var(--ink-soft)", padding: 24 }}>
+                    Belum ada pengiriman.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
