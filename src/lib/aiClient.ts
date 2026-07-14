@@ -1,21 +1,46 @@
 import { providerForModel, type AIModel, type AIProvider } from "./aiAutoReply";
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY ?? "";
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? "";
-
 const MAX_TOKENS = 400;
 
+type ProviderConfig = {
+  envKey: string;
+  shape: "anthropic" | "openai-compatible";
+  baseUrl: string; // unused for the anthropic shape, which hardcodes its own endpoint
+  label: string;
+};
+
+// Deepseek, OpenAI, Gemini, Groq, Mistral, and Qwen all speak the same
+// OpenAI-compatible chat/completions shape — only the base URL and key
+// differ, so adding a new provider here is usually a one-line addition
+// rather than a new call function.
+const PROVIDERS: Record<AIProvider, ProviderConfig> = {
+  anthropic: { envKey: "ANTHROPIC_API_KEY", shape: "anthropic", baseUrl: "", label: "Anthropic" },
+  deepseek: { envKey: "DEEPSEEK_API_KEY", shape: "openai-compatible", baseUrl: "https://api.deepseek.com", label: "DeepSeek" },
+  openai: { envKey: "OPENAI_API_KEY", shape: "openai-compatible", baseUrl: "https://api.openai.com/v1", label: "OpenAI" },
+  gemini: {
+    envKey: "GEMINI_API_KEY",
+    shape: "openai-compatible",
+    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+    label: "Gemini",
+  },
+  groq: { envKey: "GROQ_API_KEY", shape: "openai-compatible", baseUrl: "https://api.groq.com/openai/v1", label: "Groq" },
+  mistral: { envKey: "MISTRAL_API_KEY", shape: "openai-compatible", baseUrl: "https://api.mistral.ai/v1", label: "Mistral" },
+  qwen: {
+    envKey: "QWEN_API_KEY",
+    shape: "openai-compatible",
+    baseUrl: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    label: "Qwen",
+  },
+};
+
 function apiKeyFor(provider: AIProvider): string {
-  if (provider === "anthropic") return ANTHROPIC_API_KEY;
-  if (provider === "deepseek") return DEEPSEEK_API_KEY;
-  return OPENAI_API_KEY;
+  return process.env[PROVIDERS[provider].envKey] ?? "";
 }
 
 /** True if ANY provider has a key set — used to decide whether the AI
  * auto-reply feature exists at all on this platform. */
 export function isAIConfigured(): boolean {
-  return Boolean(ANTHROPIC_API_KEY || DEEPSEEK_API_KEY || OPENAI_API_KEY);
+  return (Object.keys(PROVIDERS) as AIProvider[]).some((p) => apiKeyFor(p).length > 0);
 }
 
 /** True for the specific model a tenant has picked — a tenant could select
@@ -25,11 +50,11 @@ export function isModelConfigured(model: AIModel): boolean {
   return apiKeyFor(providerForModel(model)).length > 0;
 }
 
-async function callAnthropic(systemPrompt: string, userContent: string, model: AIModel): Promise<string> {
+async function callAnthropic(systemPrompt: string, userContent: string, model: AIModel, apiKey: string): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
-      "x-api-key": ANTHROPIC_API_KEY,
+      "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
@@ -47,18 +72,14 @@ async function callAnthropic(systemPrompt: string, userContent: string, model: A
   return text.trim();
 }
 
-/** DeepSeek and OpenAI both speak the same OpenAI-compatible chat
- * completions shape — one function covers both, only the base URL/key
- * differ. */
 async function callOpenAICompatible(
-  baseUrl: string,
+  cfg: ProviderConfig,
   apiKey: string,
   systemPrompt: string,
   userContent: string,
   model: AIModel,
-  providerLabel: string,
 ): Promise<string> {
-  const res = await fetch(`${baseUrl}/chat/completions`, {
+  const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -73,10 +94,10 @@ async function callOpenAICompatible(
       ],
     }),
   });
-  if (!res.ok) throw new Error(`${providerLabel} API error: ${res.status} ${await res.text().catch(() => "")}`);
+  if (!res.ok) throw new Error(`${cfg.label} API error: ${res.status} ${await res.text().catch(() => "")}`);
   const data = await res.json();
   const text = data.choices?.[0]?.message?.content;
-  if (!text || typeof text !== "string") throw new Error(`${providerLabel} tidak mengembalikan balasan teks`);
+  if (!text || typeof text !== "string") throw new Error(`${cfg.label} tidak mengembalikan balasan teks`);
   return text.trim();
 }
 
@@ -84,13 +105,10 @@ async function callOpenAICompatible(
  * matches this codebase's existing hand-rolled-fetch style (see waha.ts). */
 export async function generateAIReply(systemPrompt: string, userContent: string, model: AIModel): Promise<string> {
   const provider = providerForModel(model);
-  if (!isModelConfigured(model)) {
-    throw new Error(`API key untuk provider "${provider}" belum diatur di server`);
-  }
+  const cfg = PROVIDERS[provider];
+  const apiKey = apiKeyFor(provider);
+  if (!apiKey) throw new Error(`API key untuk provider "${cfg.label}" belum diatur di server`);
 
-  if (provider === "anthropic") return callAnthropic(systemPrompt, userContent, model);
-  if (provider === "deepseek") {
-    return callOpenAICompatible("https://api.deepseek.com", DEEPSEEK_API_KEY, systemPrompt, userContent, model, "DeepSeek");
-  }
-  return callOpenAICompatible("https://api.openai.com/v1", OPENAI_API_KEY, systemPrompt, userContent, model, "OpenAI");
+  if (cfg.shape === "anthropic") return callAnthropic(systemPrompt, userContent, model, apiKey);
+  return callOpenAICompatible(cfg, apiKey, systemPrompt, userContent, model);
 }
