@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAISettings, updateAISettings } from "@/lib/aiAutoReply";
+import { AI_MODELS, getAISettings, isValidAIModel, updateAISettings } from "@/lib/aiAutoReply";
 import { isAIConfigured } from "@/lib/aiClient";
 import { requireFeature } from "@/lib/authz";
 import { getEffectiveTenantId } from "@/lib/users";
@@ -12,6 +12,7 @@ export async function GET() {
   return NextResponse.json({
     ...getAISettings(getEffectiveTenantId(user!)),
     configured: isAIConfigured(),
+    availableModels: AI_MODELS,
   });
 }
 
@@ -21,12 +22,16 @@ export async function PUT(req: NextRequest) {
 
   const { body, response: parseError } = await parseJsonBody(req);
   if (parseError) return parseError;
-  const { enabled, businessName, knowledgeBase, tone } = body!;
+  const { enabled, businessName, knowledgeBase, tone, model } = body!;
+  if (model !== undefined && !isValidAIModel(model)) {
+    return NextResponse.json({ error: "Model AI tidak valid" }, { status: 400 });
+  }
   const next = updateAISettings(getEffectiveTenantId(user!), {
     enabled: typeof enabled === "boolean" ? enabled : undefined,
     businessName: typeof businessName === "string" ? businessName.slice(0, 120) : undefined,
     knowledgeBase: typeof knowledgeBase === "string" ? knowledgeBase.slice(0, 8000) : undefined,
     tone: typeof tone === "string" ? tone.slice(0, 200) : undefined,
+    model: isValidAIModel(model) ? model : undefined,
   });
   return NextResponse.json(next);
 }

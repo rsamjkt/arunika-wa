@@ -1,10 +1,41 @@
 import { readJson, writeJson } from "./store";
 
+export type AIModel = "claude-haiku-4-5-20251001" | "claude-sonnet-5" | "claude-opus-4-8";
+
+export const AI_MODELS: { id: AIModel; label: string; description: string }[] = [
+  {
+    id: "claude-haiku-4-5-20251001",
+    label: "Claude Haiku 4.5",
+    description: "Cepat & paling hemat biaya — cocok untuk balasan singkat sehari-hari.",
+  },
+  {
+    id: "claude-sonnet-5",
+    label: "Claude Sonnet 5",
+    description: "Lebih pintar, biaya sedang — cocok kalau pertanyaan pelanggan sering rumit.",
+  },
+  {
+    id: "claude-opus-4-8",
+    label: "Claude Opus 4.8",
+    description: "Paling pintar, biaya paling tinggi — untuk kasus yang butuh pemahaman terbaik.",
+  },
+];
+
+export function isValidAIModel(model: unknown): model is AIModel {
+  return typeof model === "string" && AI_MODELS.some((m) => m.id === model);
+}
+
+// A platform-wide env var can still set the default for new tenants, but
+// each tenant's own saved choice always takes precedence once they pick one.
+const DEFAULT_MODEL: AIModel = isValidAIModel(process.env.AI_AUTOREPLY_MODEL)
+  ? process.env.AI_AUTOREPLY_MODEL
+  : "claude-haiku-4-5-20251001";
+
 export type AIAutoReplySettings = {
   enabled: boolean;
   businessName: string;
   knowledgeBase: string;
   tone: string;
+  model: AIModel;
 };
 
 const FILE = "ai-autoreply.json";
@@ -16,6 +47,7 @@ const DEFAULTS: AIAutoReplySettings = {
   businessName: "",
   knowledgeBase: "",
   tone: "ramah, singkat, dan profesional",
+  model: DEFAULT_MODEL,
 };
 
 type Store = Record<string, AIAutoReplySettings>;

@@ -123,6 +123,7 @@ async function runAIAutoReply(ownerId: string, session: string, chatId: string, 
     const reply = await generateAIReply(
       buildSystemPrompt(aiSettings),
       `${transcript}\n\nBalas pesan terakhir dari pelanggan di atas.`,
+      aiSettings.model,
     );
     recordAIUsage(ownerId);
     await sendReply(ownerId, session, chatId, reply);
