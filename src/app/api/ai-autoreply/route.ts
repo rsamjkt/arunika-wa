@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AI_MODELS, getAISettings, isValidAIModel, updateAISettings } from "@/lib/aiAutoReply";
-import { isAIConfigured } from "@/lib/aiClient";
+import { isAIConfigured, isModelConfigured } from "@/lib/aiClient";
 import { requireFeature } from "@/lib/authz";
 import { getEffectiveTenantId } from "@/lib/users";
 import { parseJsonBody } from "@/lib/parseJsonBody";
@@ -9,10 +9,12 @@ export async function GET() {
   const { user, response } = await requireFeature("autoreply");
   if (response) return response;
 
+  const settings = getAISettings(getEffectiveTenantId(user!));
   return NextResponse.json({
-    ...getAISettings(getEffectiveTenantId(user!)),
+    ...settings,
     configured: isAIConfigured(),
-    availableModels: AI_MODELS,
+    modelConfigured: isModelConfigured(settings.model),
+    availableModels: AI_MODELS.map((m) => ({ ...m, configured: isModelConfigured(m.id) })),
   });
 }
 

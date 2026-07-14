@@ -1,27 +1,67 @@
 import { readJson, writeJson } from "./store";
 
-export type AIModel = "claude-haiku-4-5-20251001" | "claude-sonnet-5" | "claude-opus-4-8";
+export type AIProvider = "anthropic" | "deepseek" | "openai";
 
-export const AI_MODELS: { id: AIModel; label: string; description: string }[] = [
+export type AIModel =
+  | "claude-haiku-4-5-20251001"
+  | "claude-sonnet-5"
+  | "claude-opus-4-8"
+  | "deepseek-chat"
+  | "deepseek-reasoner"
+  | "gpt-4o-mini"
+  | "gpt-4o";
+
+export const AI_MODELS: { id: AIModel; provider: AIProvider; label: string; description: string }[] = [
   {
     id: "claude-haiku-4-5-20251001",
+    provider: "anthropic",
     label: "Claude Haiku 4.5",
     description: "Cepat & paling hemat biaya — cocok untuk balasan singkat sehari-hari.",
   },
   {
     id: "claude-sonnet-5",
+    provider: "anthropic",
     label: "Claude Sonnet 5",
     description: "Lebih pintar, biaya sedang — cocok kalau pertanyaan pelanggan sering rumit.",
   },
   {
     id: "claude-opus-4-8",
+    provider: "anthropic",
     label: "Claude Opus 4.8",
     description: "Paling pintar, biaya paling tinggi — untuk kasus yang butuh pemahaman terbaik.",
+  },
+  {
+    id: "deepseek-chat",
+    provider: "deepseek",
+    label: "DeepSeek Chat",
+    description: "Model umum DeepSeek — sangat hemat biaya, kualitas bagus untuk percakapan sehari-hari.",
+  },
+  {
+    id: "deepseek-reasoner",
+    provider: "deepseek",
+    label: "DeepSeek Reasoner (R1)",
+    description: "Model reasoning DeepSeek — lebih pintar untuk pertanyaan yang butuh penalaran lebih dalam.",
+  },
+  {
+    id: "gpt-4o-mini",
+    provider: "openai",
+    label: "GPT-4o mini",
+    description: "Model OpenAI yang ringan dan hemat biaya.",
+  },
+  {
+    id: "gpt-4o",
+    provider: "openai",
+    label: "GPT-4o",
+    description: "Model OpenAI yang lebih pintar, biaya lebih tinggi.",
   },
 ];
 
 export function isValidAIModel(model: unknown): model is AIModel {
   return typeof model === "string" && AI_MODELS.some((m) => m.id === model);
+}
+
+export function providerForModel(model: AIModel): AIProvider {
+  return AI_MODELS.find((m) => m.id === model)?.provider ?? "anthropic";
 }
 
 // A platform-wide env var can still set the default for new tenants, but

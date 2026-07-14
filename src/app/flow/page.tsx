@@ -20,8 +20,10 @@ interface AutoReplySettings {
 
 interface AIModelOption {
   id: string;
+  provider: string;
   label: string;
   description: string;
+  configured: boolean;
 }
 
 interface AISettings {
@@ -31,6 +33,7 @@ interface AISettings {
   tone: string;
   model: string;
   configured: boolean;
+  modelConfigured: boolean;
   availableModels: AIModelOption[];
 }
 
@@ -183,13 +186,18 @@ export default function FlowPage() {
                 className={`toggle${ai.enabled ? " on" : ""}`}
                 style={{ marginLeft: "auto", flexShrink: 0 }}
                 onClick={() => saveAI({ enabled: !ai.enabled }, "aiEnabled")}
-                disabled={aiSaving === "aiEnabled" || !ai.configured}
+                disabled={aiSaving === "aiEnabled" || !ai.modelConfigured}
                 aria-label="Aktifkan balasan AI"
               />
             </div>
             {!ai.configured && (
               <p style={{ fontSize: "0.78rem", color: "var(--warning)", marginBottom: 12 }}>
                 Fitur ini belum diaktifkan di server platform — hubungi admin.
+              </p>
+            )}
+            {ai.configured && !ai.modelConfigured && (
+              <p style={{ fontSize: "0.78rem", color: "var(--warning)", marginBottom: 12 }}>
+                API key untuk model ini belum diatur di server. Pilih model lain yang sudah aktif, atau hubungi admin.
               </p>
             )}
             <label className="lbl">Nama bisnis Anda</label>
@@ -216,6 +224,7 @@ export default function FlowPage() {
               {(ai.availableModels ?? []).map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.label}
+                  {!m.configured ? " (belum aktif)" : ""}
                 </option>
               ))}
             </select>
