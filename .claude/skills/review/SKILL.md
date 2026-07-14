@@ -40,7 +40,7 @@ This codebase has clear, repeated conventions — flag deviation as a defect, no
 - Data stores: one file per concern in `data/*.json` via `readJson`/`writeJson` from `src/lib/store.ts`, keyed by ownerId, with a `deleteXForOwner`/cascade-delete function wired into the tenant-deletion route in `src/app/api/admin/tenants/[id]/route.ts`.
 - API routes: thin handler, auth/ownership check first, then delegate to a `src/lib` function; errors via `WahaError`-style status-carrying exceptions where relevant.
 - No emoji on customer-facing marketing/auth pages or transactional emails (internal dashboard nav icons are fine, established exception).
-- Public pages use the brand-neutral slate/white/black palette; the internal dashboard keeps WhatsApp-green branding — don't blur the two.
+- Public pages use the brand-neutral slate/white/black palette. The internal dashboard uses a neutral slate sidebar/chrome with a muted forest-green accent (`--primary`, not the bright WhatsApp `#25d366`) — don't reintroduce the old neon-green/mint-tinted look on either surface.
 - Never expose the underlying WA engine's name/vendor identity on any customer-facing surface.
 
 ### 5. Smooth/fast/solid
