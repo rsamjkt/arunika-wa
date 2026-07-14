@@ -1203,6 +1203,86 @@ a.media-fallback:hover {
 }
 
 /* ---------- API docs ---------- */
+/* Redoc/Swagger-style layout: a persistent left nav tree for jumping
+ * between operations while scrolling, next to the accordion content. */
+.docs-shell {
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+}
+.docs-nav {
+  width: 232px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 84px;
+  max-height: calc(100vh - 104px);
+  overflow-y: auto;
+  padding-bottom: 24px;
+}
+.docs-nav-group-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  padding: 14px 10px 6px;
+}
+.docs-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.docs-nav-link:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+.docs-nav-link.active {
+  background: var(--success-bg);
+  color: var(--ink);
+  font-weight: 700;
+}
+.docs-nav-link .m {
+  flex-shrink: 0;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.docs-nav-link .m.get {
+  background: #61affe;
+}
+.docs-nav-link .m.post {
+  background: #49cc90;
+}
+.docs-nav-link .m.delete {
+  background: #f93e3e;
+}
+.docs-nav-link .p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.docs-main {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 980px) {
+  .docs-nav {
+    display: none;
+  }
+}
 /* ---------- Swagger-style accordion ---------- */
 .swagger-header {
   display: flex;

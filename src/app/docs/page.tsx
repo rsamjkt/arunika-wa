@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ApiTagGroup from "@/components/ApiTagGroup";
+import DocsNav from "@/components/DocsNav";
 import type { ApiEndpointDef } from "@/components/ApiEndpoint";
 
 interface Tag {
@@ -554,6 +555,10 @@ const TAGS: Tag[] = [
 
 export default function DocsPage() {
   const [filter, setFilter] = useState("");
+  const [openTags, setOpenTags] = useState<Set<string>>(() => new Set(TAGS.map((t) => t.tag)));
+  const [openOps, setOpenOps] = useState<Set<string>>(() => new Set());
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
   const filteredTags = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -571,8 +576,58 @@ export default function DocsPage() {
 
   const totalEndpoints = TAGS.reduce((sum, t) => sum + t.endpoints.length, 0);
 
+  function toggleTag(tag: string) {
+    setOpenTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  }
+
+  function toggleOp(id: string) {
+    setOpenOps((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function navigateTo(tag: string, id: string) {
+    setOpenTags((prev) => new Set(prev).add(tag));
+    setOpenOps((prev) => new Set(prev).add(id));
+    setActiveId(id);
+    // Wait a tick for the (possibly newly-expanded) section to actually
+    // mount before trying to scroll to it.
+    setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
+  // Scrollspy: highlight whichever operation heading is nearest the top of
+  // the viewport, so the nav tracks reading position like Redoc/Swagger UI.
+  useEffect(() => {
+    const rows = Array.from(document.querySelectorAll(".swagger-op-row"));
+    if (rows.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting);
+        if (visible.length === 0) return;
+        const topMost = visible.reduce((a, b) => (a.boundingClientRect.top < b.boundingClientRect.top ? a : b));
+        const id = topMost.target.closest(".swagger-op")?.id;
+        if (id) setActiveId(id);
+      },
+      { rootMargin: "-96px 0px -70% 0px", threshold: 0 },
+    );
+    rows.forEach((r) => observer.observe(r));
+    return () => observer.disconnect();
+  }, [filteredTags]);
+
   return (
-    <div style={{ maxWidth: 920, margin: "0 auto 96px" }}>
+    <div className="docs-shell" ref={contentRef}>
+      <DocsNav tags={filteredTags} activeId={activeId} onNavigate={navigateTo} />
+      <div className="docs-main" style={{ maxWidth: 860 }}>
       <div className="swagger-header">
         <div>
           <h1>
@@ -622,8 +677,18 @@ export default function DocsPage() {
       )}
 
       {filteredTags.map((t) => (
-        <ApiTagGroup key={t.tag} tag={t.tag} description={t.description} endpoints={t.endpoints} />
+        <ApiTagGroup
+          key={t.tag}
+          tag={t.tag}
+          description={t.description}
+          endpoints={t.endpoints}
+          open={openTags.has(t.tag)}
+          onToggle={() => toggleTag(t.tag)}
+          openOps={openOps}
+          onToggleOp={toggleOp}
+        />
       ))}
+      </div>
     </div>
   );
 }
