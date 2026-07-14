@@ -13,7 +13,7 @@ import {
   matchKeywordRule,
 } from "@/lib/autoreply";
 import { canUseAIToday, getAISettings, recordAIUsage, type AIAutoReplySettings } from "@/lib/aiAutoReply";
-import { generateAIReply, isAIConfigured } from "@/lib/aiClient";
+import { generateAIReply, isModelConfigured } from "@/lib/aiClient";
 
 const WEBHOOK_SECRET = process.env.WAHA_WEBHOOK_SECRET ?? "";
 
@@ -111,7 +111,7 @@ function buildSystemPrompt(settings: AIAutoReplySettings): string {
 }
 
 async function runAIAutoReply(ownerId: string, session: string, chatId: string, aiSettings: AIAutoReplySettings) {
-  if (!isAIConfigured() || !canUseAIToday(ownerId)) return;
+  if (!isModelConfigured(aiSettings.model) || !canUseAIToday(ownerId)) return;
   try {
     const history = await getMessages(session, chatId, 10).catch(() => []);
     const transcript = history
