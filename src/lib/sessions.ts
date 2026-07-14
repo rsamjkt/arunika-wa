@@ -9,9 +9,19 @@ export type AuthSession = {
 };
 
 const FILE = "web-sessions.json";
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
+/** Unlike message-log.ts/webhookLog.ts (capped by entry count), sessions
+ * previously had no cap or expiry at all — a user who closes the tab
+ * instead of logging out left a permanent orphan row forever. Lazily
+ * prunes anything past its TTL on read, so the file self-heals without a
+ * separate cron job. */
 function all(): AuthSession[] {
-  return readJson<AuthSession[]>(FILE, []);
+  const sessions = readJson<AuthSession[]>(FILE, []);
+  const now = Date.now();
+  const fresh = sessions.filter((s) => now - new Date(s.createdAt).getTime() < SESSION_TTL_MS);
+  if (fresh.length !== sessions.length) writeJson(FILE, fresh);
+  return fresh;
 }
 
 export function createSession(userId: string, username: string): string {

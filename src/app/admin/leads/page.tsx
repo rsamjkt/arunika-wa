@@ -50,8 +50,9 @@ export default function AdminLeadsPage() {
       .then((r) => r.json())
       .then((data) => {
         setLeads(Array.isArray(data) ? data : []);
-        setLoading(false);
-      });
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }
 
   useEffect(load, []);

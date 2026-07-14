@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { changePassword } from "@/lib/users";
 import { consumeResetToken } from "@/lib/passwordResets";
 import { deleteSessionsForUser } from "@/lib/sessions";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function POST(req: NextRequest) {
-  const { token, password } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { token, password } = body!;
   if (!token || typeof token !== "string") {
     return NextResponse.json({ error: "Token tidak valid" }, { status: 400 });
   }

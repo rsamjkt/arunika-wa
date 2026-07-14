@@ -42,6 +42,7 @@ function ContactsPageInner() {
   const activeSession = searchParams.get("session");
 
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
   const [contacts, setContacts] = useState<WAContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -60,7 +61,9 @@ function ContactsPageInner() {
           const working = data.find((s) => s.status === "WORKING");
           if (working) router.replace(`/contacts?session=${encodeURIComponent(working.name)}`);
         }
-      });
+      })
+      .catch(() => {})
+      .finally(() => setSessionsLoaded(true));
   }, [activeSession, router]);
 
   const load = useCallback(async () => {
@@ -124,6 +127,9 @@ function ContactsPageInner() {
     }
   }
 
+  if (!sessionsLoaded) {
+    return <p style={{ color: "var(--ink-soft)" }}>Memuat…</p>;
+  }
   if (sessions.length === 0) {
     return <p style={{ color: "var(--ink-soft)" }}>Belum ada perangkat terhubung.</p>;
   }

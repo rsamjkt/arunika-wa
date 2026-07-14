@@ -3,6 +3,7 @@ import { createApiKey, listApiKeys } from "@/lib/apikeys";
 import { requireFeature } from "@/lib/authz";
 import { getEffectiveTenantId } from "@/lib/users";
 import { getApiKeyStats } from "@/lib/messageLog";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 const ALL_TIME_DAYS = 3650;
 
@@ -25,7 +26,9 @@ export async function POST(req: NextRequest) {
   const { user, response } = await requireFeature("apikeys");
   if (response) return response;
 
-  const { name } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { name } = body!;
   const record = createApiKey(getEffectiveTenantId(user!), typeof name === "string" ? name : "");
   return NextResponse.json(record, { status: 201 });
 }

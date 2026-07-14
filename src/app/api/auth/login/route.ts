@@ -13,7 +13,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { username, password } = await req.json();
+  let username, password;
+  try {
+    ({ username, password } = await req.json());
+  } catch {
+    // Still counts as a failed attempt — a malformed body must not be a
+    // free way to probe the login endpoint without tripping the rate limit.
+    recordFailure(ip);
+    return NextResponse.json({ error: "Body permintaan tidak valid" }, { status: 400 });
+  }
 
   const user = verifyLogin(username, password);
   if (!user) {

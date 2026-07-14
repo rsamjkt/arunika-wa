@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSuperadmin } from "@/lib/authz";
 import { changePassword, getFullUser } from "@/lib/users";
 import { deleteSessionsForUser } from "@/lib/sessions";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { response } = await requireSuperadmin();
@@ -13,7 +14,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Tenant tidak ditemukan" }, { status: 404 });
   }
 
-  const { password } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { password } = body!;
   if (!password || typeof password !== "string" || password.length < 6) {
     return NextResponse.json({ error: "Password minimal 6 karakter" }, { status: 400 });
   }

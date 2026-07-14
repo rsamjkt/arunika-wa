@@ -4,9 +4,12 @@ import { createResetToken } from "@/lib/passwordResets";
 import { passwordResetEmail, sendEmail } from "@/lib/email";
 import { notifyAdminPasswordReset } from "@/lib/adminNotify";
 import { getAppUrl } from "@/lib/appUrl";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function POST(req: NextRequest) {
-  const { email } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { email } = body!;
   if (!email || typeof email !== "string") {
     return NextResponse.json({ error: "Email wajib diisi" }, { status: 400 });
   }
