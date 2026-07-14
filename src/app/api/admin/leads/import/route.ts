@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperadmin } from "@/lib/authz";
 import { createLead, findLeadByPhone, type LeadCategory } from "@/lib/leads";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 const CATEGORIES = new Set<LeadCategory>(["company", "school", "hospital"]);
 
@@ -18,7 +19,9 @@ export async function POST(req: NextRequest) {
   const { response } = await requireSuperadmin();
   if (response) return response;
 
-  const { csv } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { csv } = body!;
   if (!csv || typeof csv !== "string") {
     return NextResponse.json({ error: "File CSV kosong" }, { status: 400 });
   }

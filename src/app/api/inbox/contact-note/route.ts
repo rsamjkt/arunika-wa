@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSessionAccess } from "@/lib/tenancy";
 import { getEffectiveTenantId } from "@/lib/users";
 import { getContactNote, setContactNote } from "@/lib/contactNotes";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function GET(req: NextRequest) {
   const session = req.nextUrl.searchParams.get("session");
@@ -17,7 +18,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const { session, contactId, tags, note } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { session, contactId, tags, note } = body!;
   if (!session || !contactId) {
     return NextResponse.json({ error: "session dan contactId wajib diisi" }, { status: 400 });
   }

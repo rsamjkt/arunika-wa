@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSettings, updateSettings } from "@/lib/autoreply";
 import { requireFeature } from "@/lib/authz";
 import { getEffectiveTenantId } from "@/lib/users";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function GET() {
   const { user, response } = await requireFeature("autoreply");
@@ -13,7 +14,8 @@ export async function PUT(req: NextRequest) {
   const { user, response } = await requireFeature("autoreply");
   if (response) return response;
 
-  const body = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
   const {
     enabled,
     welcomeEnabled,

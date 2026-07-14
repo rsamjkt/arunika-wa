@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createPlan, listPlans } from "@/lib/plans";
 import { requireSuperadmin } from "@/lib/authz";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function GET() {
   return NextResponse.json(listPlans());
@@ -10,7 +11,9 @@ export async function POST(req: NextRequest) {
   const { response } = await requireSuperadmin();
   if (response) return response;
 
-  const { name, priceRp, durationDays, deviceLimit, monthlyMessageQuota, features } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { name, priceRp, durationDays, deviceLimit, monthlyMessageQuota, features } = body!;
   if (!name || typeof name !== "string") {
     return NextResponse.json({ error: "Nama paket wajib diisi" }, { status: 400 });
   }

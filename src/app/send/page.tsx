@@ -36,6 +36,7 @@ function SendPageInner() {
   const activeSession = searchParams.get("session");
 
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
   const [phone, setPhone] = useState("");
   const [text, setText] = useState("");
   const [checkResult, setCheckResult] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -55,7 +56,9 @@ function SendPageInner() {
           const working = data.find((s) => s.status === "WORKING");
           if (working) router.replace(`/send?session=${encodeURIComponent(working.name)}`);
         }
-      });
+      })
+      .catch(() => {})
+      .finally(() => setSessionsLoaded(true));
   }, [activeSession, router]);
 
   async function checkNumber() {
@@ -137,6 +140,9 @@ function SendPageInner() {
     }
   }
 
+  if (!sessionsLoaded) {
+    return <p style={{ color: "var(--ink-soft)" }}>Memuat…</p>;
+  }
   if (sessions.length === 0) {
     return <p style={{ color: "var(--ink-soft)" }}>Belum ada perangkat terhubung.</p>;
   }

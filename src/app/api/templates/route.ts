@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createTemplate, listTemplates } from "@/lib/templates";
 import { requireFeature } from "@/lib/authz";
 import { getEffectiveTenantId } from "@/lib/users";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function GET() {
   const { user, response } = await requireFeature("templates");
@@ -13,7 +14,9 @@ export async function POST(req: NextRequest) {
   const { user, response } = await requireFeature("templates");
   if (response) return response;
 
-  const { name, category, body } = await req.json();
+  const { body: reqBody, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { name, category, body } = reqBody!;
   if (!name || typeof name !== "string") {
     return NextResponse.json({ error: "Nama template wajib diisi" }, { status: 400 });
   }

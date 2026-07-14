@@ -3,6 +3,7 @@ import { createCampaign, listCampaigns, startCampaign } from "@/lib/campaigns";
 import { requireFeature } from "@/lib/authz";
 import { getEffectiveTenantId } from "@/lib/users";
 import { requireSessionAccess } from "@/lib/tenancy";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function GET() {
   const { user, response } = await requireFeature("broadcast");
@@ -14,7 +15,9 @@ export async function POST(req: NextRequest) {
   const { response: featureResponse } = await requireFeature("broadcast");
   if (featureResponse) return featureResponse;
 
-  const { name, session, messageBody, templateId, recipients, startNow, scheduledAt } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { name, session, messageBody, templateId, recipients, startNow, scheduledAt } = body!;
 
   if (!name || typeof name !== "string") {
     return NextResponse.json({ error: "Nama campaign wajib diisi" }, { status: 400 });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSessionAccess } from "@/lib/tenancy";
 import { getEffectiveTenantId, listTeamMembers } from "@/lib/users";
 import { listAssignmentsForSession, setAssignment } from "@/lib/chatAssignments";
+import { parseJsonBody } from "@/lib/parseJsonBody";
 
 export async function GET(req: NextRequest) {
   const session = req.nextUrl.searchParams.get("session");
@@ -18,7 +19,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const { session, chatId, assignedTo, status } = await req.json();
+  const { body, response: parseError } = await parseJsonBody(req);
+  if (parseError) return parseError;
+  const { session, chatId, assignedTo, status } = body!;
   if (!session || !chatId) {
     return NextResponse.json({ error: "session dan chatId wajib diisi" }, { status: 400 });
   }
