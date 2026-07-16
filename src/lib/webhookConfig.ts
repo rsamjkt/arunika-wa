@@ -79,7 +79,21 @@ export function regenerateWebhookSecret(ownerId: string): OutboundWebhookConfig 
   return next;
 }
 
-function recordDelivery(ownerId: string, ok: boolean) {
+// Two deliveries for the same tenant can be in flight concurrently (no
+// per-tenant queue) — recordDelivery must apply whichever one *started*
+// most recently, not whichever happens to resolve first, or a slow
+// earlier attempt finishing late (after its retry/backoff) could clobber
+// a more recent, more accurate result. `deliverySeq` is a monotonic
+// counter captured at the start of each delivery attempt; a call only
+// applies if its sequence number is the newest ever seen for that owner.
+let deliverySeq = 0;
+const lastAppliedSeq = new Map<string, number>();
+
+function recordDelivery(ownerId: string, ok: boolean, seq: number) {
+  const lastSeq = lastAppliedSeq.get(ownerId) ?? -1;
+  if (seq < lastSeq) return;
+  lastAppliedSeq.set(ownerId, seq);
+
   const current = getWebhookConfig(ownerId);
   const consecutiveFailures = ok ? 0 : current.consecutiveFailures + 1;
   const store = allConfigs();
@@ -130,29 +144,55 @@ async function send(url: string, secret: string, body: unknown): Promise<SendRes
   }
 }
 
+// Each inbound/outbound WA event fires its own independent delivery with
+// no per-tenant queue — a tenant whose endpoint is consistently slow (not
+// hanging; `send()` already times out at 8s) could otherwise accumulate an
+// unbounded number of concurrent outbound requests under high message
+// throughput. Cap it and drop (not queue) deliveries beyond the limit,
+// logged as a failure so it's visible rather than a silent black hole.
+const MAX_CONCURRENT_PER_OWNER = 4;
+const inFlightCount = new Map<string, number>();
+
 export async function deliverOutboundWebhook(ownerId: string, event: string, body: unknown) {
   const cfg = getWebhookConfig(ownerId);
   if (!cfg.enabled || !cfg.url || !cfg.events.includes(event)) return;
 
-  let result = await send(cfg.url, cfg.secret, body);
-  if (!result.ok) {
-    await new Promise((r) => setTimeout(r, 1500));
-    result = await send(cfg.url, cfg.secret, body);
+  const inFlight = inFlightCount.get(ownerId) ?? 0;
+  if (inFlight >= MAX_CONCURRENT_PER_OWNER) {
+    logWebhookDelivery({
+      ownerId,
+      event,
+      ok: false,
+      error: "Dilewati: terlalu banyak pengiriman webhook lain sedang berjalan ke endpoint ini",
+    });
+    return;
   }
-  recordDelivery(ownerId, result.ok);
-  logWebhookDelivery({ ownerId, event, ok: result.ok, status: result.status, error: result.error });
+  inFlightCount.set(ownerId, inFlight + 1);
+  const seq = ++deliverySeq;
+  try {
+    let result = await send(cfg.url, cfg.secret, body);
+    if (!result.ok) {
+      await new Promise((r) => setTimeout(r, 1500));
+      result = await send(cfg.url, cfg.secret, body);
+    }
+    recordDelivery(ownerId, result.ok, seq);
+    logWebhookDelivery({ ownerId, event, ok: result.ok, status: result.status, error: result.error });
+  } finally {
+    inFlightCount.set(ownerId, (inFlightCount.get(ownerId) ?? 1) - 1);
+  }
 }
 
 /** Sends a test payload regardless of the enabled/events gate. */
 export async function testOutboundWebhook(ownerId: string): Promise<{ ok: boolean; error?: string }> {
   const cfg = getWebhookConfig(ownerId);
   if (!cfg.url) return { ok: false, error: "Belum ada URL webhook yang diset" };
+  const seq = ++deliverySeq;
   const result = await send(cfg.url, cfg.secret, {
     event: "test",
     timestamp: Date.now(),
     payload: { message: "Ini adalah test webhook dari Arunika-WA." },
   });
-  recordDelivery(ownerId, result.ok);
+  recordDelivery(ownerId, result.ok, seq);
   logWebhookDelivery({ ownerId, event: "test", ok: result.ok, status: result.status, error: result.error });
   return { ok: result.ok, error: result.error };
 }
