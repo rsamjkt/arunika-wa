@@ -109,25 +109,39 @@ async function bestEffortEmailFromWebsite(website: string): Promise<string | nul
   }
 }
 
+// A batch takes tens of seconds (each lead paced 5-12s apart) — long enough
+// that a misfired/overlapping cron trigger could otherwise fetch the same
+// still-"new" leads twice and double-send before either run updates their
+// status. Same guard shape as campaigns.ts's activeCampaigns Set: a
+// synchronous check-and-set with no await in between, so two near-
+// simultaneous calls can't both pass the check.
+let batchRunning = false;
+
 /** Sends the offer (WA if phone present, email if email present) to up to
  * `limit` leads still in "new" status, with a randomized delay between
  * each send — called in small batches by the lead-outreach cron so real
  * daily volume stays low instead of blasting everything at once. */
 export async function sendOfferBatch(limit: number): Promise<{ sent: number; failed: number }> {
-  const leads = listNewLeads(limit);
-  let sent = 0;
-  let failed = 0;
+  if (batchRunning) return { sent: 0, failed: 0 };
+  batchRunning = true;
+  try {
+    const leads = listNewLeads(limit);
+    let sent = 0;
+    let failed = 0;
 
-  for (const lead of leads) {
-    const ok = await sendOfferToLead(lead);
-    if (ok) sent++;
-    else failed++;
+    for (const lead of leads) {
+      const ok = await sendOfferToLead(lead);
+      if (ok) sent++;
+      else failed++;
 
-    const delay = MIN_DELAY_MS + Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS);
-    await new Promise((r) => setTimeout(r, delay));
+      const delay = MIN_DELAY_MS + Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+
+    return { sent, failed };
+  } finally {
+    batchRunning = false;
   }
-
-  return { sent, failed };
 }
 
 async function sendOfferToLead(lead: Lead): Promise<boolean> {

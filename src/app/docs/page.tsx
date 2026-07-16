@@ -622,7 +622,9 @@ export default function DocsPage() {
     );
     rows.forEach((r) => observer.observe(r));
     return () => observer.disconnect();
-  }, [filteredTags]);
+    // Re-attach whenever the set of rendered rows can change — a new search
+    // filter, or a tag group collapsing/expanding (its rows unmount/remount).
+  }, [filteredTags, openTags]);
 
   return (
     <div className="docs-shell" ref={contentRef}>
