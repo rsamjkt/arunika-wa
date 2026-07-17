@@ -184,21 +184,21 @@ export default function FlowPage() {
               </div>
               <button
                 className={`toggle${ai.enabled ? " on" : ""}`}
-                style={{ marginLeft: "auto", flexShrink: 0 }}
+                style={{ marginLeft: "auto", flexShrink: 0, alignSelf: "flex-start" }}
                 onClick={() => saveAI({ enabled: !ai.enabled }, "aiEnabled")}
                 disabled={aiSaving === "aiEnabled" || !ai.modelConfigured}
                 aria-label="Aktifkan balasan AI"
               />
             </div>
             {!ai.configured && (
-              <p style={{ fontSize: "0.78rem", color: "var(--warning)", marginBottom: 12 }}>
+              <div className="callout warn" style={{ marginBottom: 14 }}>
                 Fitur ini belum diaktifkan di server platform — hubungi admin.
-              </p>
+              </div>
             )}
             {ai.configured && !ai.modelConfigured && (
-              <p style={{ fontSize: "0.78rem", color: "var(--warning)", marginBottom: 12 }}>
+              <div className="callout warn" style={{ marginBottom: 14 }}>
                 API key untuk model ini belum diatur di server. Pilih model lain yang sudah aktif, atau hubungi admin.
-              </p>
+              </div>
             )}
             <label className="lbl">Nama bisnis Anda</label>
             <input
@@ -212,6 +212,7 @@ export default function FlowPage() {
             />
             <label className="lbl">Model AI</label>
             <select
+              className="field"
               style={{ marginBottom: 4 }}
               value={ai.model}
               onChange={(e) => {

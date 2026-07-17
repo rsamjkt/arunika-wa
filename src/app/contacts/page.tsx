@@ -214,7 +214,18 @@ function ContactsPageInner() {
                     </div>
                   </td>
                   <td className="mono" style={{ color: "var(--ink-soft)" }}>
-                    {c.number ?? c.id.replace(/@.*/, "")}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {c.number ?? c.id.replace(/@.*/, "")}
+                      {c.id.endsWith("@lid") && (
+                        <span
+                          className="chip"
+                          title="ID privasi WhatsApp — bukan nomor telepon, ditampilkan oleh WhatsApp untuk melindungi nomor asli kontak ini"
+                          style={{ fontSize: "0.62rem", padding: "1px 7px" }}
+                        >
+                          LID
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     {c.isBusiness ? (
