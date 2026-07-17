@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentFullUser } from "./currentUser";
 import { getFreePlan, getPlan, hasFeature as planHasFeature, type FeatureKey, type Plan } from "./plans";
-import { getEffectiveQuotaUsage, getGoverningUser, type User } from "./users";
+import { getEffectiveQuotaUsage, getGoverningUser, reserveQuotaUsage, decrementQuotaUsage, type User } from "./users";
 import { createNotification, hasRecentNotification } from "./notifications";
 
 const QUOTA_WARNING_THRESHOLD = 0.8;
@@ -49,6 +49,31 @@ export function hasQuotaRemaining(user: User): boolean {
   const usage = getEffectiveQuotaUsage(governing.id);
   maybeNotifyQuotaNearLimit(governing.id, usage, plan.monthlyMessageQuota);
   return usage < plan.monthlyMessageQuota;
+}
+
+/** Atomically reserves one unit of message quota for `user`, or returns
+ * false and reserves nothing if they're already at their monthly limit.
+ * Use this instead of hasQuotaRemaining() for anything that actually sends
+ * a message — checking then incrementing only after a full network
+ * round-trip (the previous pattern in every send-* route) leaves a race
+ * window where a burst of concurrent requests can all pass the check
+ * before any of them increment, sending well past the quota. Call
+ * refundQuota() if the send this reserved for ultimately fails, so a
+ * failed send doesn't count against the tenant. */
+export function reserveQuota(user: User): boolean {
+  if (user.role === "superadmin") return true;
+  const governing = getGoverningUser(user);
+  const plan = getEffectivePlan(user);
+  if (plan.monthlyMessageQuota === null) return true;
+  const reserved = reserveQuotaUsage(governing.id, plan.monthlyMessageQuota);
+  if (reserved) {
+    maybeNotifyQuotaNearLimit(governing.id, getEffectiveQuotaUsage(governing.id), plan.monthlyMessageQuota);
+  }
+  return reserved;
+}
+
+export function refundQuota(user: User): void {
+  decrementQuotaUsage(getGoverningUser(user).id);
 }
 
 export function quotaExceededResponse(): NextResponse {

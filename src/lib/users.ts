@@ -381,6 +381,40 @@ export function incrementQuotaUsage(userId: string, by = 1) {
   );
 }
 
+export function decrementQuotaUsage(userId: string, by = 1) {
+  const users = all();
+  writeJson(
+    FILE,
+    users.map((u) => {
+      if (u.id !== userId) return u;
+      const month = currentMonth();
+      const sent = u.quotaUsage.month === month ? Math.max(0, u.quotaUsage.sent - by) : 0;
+      return { ...u, quotaUsage: { month, sent } };
+    }),
+  );
+}
+
+/** Atomically checks-and-increments quota usage in one synchronous
+ * read-modify-write (store.ts's I/O is synchronous, and there's no `await`
+ * between the read and the write here) — so two concurrent requests can't
+ * both pass the check before either one increments, unlike a separate
+ * check-then-increment-after-send call pair. Returns false, and increments
+ * nothing, if usage is already at or above `limit`. Same guard shape as
+ * the activeCampaigns/batchRunning locks used elsewhere in this codebase. */
+export function reserveQuotaUsage(userId: string, limit: number): boolean {
+  const users = all();
+  const user = users.find((u) => u.id === userId);
+  if (!user) return false;
+  const month = currentMonth();
+  const currentSent = user.quotaUsage.month === month ? user.quotaUsage.sent : 0;
+  if (currentSent >= limit) return false;
+  writeJson(
+    FILE,
+    users.map((u) => (u.id === userId ? { ...u, quotaUsage: { month, sent: currentSent + 1 } } : u)),
+  );
+  return true;
+}
+
 export function getFullUser(id: string): User | null {
   return all().find((u) => u.id === id) ?? null;
 }
