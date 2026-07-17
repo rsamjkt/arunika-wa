@@ -6,6 +6,11 @@ export async function POST(req: NextRequest) {
   if (token) deleteSession(token);
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set("arunika_session", "", { httpOnly: true, path: "/", maxAge: 0 });
+  res.cookies.set("arunika_session", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  });
   return res;
 }

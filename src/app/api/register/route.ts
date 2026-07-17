@@ -9,16 +9,31 @@ import { recordReferral } from "@/lib/referrals";
 import { getAppUrl } from "@/lib/appUrl";
 import { sendInvoiceWhatsApp } from "@/lib/customerNotify";
 import { parseJsonBody } from "@/lib/parseJsonBody";
+import { checkAndCountRequest, clientIp } from "@/lib/rateLimit";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Usernames get rendered into HTML emails (see email.ts's escapeHtml, the
+// primary defense) — restricting the charset here too is defense in depth
+// and keeps usernames sane as login identifiers regardless.
+const USERNAME_RE = /^[a-zA-Z0-9_.-]{3,30}$/;
 
 export async function POST(req: NextRequest) {
+  // Unthrottled, this endpoint is scriptable account-creation that also
+  // triggers a real external payment-gateway call for paid plans (createTransaction)
+  // and sends real emails — cap it per IP.
+  if (!checkAndCountRequest(`register:${clientIp(req.headers)}`, 8, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: "Terlalu banyak percobaan pendaftaran. Coba lagi nanti." }, { status: 429 });
+  }
+
   const { body, response: parseError } = await parseJsonBody(req);
   if (parseError) return parseError;
   const { username, password, email, phone, planId, referralCode } = body!;
 
-  if (!username || typeof username !== "string" || username.trim().length < 3) {
-    return NextResponse.json({ error: "Username minimal 3 karakter" }, { status: 400 });
+  if (!username || typeof username !== "string" || !USERNAME_RE.test(username.trim())) {
+    return NextResponse.json(
+      { error: "Username 3-30 karakter, hanya huruf, angka, titik, garis bawah, atau strip" },
+      { status: 400 },
+    );
   }
   if (!password || typeof password !== "string" || password.length < 6) {
     return NextResponse.json({ error: "Password minimal 6 karakter" }, { status: 400 });

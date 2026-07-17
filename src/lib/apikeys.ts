@@ -74,10 +74,17 @@ export function deleteAllForOwner(ownerId: string): void {
   writeJson(FILE, all().filter((k) => k.ownerId !== ownerId));
 }
 
+function timingSafeStringEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 export function validateApiKey(key: string): ApiKeyRecord | null {
   if (!key) return null;
   const keys = all();
-  const found = keys.find((k) => k.key === key && !k.revoked);
+  const found = keys.find((k) => !k.revoked && timingSafeStringEqual(k.key, key));
   if (!found) return null;
 
   const lastUsed = found.lastUsedAt ? new Date(found.lastUsedAt).getTime() : 0;
