@@ -59,6 +59,17 @@ const TENANT_OWNER_PREFIXES = [
   "/account/referral",
   "/account/billing",
   "/api/referrals",
+  // API keys grant full programmatic send access to the whole tenant
+  // account (burning the owner's quota), and the webhook config controls
+  // where the tenant's inbound messages get forwarded — both were
+  // reachable by any tenant_staff login (COOKIE_ONLY_PREFIXES only blocks
+  // API-key callers, not staff sessions), letting a staff member read the
+  // owner's live API key, mint new ones, or redirect the owner's webhook
+  // to an attacker URL. Scoped to owner-only like team/billing above.
+  "/settings/api-keys",
+  "/api/api-keys",
+  "/settings/webhook",
+  "/api/webhook-config",
 ];
 
 export function proxy(req: NextRequest) {
