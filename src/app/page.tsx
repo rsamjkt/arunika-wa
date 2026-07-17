@@ -261,9 +261,15 @@ export default function LandingPage() {
                   }}
                 >
                   <div style={{ fontWeight: 700, fontSize: "0.9rem", marginBottom: 8, color: INK_SOFT }}>{p.name}</div>
-                  <div style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: 14, color: INK }}>
-                    {p.priceRp === 0 ? "Gratis" : `Rp${p.priceRp.toLocaleString("id-ID")}`}
-                    {p.priceRp > 0 && <small style={{ fontSize: "0.65rem", fontWeight: 500, color: INK_SOFT }}> /bulan</small>}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: "1.4rem", fontWeight: 800, color: INK }}>
+                      {p.priceRp === 0 ? "Gratis" : `Rp${p.priceRp.toLocaleString("id-ID")}`}
+                    </div>
+                    {p.priceRp > 0 && (
+                      <small style={{ fontSize: "0.65rem", fontWeight: 500, color: INK_SOFT, display: "block", marginTop: 2 }}>
+                        /bulan
+                      </small>
+                    )}
                   </div>
                   <div style={{ fontSize: "0.78rem", color: INK_SOFT, marginBottom: 5 }}>
                     {p.deviceLimit} perangkat WA
