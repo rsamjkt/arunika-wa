@@ -414,7 +414,6 @@ h3 {
   padding: 10px 16px;
   font-weight: 700;
   font-size: 0.86rem;
-  white-space: nowrap;
   background: var(--primary-gradient);
   color: var(--primary-ink);
   box-shadow: 0 8px 18px rgba(22, 163, 74, 0.22);
