@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ChartColumn } from "lucide-react";
 
 interface DayStat {
   date: string;
@@ -27,6 +28,7 @@ interface ApiKeyStat {
 }
 interface ReportStats {
   days: DayStat[];
+  periodDays: number;
   totalSent: number;
   totalFailed: number;
   totalReceived: number;
@@ -38,13 +40,18 @@ interface ReportStats {
   apiKeyStats: ApiKeyStat[];
 }
 
+const PERIODS = [7, 14, 30];
+
 export default function ReportsPage() {
   const [stats, setStats] = useState<ReportStats | null>(null);
+  const [period, setPeriod] = useState(14);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch("/api/reports")
+    setLoading(true);
+    setError(false);
+    fetch(`/api/reports?days=${period}`)
       .then((r) => {
         if (!r.ok) throw new Error("Gagal memuat laporan");
         return r.json();
@@ -52,9 +59,9 @@ export default function ReportsPage() {
       .then(setStats)
       .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, []);
+  }, [period]);
 
-  if (loading) {
+  if (loading && !stats) {
     return <p style={{ color: "var(--ink-soft)" }}>Memuat…</p>;
   }
   if (error || !stats) {
@@ -65,21 +72,39 @@ export default function ReportsPage() {
 
   return (
     <div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14, gap: 8 }}>
+        {PERIODS.map((p) => (
+          <button
+            key={p}
+            type="button"
+            className="chip"
+            style={
+              period === p
+                ? { background: "var(--success-bg)", color: "var(--success)", fontWeight: 700 }
+                : undefined
+            }
+            onClick={() => setPeriod(p)}
+          >
+            {p} hari
+          </button>
+        ))}
+      </div>
+
       <div className="stat-grid">
         <div className="stat-card">
-          <div className="lbl">Terkirim (14 hari)</div>
+          <div className="lbl">Terkirim ({stats.periodDays} hari)</div>
           <div className="val" style={{ color: "var(--success)" }}>
             {stats.totalSent}
           </div>
         </div>
         <div className="stat-card">
-          <div className="lbl">Gagal (14 hari)</div>
+          <div className="lbl">Gagal ({stats.periodDays} hari)</div>
           <div className="val" style={{ color: "var(--danger)" }}>
             {stats.totalFailed}
           </div>
         </div>
         <div className="stat-card">
-          <div className="lbl">Pesan Masuk (14 hari)</div>
+          <div className="lbl">Pesan Masuk ({stats.periodDays} hari)</div>
           <div className="val" style={{ color: "var(--info)" }}>
             {stats.totalReceived}
           </div>
@@ -95,7 +120,7 @@ export default function ReportsPage() {
           <div className="ch">
             <div>
               <div className="chttl">Volume Pesan</div>
-              <div className="chsub">14 hari terakhir</div>
+              <div className="chsub">{stats.periodDays} hari terakhir</div>
             </div>
             <div style={{ display: "flex", gap: 14, marginLeft: "auto" }}>
               <div className="leg">
@@ -136,18 +161,14 @@ export default function ReportsPage() {
           <div className="ch">
             <div className="chttl">Ringkasan Campaign</div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div>
-              <div style={{ fontSize: "1.6rem", fontWeight: 800 }} className="mono">
-                {stats.activeCampaigns}
-              </div>
-              <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)" }}>Sedang mengirim</div>
+          <div className="stat-grid" style={{ gridTemplateColumns: "1fr", marginBottom: 0 }}>
+            <div className="stat-card">
+              <div className="lbl">Sedang mengirim</div>
+              <div className="val">{stats.activeCampaigns}</div>
             </div>
-            <div>
-              <div style={{ fontSize: "1.6rem", fontWeight: 800 }} className="mono">
-                {stats.totalCampaigns}
-              </div>
-              <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)" }}>Total campaign dibuat</div>
+            <div className="stat-card">
+              <div className="lbl">Total campaign dibuat</div>
+              <div className="val">{stats.totalCampaigns}</div>
             </div>
           </div>
         </div>
@@ -157,29 +178,32 @@ export default function ReportsPage() {
         <div className="ch">
           <div className="chttl">Template Paling Efektif</div>
         </div>
-        <table className="dtable">
-          <thead>
-            <tr>
-              <th>Template</th>
-              <th>Dipakai</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stats.topTemplates.map((t) => (
-              <tr key={t.id}>
-                <td style={{ fontWeight: 700 }}>{t.name}</td>
-                <td className="mono">{t.usedCount}x</td>
-              </tr>
-            ))}
-            {stats.topTemplates.length === 0 && (
+        {stats.topTemplates.length === 0 ? (
+          <div className="empty-state">
+            <span className="ic">
+              <ChartColumn size={20} />
+            </span>
+            <div className="ttl">Belum ada template yang dipakai</div>
+            <div className="sub">Template yang paling sering dipakai saat mengirim pesan akan muncul di sini.</div>
+          </div>
+        ) : (
+          <table className="dtable">
+            <thead>
               <tr>
-                <td colSpan={2} style={{ textAlign: "center", color: "var(--ink-soft)", padding: 20 }}>
-                  Belum ada template yang dipakai.
-                </td>
+                <th>Template</th>
+                <th>Dipakai</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {stats.topTemplates.map((t) => (
+                <tr key={t.id}>
+                  <td style={{ fontWeight: 700 }}>{t.name}</td>
+                  <td className="mono">{t.usedCount}x</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {stats.agentStats.length > 0 && (
@@ -187,7 +211,7 @@ export default function ReportsPage() {
           <div className="ch">
             <div>
               <div className="chttl">Aktivitas Tim</div>
-              <div className="chsub">Pesan manual per anggota, 14 hari terakhir</div>
+              <div className="chsub">Pesan manual per anggota, {stats.periodDays} hari terakhir</div>
             </div>
           </div>
           <table className="dtable">
@@ -220,7 +244,7 @@ export default function ReportsPage() {
           <div className="ch">
             <div>
               <div className="chttl">Penggunaan API</div>
-              <div className="chsub">Pesan manual per sumber (dashboard vs API key), 14 hari terakhir</div>
+              <div className="chsub">Pesan manual per sumber (dashboard vs API key), {stats.periodDays} hari terakhir</div>
             </div>
           </div>
           <table className="dtable">

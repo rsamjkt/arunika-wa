@@ -644,18 +644,24 @@ export default function DocsPage() {
         <div className="swagger-server">GET/POST http://10.10.1.7:4000</div>
       </div>
 
-      <div className="callout warn">
+      <div className="callout">
         <b>Semua endpoint di sini butuh autentikasi</b>
-        Ada dua cara: (1) <b>lewat browser</b> — login dulu di halaman ini (pojok kanan atas),
-        cookie sesi otomatis terpakai, itu kenapa tombol &quot;Try it out&quot; di bawah langsung
-        jalan tanpa setelan tambahan. (2) <b>lewat aplikasi/skrip eksternal</b> — sertakan header{" "}
-        <code className="mono">X-Api-Key</code> di tiap request ke <code className="mono">/api/*</code>.
-        Tanpa salah satu dari keduanya, semua endpoint balas <code className="mono">401 Unauthorized</code>.
-        Buat dan kelola API key sendiri di halaman{" "}
-        <a href="/settings/api-keys" style={{ color: "inherit", textDecoration: "underline" }}>
-          Pengaturan → API Key
-        </a>{" "}
-        — jangan simpan key di kode yang publik.
+        <p style={{ margin: "6px 0 4px" }}>
+          <b>1. Lewat browser</b> — login dulu di halaman ini (pojok kanan atas), cookie sesi otomatis
+          terpakai, itu kenapa tombol &quot;Try it out&quot; di bawah langsung jalan tanpa setelan tambahan.
+        </p>
+        <p style={{ margin: "4px 0" }}>
+          <b>2. Lewat aplikasi/skrip eksternal</b> — sertakan header <code className="mono">X-Api-Key</code>{" "}
+          di tiap request ke <code className="mono">/api/*</code>.
+        </p>
+        <p style={{ margin: "8px 0 0" }}>
+          Tanpa salah satu dari keduanya, semua endpoint balas <code className="mono">401 Unauthorized</code>.
+          Buat dan kelola API key sendiri di halaman{" "}
+          <a href="/settings/api-keys" style={{ color: "inherit", textDecoration: "underline" }}>
+            Pengaturan → API Key
+          </a>{" "}
+          — jangan simpan key di kode yang publik.
+        </p>
       </div>
 
       <p style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginTop: -16, marginBottom: 24 }}>

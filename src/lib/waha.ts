@@ -56,6 +56,7 @@ export interface ChatSummary {
     body?: string;
     timestamp?: number;
     fromMe?: boolean;
+    hasMedia?: boolean;
   } | null;
 }
 
@@ -272,6 +273,7 @@ export interface WAContact {
   number?: string;
   isMyContact?: boolean;
   isBusiness?: boolean;
+  isBlocked?: boolean;
 }
 
 export function getAllContacts(session: string, limit = 50, offset = 0) {

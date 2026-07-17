@@ -65,6 +65,13 @@ interface Me {
   usage: { messagesSent: number; devices: number };
 }
 
+interface DayStat {
+  date: string;
+  sent: number;
+  failed: number;
+  received: number;
+}
+
 export default function DashboardPage() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -73,6 +80,7 @@ export default function DashboardPage() {
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [me, setMe] = useState<Me | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [activity, setActivity] = useState<DayStat[] | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -107,6 +115,13 @@ export default function DashboardPage() {
     fetch("/api/auth/me")
       .then((r) => (r.ok ? r.json() : null))
       .then(setMe)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/reports?days=14")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setActivity(data?.days ?? null))
       .catch(() => {});
   }, []);
 
@@ -210,10 +225,9 @@ export default function DashboardPage() {
         </div>
       )}
       {me?.role === "superadmin" && server?.version && (
-        <p style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 14 }}>
-          Mesin: <strong className="mono">{server.version.engine ?? "WEBJS"}</strong> · Engine{" "}
-          <span className="mono">{server.version.version}</span>
-        </p>
+        <span className="pill mono" style={{ display: "inline-flex", marginBottom: 14 }}>
+          {server.version.engine ?? "WEBJS"} · {server.version.version}
+        </span>
       )}
       <div className="stat-grid">
         <div className="stat-card">
@@ -222,19 +236,19 @@ export default function DashboardPage() {
         </div>
         <div className="stat-card">
           <div className="lbl">Terhubung</div>
-          <div className="val" style={{ color: "var(--success)" }}>
+          <div className="val" style={{ color: active > 0 ? "var(--success)" : "var(--ink)" }}>
             {active}
           </div>
         </div>
         <div className="stat-card">
           <div className="lbl">Menunggu Scan</div>
-          <div className="val" style={{ color: "var(--warning)" }}>
+          <div className="val" style={{ color: pending > 0 ? "var(--warning)" : "var(--ink)" }}>
             {pending}
           </div>
         </div>
         <div className="stat-card">
           <div className="lbl">Terputus / Gagal</div>
-          <div className="val" style={{ color: "var(--danger)" }}>
+          <div className="val" style={{ color: down > 0 ? "var(--danger)" : "var(--ink)" }}>
             {down}
           </div>
         </div>
@@ -322,7 +336,8 @@ export default function DashboardPage() {
                       </Link>
                     )}
                     <button
-                      className="btn danger"
+                      className="btn secondary"
+                      style={{ color: "var(--danger)" }}
                       onClick={() => remove(s.name)}
                       disabled={busy === s.name + "delete"}
                     >
@@ -335,6 +350,38 @@ export default function DashboardPage() {
           </tbody>
         </table>
       </div>
+
+      {activity && activity.length > 0 && (
+        <div className="card cpad mb16" style={{ padding: 18, marginTop: 16 }}>
+          <div className="ch">
+            <div>
+              <div className="chttl">Aktivitas Pesan</div>
+              <div className="chsub">14 hari terakhir</div>
+            </div>
+            <Link href="/reports" className="btn secondary" style={{ marginLeft: "auto", padding: "6px 12px", fontSize: "0.78rem" }}>
+              Lihat Laporan
+            </Link>
+          </div>
+          <div className="bars" style={{ height: 100 }}>
+            {(() => {
+              const dayMax = Math.max(1, ...activity.map((x) => x.sent + x.failed));
+              return activity.map((d) => (
+                <div className="barcol" key={d.date}>
+                  <div className="barstack" style={{ height: `${Math.max(2, ((d.sent + d.failed) / dayMax) * 100)}%` }}>
+                    {d.failed > 0 && (
+                      <div className="bar fail" style={{ height: `${(d.failed / (d.sent + d.failed || 1)) * 100}%` }} />
+                    )}
+                    {d.sent > 0 && (
+                      <div className="bar" style={{ height: `${(d.sent / (d.sent + d.failed || 1)) * 100}%` }} />
+                    )}
+                  </div>
+                  <span className="barlbl">{d.date.slice(5)}</span>
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

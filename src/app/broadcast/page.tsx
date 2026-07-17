@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useState } from "react";
+import { Megaphone } from "lucide-react";
 
 interface SessionInfo {
   name: string;
@@ -518,7 +519,13 @@ function BroadcastPageInner() {
               );
             })}
             {campaignsLoaded && campaigns.length === 0 && (
-              <p style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>Belum ada campaign.</p>
+              <div className="empty-state">
+                <span className="ic">
+                  <Megaphone size={20} />
+                </span>
+                <div className="ttl">Belum ada campaign</div>
+                <div className="sub">Susun broadcast pertama di form sebelah kiri, lalu kirim sekarang atau simpan sebagai draft.</div>
+              </div>
             )}
           </div>
         </div>
