@@ -46,10 +46,17 @@ async function runAutoReply(ownerId: string, session: string, chatId: string, te
   const aiSettings = getAISettings(ownerId);
   if (!settings.enabled && !aiSettings.enabled) return;
 
+  // Re-verify the plan feature here, not just at settings-save time — a
+  // tenant could have enabled this while on a paid plan and since
+  // downgraded/expired, and the toggle in autoreply.json/ai-autoreply.json
+  // wouldn't know. (Found missing for the keyword bot in a pentest pass —
+  // the AI branch already did this re-check.)
+  const owner = getFullUser(ownerId);
+
   const isNewContact = !hasSeenContact(session, chatId);
   markSeenContact(session, chatId);
 
-  if (settings.enabled) {
+  if (settings.enabled && owner && userHasFeature(owner, "autoreply")) {
     if (isNewContact && settings.welcomeEnabled) {
       await sendReply(ownerId, session, chatId, settings.welcomeMessage);
       return;
@@ -72,14 +79,8 @@ async function runAutoReply(ownerId: string, session: string, chatId: string, te
   // AI auto-reply is a fallback layer, independent of the keyword bot's own
   // on/off switch — only reached when no keyword rule matched (or keyword
   // auto-reply is off entirely).
-  if (aiSettings.enabled) {
-    // Re-verify the plan feature here, not just at settings-save time — a
-    // tenant could have enabled this while on a paid plan and since
-    // downgraded/expired, and the toggle in ai-autoreply.json wouldn't know.
-    const owner = getFullUser(ownerId);
-    if (owner && userHasFeature(owner, "ai_autoreply")) {
-      scheduleAIAutoReply(ownerId, session, chatId, aiSettings);
-    }
+  if (aiSettings.enabled && owner && userHasFeature(owner, "ai_autoreply")) {
+    scheduleAIAutoReply(ownerId, session, chatId, aiSettings);
   }
 }
 
@@ -181,7 +182,13 @@ export async function POST(req: NextRequest) {
 
   // Forward to the owning tenant's configured outbound webhook (if any)
   // without blocking the response — WAHA expects a fast 200 or it retries.
-  deliverOutboundWebhook(ownerId, data.event, data).catch(() => {});
+  // Re-verify the plan feature at delivery time, not just when the tenant
+  // saved their webhook config — otherwise a downgraded/expired tenant's
+  // webhook (a paid feature) keeps delivering indefinitely.
+  const deliveryOwner = getFullUser(ownerId);
+  if (deliveryOwner && userHasFeature(deliveryOwner, "webhook")) {
+    deliverOutboundWebhook(ownerId, data.event, data).catch(() => {});
+  }
 
   if (data.event === "message" && data.payload && !data.payload.fromMe) {
     const chatId = data.payload.from;
