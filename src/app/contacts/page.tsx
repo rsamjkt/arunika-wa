@@ -15,6 +15,7 @@ interface WAContact {
   number?: string;
   isMyContact?: boolean;
   isBusiness?: boolean;
+  isBlocked?: boolean;
 }
 
 function initials(text: string) {
@@ -95,11 +96,14 @@ function ContactsPageInner() {
     if (!activeSession) return;
     setBusy(contactId);
     try {
-      await fetch(`/api/sessions/${encodeURIComponent(activeSession)}/contacts/${block ? "block" : "unblock"}`, {
+      const res = await fetch(`/api/sessions/${encodeURIComponent(activeSession)}/contacts/${block ? "block" : "unblock"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contactId }),
       });
+      if (res.ok) {
+        setContacts((prev) => prev.map((c) => (c.id === contactId ? { ...c, isBlocked: block } : c)));
+      }
     } finally {
       setBusy(null);
     }
@@ -136,25 +140,12 @@ function ContactsPageInner() {
 
   return (
     <div>
-      <div className="card" style={{ padding: 16, marginBottom: 18 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <label style={{ fontSize: "0.72rem", color: "var(--ink-soft)", display: "block", marginBottom: 4 }}>
-              Cek nomor terdaftar WhatsApp
-            </label>
-            <input
-              className="field"
-              placeholder="mis. 6281234567890"
-              value={checkPhone}
-              onChange={(e) => setCheckPhone(e.target.value)}
-            />
-          </div>
-          <button className="btn secondary" onClick={runCheck} disabled={checking || !checkPhone.trim()}>
-            {checking ? "Mengecek…" : "Cek nomor"}
-          </button>
+      <div className="card cpad" style={{ padding: 18, marginBottom: 18 }}>
+        <div className="ch">
+          <div className="chttl">Cek nomor terdaftar WhatsApp</div>
           <select
             className="field"
-            style={{ maxWidth: 220 }}
+            style={{ maxWidth: 220, marginLeft: "auto" }}
             value={activeSession ?? ""}
             onChange={(e) => router.push(`/contacts?session=${encodeURIComponent(e.target.value)}`)}
           >
@@ -164,6 +155,18 @@ function ContactsPageInner() {
               </option>
             ))}
           </select>
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <input
+            className="field"
+            style={{ flex: 1, minWidth: 200 }}
+            placeholder="mis. 6281234567890"
+            value={checkPhone}
+            onChange={(e) => setCheckPhone(e.target.value)}
+          />
+          <button className="btn secondary" onClick={runCheck} disabled={checking || !checkPhone.trim()}>
+            {checking ? "Mengecek…" : "Cek nomor"}
+          </button>
         </div>
         {checkResult && <p style={{ marginTop: 10, fontSize: "0.85rem" }}>{checkResult}</p>}
       </div>
@@ -224,20 +227,24 @@ function ContactsPageInner() {
                   </td>
                   <td>
                     <div className="actions-cell">
-                      <button
-                        className="btn secondary"
-                        onClick={() => toggleBlock(c.id, true)}
-                        disabled={busy === c.id}
-                      >
-                        Blokir
-                      </button>
-                      <button
-                        className="btn secondary"
-                        onClick={() => toggleBlock(c.id, false)}
-                        disabled={busy === c.id}
-                      >
-                        Buka blokir
-                      </button>
+                      {c.isBlocked ? (
+                        <button
+                          className="btn secondary"
+                          onClick={() => toggleBlock(c.id, false)}
+                          disabled={busy === c.id}
+                        >
+                          Buka blokir
+                        </button>
+                      ) : (
+                        <button
+                          className="btn secondary"
+                          style={{ color: "var(--danger)" }}
+                          onClick={() => toggleBlock(c.id, true)}
+                          disabled={busy === c.id}
+                        >
+                          Blokir
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

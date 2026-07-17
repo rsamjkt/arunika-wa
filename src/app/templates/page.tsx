@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { FileText } from "lucide-react";
 
 interface MessageTemplate {
   id: string;
@@ -164,50 +165,55 @@ export default function TemplatesPage() {
         )}
       </div>
 
-      <div className="table-wrap">
-        <table className="dtable">
-          <thead>
-            <tr>
-              <th>Nama</th>
-              <th>Kategori</th>
-              <th>Pratinjau</th>
-              <th>Dipakai</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {templates.map((t) => (
-              <tr key={t.id}>
-                <td style={{ fontWeight: 700 }}>{t.name}</td>
-                <td>
-                  <span className="chip">{t.category}</span>
-                </td>
-                <td style={{ maxWidth: 320, color: "var(--ink-soft)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {t.body}
-                </td>
-                <td className="mono" style={{ color: "var(--ink-soft)" }}>
-                  {t.usedCount}x
-                </td>
-                <td className="actions-cell">
-                  <button className="btn secondary" onClick={() => startEdit(t)}>
-                    Ubah
-                  </button>
-                  <button className="btn danger" disabled={busy === t.id} onClick={() => remove(t)}>
-                    Hapus
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {!loading && templates.length === 0 && (
+      {!loading && templates.length === 0 ? (
+        <div className="card">
+          <div className="empty-state">
+            <span className="ic">
+              <FileText size={20} />
+            </span>
+            <div className="ttl">Belum ada template</div>
+            <div className="sub">Buat template pertama di form di atas untuk dipakai ulang saat Kirim Pesan atau Broadcast.</div>
+          </div>
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table className="dtable">
+            <thead>
               <tr>
-                <td colSpan={5} style={{ textAlign: "center", color: "var(--ink-soft)", padding: 24 }}>
-                  Belum ada template.
-                </td>
+                <th>Nama</th>
+                <th>Kategori</th>
+                <th>Pratinjau</th>
+                <th>Dipakai</th>
+                <th>Aksi</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {templates.map((t) => (
+                <tr key={t.id}>
+                  <td style={{ fontWeight: 700 }}>{t.name}</td>
+                  <td>
+                    <span className="chip">{t.category}</span>
+                  </td>
+                  <td style={{ maxWidth: 320, color: "var(--ink-soft)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {t.body}
+                  </td>
+                  <td className="mono" style={{ color: "var(--ink-soft)" }}>
+                    {t.usedCount}x
+                  </td>
+                  <td className="actions-cell">
+                    <button className="btn secondary" onClick={() => startEdit(t)}>
+                      Ubah
+                    </button>
+                    <button className="btn danger" disabled={busy === t.id} onClick={() => remove(t)}>
+                      Hapus
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

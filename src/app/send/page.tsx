@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Send as SendIcon } from "lucide-react";
 
 interface SessionInfo {
   name: string;
@@ -246,7 +247,13 @@ function SendPageInner() {
       <div className="card" style={{ padding: 18 }}>
         <h2 style={{ fontSize: "0.9rem", marginBottom: 12 }}>Riwayat terkirim (sesi ini)</h2>
         {history.length === 0 ? (
-          <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)" }}>Belum ada pesan terkirim.</p>
+          <div className="empty-state">
+            <span className="ic">
+              <SendIcon size={20} />
+            </span>
+            <div className="ttl">Belum ada pesan terkirim</div>
+            <div className="sub">Pesan yang Anda kirim lewat form di sebelah kiri akan tercatat di sini.</div>
+          </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {history.map((h) => (

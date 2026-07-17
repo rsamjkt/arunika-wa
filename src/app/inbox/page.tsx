@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { substituteVariables } from "@/lib/textVars";
+import { MessageSquare } from "lucide-react";
 
 type SessionStatus =
   | "STOPPED"
@@ -21,7 +22,7 @@ interface ChatSummary {
   id: string;
   name: string | null;
   picture: string | null;
-  lastMessage: { body?: string; timestamp?: number; fromMe?: boolean } | null;
+  lastMessage: { body?: string; timestamp?: number; fromMe?: boolean; hasMedia?: boolean } | null;
 }
 
 interface WAMediaInfo {
@@ -66,6 +67,20 @@ function initials(text: string) {
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase())
     .join("") || "?";
+}
+
+// Unnamed contacts fall back to a WAHA-formatted phone number as their
+// "name" (e.g. "+62 821-4496-5482") — running that through initials()
+// takes the first char of the first two "words" ("+62" and "8214…"),
+// which collapses to the same meaningless "+8" for nearly every unnamed
+// contact. Detect that shape and show the last 2 digits instead.
+function avatarLabel(text: string) {
+  const trimmed = text.trim();
+  if (/^[+\d][\d\s-]*$/.test(trimmed)) {
+    const digits = trimmed.replace(/\D/g, "");
+    return digits.slice(-2) || "?";
+  }
+  return initials(text);
 }
 
 function label(status: SessionStatus) {
@@ -634,7 +649,7 @@ function InboxPageInner() {
                 className={`conv${c.id === activeChatId ? " active" : ""}`}
                 onClick={() => setActiveChatId(c.id)}
               >
-                <div className="avatar-sm">{initials(c.name ?? c.id)}</div>
+                <div className="avatar-sm">{avatarLabel(c.name ?? c.id)}</div>
                 <div className="meta">
                   <div className="top">
                     <span className="name">{c.name ?? c.id.split("@")[0]}</span>
@@ -642,7 +657,7 @@ function InboxPageInner() {
                   </div>
                   <div className="snippet">
                     {c.lastMessage?.fromMe ? "Anda: " : ""}
-                    {c.lastMessage?.body ?? ""}
+                    {c.lastMessage?.body || (c.lastMessage?.hasMedia ? "📎 Media" : "")}
                   </div>
                   {teamMembers.length > 1 && (a.assignedTo || a.status === "resolved") && (
                     <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
@@ -667,7 +682,15 @@ function InboxPageInner() {
 
       <div className="thread">
         {!activeChatId ? (
-          <div className="empty">Pilih percakapan di sebelah kiri</div>
+          <div className="empty">
+            <div className="empty-state">
+              <span className="ic">
+                <MessageSquare size={20} />
+              </span>
+              <div className="ttl">Pilih percakapan</div>
+              <div className="sub">Pilih salah satu percakapan di sebelah kiri untuk mulai membaca dan membalas pesan.</div>
+            </div>
+          </div>
         ) : (
           <>
             <div className="head">
