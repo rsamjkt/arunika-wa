@@ -106,7 +106,7 @@ const BUTTON = (href: string, label: string) => `
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:20px 0;">
   <tr>
     <td style="background:#25d366;border-radius:10px;">
-      <a href="${href}" style="display:inline-block;padding:12px 22px;color:#04271f;font-weight:700;font-size:14px;text-decoration:none;">${label}</a>
+      <a href="${escapeHtml(href)}" style="display:inline-block;padding:12px 22px;color:#04271f;font-weight:700;font-size:14px;text-decoration:none;">${escapeHtml(label)}</a>
     </td>
   </tr>
 </table>`;
@@ -117,8 +117,8 @@ const INVOICE_TABLE = (rows: [string, string][]) => `
     .map(
       ([label, value], i) => `
   <tr>
-    <td style="padding:10px 14px;font-size:13px;color:#8a9a94;background:${i % 2 === 0 ? "#f7faf8" : "#ffffff"};">${label}</td>
-    <td style="padding:10px 14px;font-size:13px;color:#0a3d36;font-weight:700;text-align:right;background:${i % 2 === 0 ? "#f7faf8" : "#ffffff"};">${value}</td>
+    <td style="padding:10px 14px;font-size:13px;color:#8a9a94;background:${i % 2 === 0 ? "#f7faf8" : "#ffffff"};">${escapeHtml(label)}</td>
+    <td style="padding:10px 14px;font-size:13px;color:#0a3d36;font-weight:700;text-align:right;background:${i % 2 === 0 ? "#f7faf8" : "#ffffff"};">${escapeHtml(value)}</td>
   </tr>`,
     )
     .join("")}
@@ -126,13 +126,30 @@ const INVOICE_TABLE = (rows: [string, string][]) => `
 
 const RP = (n: number) => `Rp${n.toLocaleString("id-ID")}`;
 
+// Every value below that ultimately comes from a tenant-chosen field
+// (username, email, a lead's name) must be HTML-escaped before landing in
+// one of these email bodies — nodemailer renders `html` as-is, so an
+// unescaped username like `<img src=x onerror=...>` would execute in any
+// mail client that renders inline HTML/event handlers, including the
+// platform admin's own inbox (adminPasswordResetNotifyEmail is sent to the
+// admin based on a self-chosen, attacker-controllable username).
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function welcomeEmail(username: string, planName: string): { subject: string; html: string } {
+  const safeUsername = escapeHtml(username);
   return {
     subject: "Selamat datang di Arunika · WA",
     html: WRAPPER(
       "Akun Anda Aktif",
-      `<p>Halo <b>${username}</b>,</p>
-       <p>Akun Arunika-WA Anda sudah aktif dengan paket <b>${planName}</b>. Silakan masuk dan hubungkan perangkat WhatsApp pertama Anda.</p>`,
+      `<p>Halo <b>${safeUsername}</b>,</p>
+       <p>Akun Arunika-WA Anda sudah aktif dengan paket <b>${escapeHtml(planName)}</b>. Silakan masuk dan hubungkan perangkat WhatsApp pertama Anda.</p>`,
     ),
   };
 }
@@ -153,8 +170,8 @@ export function invoicePendingEmail(
     subject: `Invoice ${orderId} — selesaikan pembayaran paket ${planName}`,
     html: WRAPPER(
       "Selesaikan Pembayaran",
-      `<p>Halo <b>${username}</b>,</p>
-       <p>Berikut invoice untuk paket <b>${planName}</b>. Scan QRIS di bawah dengan aplikasi e-wallet/mobile banking Anda — bayar tepat sesuai nominal (termasuk kode unik) supaya otomatis terverifikasi.</p>
+      `<p>Halo <b>${escapeHtml(username)}</b>,</p>
+       <p>Berikut invoice untuk paket <b>${escapeHtml(planName)}</b>. Scan QRIS di bawah dengan aplikasi e-wallet/mobile banking Anda — bayar tepat sesuai nominal (termasuk kode unik) supaya otomatis terverifikasi.</p>
        ${INVOICE_TABLE([
          ["No. Invoice", orderId],
          ["Paket", planName],
@@ -181,8 +198,8 @@ export function paymentConfirmedEmail(
     subject: `Invoice ${orderId} — pembayaran berhasil, paket Anda aktif`,
     html: WRAPPER(
       "Pembayaran Diterima",
-      `<p>Halo <b>${username}</b>,</p>
-       <p>Pembayaran Anda berhasil diverifikasi. Paket <b>${planName}</b> sudah aktif di akun Anda.</p>
+      `<p>Halo <b>${escapeHtml(username)}</b>,</p>
+       <p>Pembayaran Anda berhasil diverifikasi. Paket <b>${escapeHtml(planName)}</b> sudah aktif di akun Anda.</p>
        ${INVOICE_TABLE([
          ["No. Invoice", orderId],
          ["Paket", planName],
@@ -231,9 +248,9 @@ export function referralRewardEmail(username: string, days: number, planName: st
     subject: `Bonus ${days} hari karena mengajak teman`,
     html: WRAPPER(
       "Terima Kasih Sudah Mengajak Teman",
-      `<p>Halo <b>${username}</b>,</p>
+      `<p>Halo <b>${escapeHtml(username)}</b>,</p>
        <p>Ada yang baru saja mendaftar Arunika-WA pakai kode referral Anda. Sebagai terima kasih, kami tambahkan
-       <b>${days} hari</b> masa aktif paket <b>${planName}</b> ke akun Anda — otomatis, tanpa perlu klaim.</p>
+       <b>${days} hari</b> masa aktif paket <b>${escapeHtml(planName)}</b> ke akun Anda — otomatis, tanpa perlu klaim.</p>
        <p style="color:#8a9a94;font-size:13px">Terus ajak teman lain dan kumpulkan lebih banyak bonus hari aktif. Cek halaman Program Referral untuk lihat kode dan riwayat Anda.</p>`,
     ),
   };
@@ -244,8 +261,8 @@ export function subscriptionExpiringEmail(username: string, planName: string, ex
     subject: `Paket ${planName} Anda akan berakhir`,
     html: WRAPPER(
       "Segera Perpanjang Paket Anda",
-      `<p>Halo <b>${username}</b>,</p>
-       <p>Paket <b>${planName}</b> Anda akan berakhir pada <b>${new Date(expiresAt).toLocaleDateString("id-ID")}</b>. Perpanjang sekarang di halaman Paket Saya supaya perangkat dan fitur Anda tidak turun ke paket Free.</p>`,
+      `<p>Halo <b>${escapeHtml(username)}</b>,</p>
+       <p>Paket <b>${escapeHtml(planName)}</b> Anda akan berakhir pada <b>${new Date(expiresAt).toLocaleDateString("id-ID")}</b>. Perpanjang sekarang di halaman Paket Saya supaya perangkat dan fitur Anda tidak turun ke paket Free.</p>`,
     ),
   };
 }
@@ -257,7 +274,7 @@ export function leadOfferEmail(leadName: string, helpUrl: string): { subject: st
     subject: `${leadName} — WhatsApp Gateway untuk bisnis Anda`,
     html: WRAPPER(
       "Kelola WhatsApp Bisnis Anda Lebih Rapi",
-      `<p>Halo Tim <b>${leadName}</b>,</p>
+      `<p>Halo Tim <b>${escapeHtml(leadName)}</b>,</p>
        <p>Kami dari Arunika · WA — platform WhatsApp Gateway untuk kirim pesan, broadcast, auto-reply,
        dan integrasi API ke sistem Anda sendiri, dengan staf/tim tak terbatas di setiap paket.</p>
        <p>Mulai dari <b>Rp0/bulan</b> (paket gratis tersedia), paket berbayar dibayar mudah lewat QRIS.</p>

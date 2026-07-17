@@ -3,6 +3,10 @@ import { getCurrentFullUser } from "@/lib/currentUser";
 import { createStaff, listStaffForTenant } from "@/lib/users";
 import { parseJsonBody } from "@/lib/parseJsonBody";
 
+// Usernames get rendered into HTML emails (see email.ts's escapeHtml, the
+// primary defense) — restricting the charset here too is defense in depth.
+const USERNAME_RE = /^[a-zA-Z0-9_.-]{3,30}$/;
+
 async function requireOwner() {
   const user = await getCurrentFullUser();
   if (!user) {
@@ -28,8 +32,11 @@ export async function POST(req: NextRequest) {
   if (parseError) return parseError;
   const { username, password, email } = body!;
 
-  if (!username || typeof username !== "string" || username.trim().length < 3) {
-    return NextResponse.json({ error: "Username minimal 3 karakter" }, { status: 400 });
+  if (!username || typeof username !== "string" || !USERNAME_RE.test(username.trim())) {
+    return NextResponse.json(
+      { error: "Username 3-30 karakter, hanya huruf, angka, titik, garis bawah, atau strip" },
+      { status: 400 },
+    );
   }
   if (!password || typeof password !== "string" || password.length < 6) {
     return NextResponse.json({ error: "Password minimal 6 karakter" }, { status: 400 });
