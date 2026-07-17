@@ -54,18 +54,29 @@ export function checkAndCountRequest(key: string, maxPerWindow: number, windowMs
 }
 
 export function clientIp(headers: Headers): string {
+  // connect.arunify.id resolves to Cloudflare's anycast IPs (confirmed via
+  // DNS + `server: cloudflare` on live responses) — Cloudflare sits in
+  // front of this box's Caddy, which is itself in front of the app. That
+  // makes CF-Connecting-IP the most trustworthy source: Cloudflare's edge
+  // always sets it fresh from the real TCP connection it terminated,
+  // overwriting any client-supplied value, so it can't be spoofed the way
+  // X-Forwarded-For can. Prefer it when present.
+  const cfIp = headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp.trim();
+
+  // Fallback for direct (non-Cloudflare-fronted) access — e.g. hitting the
+  // origin IP directly, or if the domain is ever moved off Cloudflare.
+  // Caddy (the reverse-proxy hop, see /etc/caddy/Caddyfile) appends the IP
+  // it actually observed rather than replacing a client-supplied header,
+  // so the trustworthy value in that case is the LAST one — taking the
+  // first let an attacker send a different fake X-Forwarded-For on every
+  // request to get a fresh rate-limit key each time.
   const xff = headers.get("x-forwarded-for");
   if (xff) {
     const parts = xff
       .split(",")
       .map((p) => p.trim())
       .filter(Boolean);
-    // Caddy (the only reverse-proxy hop in front of this app, see
-    // /etc/caddy/Caddyfile) appends the IP it actually observed rather than
-    // replacing a client-supplied header, so the trustworthy value is the
-    // LAST one. Taking the first (as this used to) let an attacker send a
-    // different fake X-Forwarded-For on every request to get a fresh
-    // rate-limit key each time, defeating the login lockout entirely.
     if (parts.length > 0) return parts[parts.length - 1];
   }
   return headers.get("x-real-ip") ?? "unknown";
