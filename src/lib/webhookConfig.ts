@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { readJson, writeJson } from "./store";
 import { logWebhookDelivery } from "./webhookLog";
 import { createNotification } from "./notifications";
+import { isSafeExternalUrl } from "./urlSafety";
 
 const CONSECUTIVE_FAILURE_THRESHOLD = 3;
 
@@ -124,6 +125,15 @@ function recordDelivery(ownerId: string, ok: boolean, seq: number) {
 type SendResult = { ok: boolean; status?: number; error?: string };
 
 async function send(url: string, secret: string, body: unknown): Promise<SendResult> {
+  // Defense in depth — the PUT /api/webhook-config handler already
+  // validates the URL when it's saved, but re-checking here means this
+  // function is safe to call from ANY future caller (including a direct
+  // data-store edit or a bug in the save-path check) without relying on
+  // that one call site to be the sole enforcement point.
+  if (!(await isSafeExternalUrl(url))) {
+    return { ok: false, error: "URL webhook tidak valid atau menunjuk ke alamat internal" };
+  }
+
   const payload = JSON.stringify(body);
   const signature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
 
@@ -137,7 +147,15 @@ async function send(url: string, secret: string, body: unknown): Promise<SendRes
       },
       body: payload,
       signal: AbortSignal.timeout(8000),
+      // Never auto-follow a redirect — a URL that passed the DNS-resolved
+      // safety check could still redirect (3xx) to an internal address at
+      // request time. Treat any redirect response as a failed delivery
+      // rather than silently chasing it.
+      redirect: "manual",
     });
+    if (res.type === "opaqueredirect" || (res.status >= 300 && res.status < 400)) {
+      return { ok: false, error: "Webhook merespons redirect — tidak diikuti demi keamanan" };
+    }
     return { ok: res.ok, status: res.status };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };

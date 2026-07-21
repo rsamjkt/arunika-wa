@@ -92,7 +92,7 @@ async function readCapped(body: ReadableStream<Uint8Array>, maxBytes: number): P
  * Best-effort only — Google Places has no email field, most sites won't
  * yield a match, and that's fine: the WA offer still goes out regardless. */
 async function bestEffortEmailFromWebsite(website: string): Promise<string | null> {
-  if (!isSafeExternalUrl(website)) return null;
+  if (!(await isSafeExternalUrl(website))) return null;
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 6000);

@@ -47,7 +47,7 @@ const SELF_VERIFIED_PATHS = new Set([
 // logged-in tenant session (not just a stray API key) would reach every
 // /api/admin/* route and rely solely on that route's own requireSuperadmin()
 // check as the only thing standing between them and another tenant's data.
-const ADMIN_PREFIXES = ["/admin", "/settings/users", "/api/admin"];
+const ADMIN_PREFIXES = ["/admin", "/settings/users", "/api/admin", "/api/server", "/api/waha-update"];
 // Tenant-owner-only area — billing and team membership stay off-limits to
 // staff logins, which share the owner's plan/quota/devices but not control
 // over them.

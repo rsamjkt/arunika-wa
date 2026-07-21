@@ -3,14 +3,13 @@ import { downgradeToFree, listExpiredSubscriptions, listSubscriptionsExpiringSoo
 import { getPlan } from "@/lib/plans";
 import { sendEmail, subscriptionExpiringEmail } from "@/lib/email";
 import { hasBeenReminded, markReminded } from "@/lib/reminders";
+import { requireCronSecret } from "@/lib/cronAuth";
 
 const REMINDER_WINDOW_DAYS = 3;
 
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get("x-cron-secret");
-  if (!secret || secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = requireCronSecret(req);
+  if (unauthorized) return unauthorized;
 
   const expired = listExpiredSubscriptions();
   for (const user of expired) {

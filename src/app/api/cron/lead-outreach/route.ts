@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendOfferBatch } from "@/lib/leadOutreach";
+import { requireCronSecret } from "@/lib/cronAuth";
 
 // Small batch per run, throttled further by systemd timer cadence — cold
 // WhatsApp outreach at any real volume risks the sending number getting
@@ -8,10 +9,8 @@ import { sendOfferBatch } from "@/lib/leadOutreach";
 const BATCH_SIZE = Number(process.env.LEAD_OUTREACH_BATCH_SIZE ?? "5");
 
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get("x-cron-secret");
-  if (!secret || secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = requireCronSecret(req);
+  if (unauthorized) return unauthorized;
 
   const result = await sendOfferBatch(BATCH_SIZE);
   return NextResponse.json({ ok: true, ...result });

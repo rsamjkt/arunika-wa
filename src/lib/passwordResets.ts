@@ -18,17 +18,24 @@ export function createResetToken(userId: string): string {
   return token;
 }
 
+function timingSafeStringEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 /** Returns the userId if the token is valid and unused, consuming it in
  * the same call (single-use). Null if invalid/expired/already used. */
 export function consumeResetToken(token: string): string | null {
   const list = all();
-  const record = list.find((r) => r.token === token);
+  const record = list.find((r) => timingSafeStringEqual(r.token, token));
   if (!record || record.used || new Date(record.expiresAt).getTime() < Date.now()) {
     return null;
   }
   writeJson(
     FILE,
-    list.map((r) => (r.token === token ? { ...r, used: true } : r)),
+    list.map((r) => (r.token === record.token ? { ...r, used: true } : r)),
   );
   return record.userId;
 }

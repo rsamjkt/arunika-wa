@@ -36,6 +36,12 @@ export function logEvent(entry: Omit<LogEntry, "id" | "timestamp">) {
   }
 }
 
+/** Cascade delete — used when a tenant account is removed entirely. */
+export function deleteAllForOwner(ownerId: string): void {
+  const log = readJson<LogEntry[]>(FILE, []);
+  writeJson(FILE, log.filter((e) => e.ownerId !== ownerId));
+}
+
 export function getRecentLogs(ownerId: string, limit = 200): LogEntry[] {
   const log = readJson<LogEntry[]>(FILE, []).filter((e) => e.ownerId === ownerId);
   return log.slice(-limit).reverse();

@@ -32,9 +32,16 @@ export function createSession(userId: string, username: string): string {
   return token;
 }
 
+function timingSafeStringEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 export function getSession(token: string): AuthSession | null {
   if (!token) return null;
-  return all().find((s) => s.token === token) ?? null;
+  return all().find((s) => timingSafeStringEqual(s.token, token)) ?? null;
 }
 
 export function deleteSession(token: string) {
