@@ -31,6 +31,17 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(recipients) || recipients.length === 0) {
     return NextResponse.json({ error: "Audiens tidak boleh kosong" }, { status: 400 });
   }
+  // Bounds the worst-case synchronous write in createCampaign() (store.ts
+  // does a blocking JSON.stringify + fs.writeFileSync) — no legitimate
+  // broadcast needs more than this per campaign, and quota/plan limits
+  // already cap actual sends far below it anyway.
+  const MAX_RECIPIENTS = 20_000;
+  if (recipients.length > MAX_RECIPIENTS) {
+    return NextResponse.json(
+      { error: `Maksimal ${MAX_RECIPIENTS.toLocaleString("id-ID")} penerima per campaign` },
+      { status: 400 },
+    );
+  }
   let scheduledAtIso: string | null = null;
   if (typeof scheduledAt === "string" && scheduledAt) {
     const parsed = new Date(scheduledAt);

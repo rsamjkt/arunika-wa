@@ -51,6 +51,17 @@ export function listReferralsFor(referrerId: string): Referral[] {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
+// Bounds referral-reward arbitrage via sock-puppet accounts: without a
+// cap, a referrer can keep registering new accounts, buying the cheapest
+// paid plan under each one, and referring their own primary account —
+// each cycle stacks +REWARD_DAYS on the primary account regardless of
+// how cheap the plan bought under the sock account was (see security
+// audit). A generous rolling-window cap still rewards real word-of-mouth
+// growth (up to MAX_REWARDS_PER_WINDOW × REWARD_DAYS bonus days per
+// window) while bounding the rate of self-arbitrage.
+const REWARD_WINDOW_DAYS = 30;
+const MAX_REWARDS_PER_WINDOW = 8;
+
 /** Called when a referred account's payment is confirmed (not at signup) —
  * grants the referrer's reward exactly once per referral, no matter how
  * many transactions/upgrades the referred account pays for afterward. */
@@ -58,8 +69,18 @@ export function rewardReferralIfPending(referredUserId: string): void {
   const list = all();
   const referral = list.find((r) => r.referredUserId === referredUserId && !r.rewarded);
   if (!referral) return;
+
+  const windowStart = Date.now() - REWARD_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+  const recentRewards = list.filter(
+    (r) => r.referrerId === referral.referrerId && r.rewarded && new Date(r.createdAt).getTime() >= windowStart,
+  ).length;
+
   referral.rewarded = true;
   writeJson(FILE, list);
+  // Still marks it rewarded (so it can never be paid out twice later) even
+  // when the cap blocks the actual bonus — a referral over the cap simply
+  // grants no extra days, it doesn't queue up for whenever the window resets.
+  if (recentRewards >= MAX_REWARDS_PER_WINDOW) return;
   applyReferralReward(referral.referrerId);
 }
 

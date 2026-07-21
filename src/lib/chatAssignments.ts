@@ -47,3 +47,11 @@ export function setAssignment(
   writeJson(FILE, store);
   return next;
 }
+
+/** Cascade delete — used when a tenant account is removed entirely. */
+export function deleteAllForOwner(ownerId: string): void {
+  const store = all();
+  const prefix = `${ownerId}:`;
+  const next = Object.fromEntries(Object.entries(store).filter(([k]) => !k.startsWith(prefix)));
+  writeJson(FILE, next);
+}

@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-  if (!isSafeExternalUrl(url)) {
+  if (!(await isSafeExternalUrl(url))) {
     return NextResponse.json({ error: "URL tidak valid atau menunjuk ke alamat internal" }, { status: 400 });
   }
   const { user, response } = await requireSessionAccess(session);

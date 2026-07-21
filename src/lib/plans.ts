@@ -79,7 +79,17 @@ export function updatePlan(id: string, patch: Partial<Omit<Plan, "id" | "created
   const defined = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
   writeJson(
     FILE,
-    plans.map((p) => (p.id === id ? { ...p, ...defined } : p)),
+    plans.map((p) => {
+      if (p.id !== id) return p;
+      const next = { ...p, ...defined };
+      // Always DERIVE isFree from the current price rather than trusting
+      // whatever it was at creation — a plan repriced from 0 to a paid
+      // amount via PATCH must stop being treated as free everywhere
+      // (register/upgrade both branch on plan.isFree to skip payment
+      // entirely), or it silently grants paid-tier access for Rp0.
+      next.isFree = next.priceRp === 0;
+      return next;
+    }),
   );
 }
 

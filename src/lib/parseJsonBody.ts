@@ -12,10 +12,23 @@ import { NextRequest, NextResponse } from "next/server";
  * checks that wouldn't narrow a stricter `unknown` type. Widening the
  * type here would ripple type friction across ~17 call sites for no
  * actual safety gain, since none of them skip validation today. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// Route Handlers (unlike Server Actions' bodySizeLimit) impose no
+// built-in cap on JSON body size — an unbounded payload (e.g. a campaign
+// with an enormous `recipients` array) gets fully buffered into memory
+// and then synchronously JSON.stringify'd + written to disk by
+// store.ts, stalling the single Node.js event loop for every tenant at
+// once. 5 MB comfortably covers any legitimate payload in this app
+// (the largest is a broadcast recipient list) while bounding the worst case.
+const MAX_BODY_BYTES = 5 * 1024 * 1024;
+
 export async function parseJsonBody(
   req: NextRequest,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<{ body: any; response: NextResponse | null }> {
+  const contentLength = req.headers.get("content-length");
+  if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
+    return { body: null, response: NextResponse.json({ error: "Body permintaan terlalu besar" }, { status: 413 }) };
+  }
   try {
     const body = await req.json();
     return { body, response: null };

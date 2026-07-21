@@ -24,6 +24,9 @@ import { deleteConfigForOwner } from "@/lib/webhookConfig";
 import { deleteWebhookLogForOwner } from "@/lib/webhookLog";
 import { deleteReferralsForOwner } from "@/lib/referrals";
 import { deleteNotificationsForUser } from "@/lib/notifications";
+import { deleteAllForOwner as deleteContactNotesForOwner } from "@/lib/contactNotes";
+import { deleteAllForOwner as deleteChatAssignmentsForOwner } from "@/lib/chatAssignments";
+import { deleteAllForOwner as deleteMessageLogForOwner } from "@/lib/messageLog";
 import { parseJsonBody } from "@/lib/parseJsonBody";
 
 type Params = { params: Promise<{ id: string }> };
@@ -132,6 +135,14 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   deleteWebhookLogForOwner(id);
   deleteReferralsForOwner(id);
   deleteNotificationsForUser(id);
+  // Free-text/PII-adjacent stores (contact notes, chat assignment state,
+  // send/receive history) — cleaned up here too so a deleted tenant's
+  // data doesn't persist indefinitely. `transactions.ts` is deliberately
+  // NOT cleared: those are financial/payment records, normally expected
+  // to be retained for bookkeeping even after the account is gone.
+  deleteContactNotesForOwner(id);
+  deleteChatAssignmentsForOwner(id);
+  deleteMessageLogForOwner(id);
 
   for (const s of staff) {
     deleteStaff(id, s.id);

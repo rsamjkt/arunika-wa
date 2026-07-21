@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listDueCampaigns, startCampaign } from "@/lib/campaigns";
+import { requireCronSecret } from "@/lib/cronAuth";
 
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get("x-cron-secret");
-  if (!secret || secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = requireCronSecret(req);
+  if (unauthorized) return unauthorized;
 
   const due = listDueCampaigns();
   for (const c of due) {

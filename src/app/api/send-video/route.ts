@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-  if (file.url && !isSafeExternalUrl(file.url)) {
+  if (file.url && !(await isSafeExternalUrl(file.url))) {
     return NextResponse.json({ error: "URL file tidak valid atau menunjuk ke alamat internal" }, { status: 400 });
   }
   const { user, response } = await requireSessionAccess(session);
