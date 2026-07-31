@@ -63,7 +63,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
     usage: { messagesSent: getEffectiveQuotaUsage(id), devices: ownedNames.size },
     staff: listStaffForTenant(id),
     sessions,
-    transactions: listTransactionsForUser(id).slice(0, 10),
+    // Buang field sensitif (signature dipakai memverifikasi webhook pembayaran;
+    // qrisImage tak perlu) — jangan kirim ke browser walau ke superadmin.
+    transactions: listTransactionsForUser(id).slice(0, 10).map(({ signature, qrisImage, ...t }) => t),
   });
 }
 

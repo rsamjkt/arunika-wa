@@ -1,5 +1,8 @@
 import dns from "node:dns/promises";
+import { lookup as dnsLookup } from "node:dns";
 import net from "node:net";
+import http from "node:http";
+import https from "node:https";
 
 // Shared guard for any server-side fetch of a caller-supplied URL — used
 // wherever this app (or, via file.url, the WA engine on our behalf) fetches
@@ -123,4 +126,82 @@ export async function isSafeExternalUrl(raw: string): Promise<boolean> {
   } catch {
     return false; // can't resolve -> can't confirm safety -> reject
   }
+}
+
+// DNS lookup yang MEMVALIDASI IP saat koneksi dibuat. Dipakai sebagai opsi
+// `lookup` pada http/https.request → menutup celah DNS-rebinding TOCTOU:
+// isSafeExternalUrl() memeriksa saat check, tapi fetch() biasa me-resolve ulang
+// saat connect (bisa berpindah ke IP internal). Di sini koneksi HANYA dibuat ke
+// IP yang lolos validasi; kalau resolve-nya jatuh ke IP private → connect gagal.
+function validatingLookup(hostname: string, options: unknown, callback: (err: Error | null, address?: string, family?: number) => void): void {
+  dnsLookup(hostname, { all: true, verbatim: true }, (err, addresses) => {
+    if (err) return callback(err);
+    const list = Array.isArray(addresses) ? addresses : [addresses];
+    if (list.length === 0) return callback(new Error("no address"));
+    for (const a of list) {
+      if (isPrivateIp(a.address)) return callback(new Error("blocked: resolves to private address"));
+    }
+    callback(null, list[0].address, list[0].family);
+  });
+}
+
+export type SafeFetchResult = { ok: boolean; status: number; redirect: boolean; text: string; error?: string };
+
+// GET/POST yang aman-SSRF: validasi statis + koneksi hanya ke IP tervalidasi
+// (validatingLookup) + TIDAK mengikuti redirect. maxBytes>0 utk membaca body
+// (dibatasi); 0 = abaikan body (hemat). Tak melempar — selalu return hasil.
+export async function safeFetch(
+  raw: string,
+  opts: { method?: string; headers?: Record<string, string>; body?: string; timeoutMs?: number; maxBytes?: number } = {},
+): Promise<SafeFetchResult> {
+  const empty = (error: string): SafeFetchResult => ({ ok: false, status: 0, redirect: false, text: "", error });
+  if (!(await isSafeExternalUrl(raw))) return empty("URL menunjuk alamat internal / tidak valid");
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return empty("URL tidak valid");
+  }
+  const mod = url.protocol === "https:" ? https : http;
+  const { method = "GET", headers = {}, body, timeoutMs = 8000, maxBytes = 0 } = opts;
+  return new Promise<SafeFetchResult>((resolve) => {
+    let settled = false;
+    const done = (r: SafeFetchResult) => {
+      if (!settled) {
+        settled = true;
+        resolve(r);
+      }
+    };
+    const req = mod.request(
+      url,
+      { method, headers, lookup: validatingLookup as never, timeout: timeoutMs },
+      (res) => {
+        const status = res.statusCode || 0;
+        if (status >= 300 && status < 400) {
+          res.destroy();
+          return done({ ok: false, status, redirect: true, text: "" });
+        }
+        if (maxBytes <= 0) {
+          res.resume();
+          return done({ ok: status >= 200 && status < 300, status, redirect: false, text: "" });
+        }
+        const chunks: Buffer[] = [];
+        let total = 0;
+        res.on("data", (c: Buffer) => {
+          total += c.length;
+          if (total <= maxBytes) chunks.push(c);
+          else res.destroy();
+        });
+        res.on("end", () => done({ ok: status >= 200 && status < 300, status, redirect: false, text: Buffer.concat(chunks).toString("utf8") }));
+        res.on("error", () => done({ ok: false, status, redirect: false, text: Buffer.concat(chunks).toString("utf8"), error: "stream error" }));
+      },
+    );
+    req.on("timeout", () => {
+      req.destroy();
+      done(empty("timeout"));
+    });
+    req.on("error", (e: Error) => done(empty(e.message)));
+    if (body) req.write(body);
+    req.end();
+  });
 }
