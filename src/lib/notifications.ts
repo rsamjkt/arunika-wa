@@ -1,7 +1,12 @@
 import crypto from "node:crypto";
 import { readJson, writeJson } from "./store";
 
-export type NotificationType = "chat_assigned" | "campaign_completed" | "webhook_failing" | "quota_near_limit";
+export type NotificationType =
+  | "chat_assigned"
+  | "campaign_completed"
+  | "campaign_paused"
+  | "webhook_failing"
+  | "quota_near_limit";
 
 export type Notification = {
   id: string;
