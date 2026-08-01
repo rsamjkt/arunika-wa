@@ -15,6 +15,7 @@ export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
 export const AI_PROVIDERS: AIProvider[] = ["anthropic", "deepseek", "openai", "gemini", "groq", "mistral", "qwen"];
 
 export type AIModel =
+  | "claude-fable-5"
   | "claude-haiku-4-5-20251001"
   | "claude-sonnet-5"
   | "claude-opus-4-8"
@@ -33,10 +34,16 @@ export type AIModel =
 
 export const AI_MODELS: { id: AIModel; provider: AIProvider; label: string; description: string }[] = [
   {
+    id: "claude-fable-5",
+    provider: "anthropic",
+    label: "Claude Fable 5",
+    description: "Tercepat & paling hemat biaya — default hemat untuk balasan CS sehari-hari.",
+  },
+  {
     id: "claude-haiku-4-5-20251001",
     provider: "anthropic",
     label: "Claude Haiku 4.5",
-    description: "Cepat & paling hemat biaya — cocok untuk balasan singkat sehari-hari.",
+    description: "Cepat & hemat biaya — sedikit di atas Fable untuk balasan singkat sehari-hari.",
   },
   {
     id: "claude-sonnet-5",
@@ -136,7 +143,7 @@ export function providerForModel(model: AIModel): AIProvider {
 // each tenant's own saved choice always takes precedence once they pick one.
 const DEFAULT_MODEL: AIModel = isValidAIModel(process.env.AI_AUTOREPLY_MODEL)
   ? process.env.AI_AUTOREPLY_MODEL
-  : "claude-haiku-4-5-20251001";
+  : "claude-fable-5";
 
 export type AIAutoReplySettings = {
   enabled: boolean;

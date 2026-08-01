@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getMessages, sendText } from "@/lib/waha";
 import { logEvent } from "@/lib/messageLog";
+import { isTrivialMessage } from "@/lib/aiTriviality";
 import { deliverOutboundWebhook } from "@/lib/webhookConfig";
 import { getSessionOwner } from "@/lib/tenancy";
 import { checkLeadOptOut } from "@/lib/leadOutreach";
@@ -80,6 +81,11 @@ async function runAutoReply(ownerId: string, session: string, chatId: string, te
   // on/off switch — only reached when no keyword rule matched (or keyword
   // auto-reply is off entirely).
   if (aiSettings.enabled && owner && userHasFeature(owner, "ai_autoreply")) {
+    // Hemat token: pesan penutup/sepele ("ok", "makasih", emoji) tak perlu
+    // memanggil LLM. Kita cukup TIDAK menjadwalkan AI di sini — karena tak
+    // membatalkan timer debounce pesan sebelumnya, pertanyaan nyata yang datang
+    // lebih dulu tetap terjawab (lihat scheduleAIAutoReply).
+    if (isTrivialMessage(text)) return;
     scheduleAIAutoReply(ownerId, session, chatId, aiSettings);
   }
 }
