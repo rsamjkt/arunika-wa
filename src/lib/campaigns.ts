@@ -7,6 +7,7 @@ import { getFullUser } from "./users";
 import { reserveQuota, refundQuota } from "./authz";
 import { substituteVariables } from "./textVars";
 import { createNotification } from "./notifications";
+import { humanDelayMs, shouldAbortForFailures, PACING } from "./sendPacing";
 
 export type CampaignRecipient = {
   chatId: string;
@@ -31,11 +32,14 @@ export type Campaign = {
   /** Set when the campaign should auto-start at a future time instead of
    * immediately — stays "draft" until run-scheduled-campaigns fires it. */
   scheduledAt?: string | null;
+  /** Diisi saat proteksi anti-ban menghentikan campaign otomatis (gagal kirim
+   * beruntun = sinyal nomor diblokir). Status dikembalikan ke "draft" agar bisa
+   * dilanjutkan setelah nomor sehat kembali (sisa penerima tetap "pending"). */
+  autoPausedReason?: string;
+  autoPausedAt?: string;
 };
 
 const FILE = "campaigns.json";
-const MIN_DELAY_MS = 4000;
-const MAX_DELAY_MS = 9000;
 
 // In-memory only — reset on restart, which is fine: startCampaign() is safe
 // to call again and will pick up any still-pending recipients.
@@ -164,6 +168,9 @@ async function runCampaign(id: string) {
   if (!campaign) return;
 
   const pending = campaign.recipients.filter((r) => r.status === "pending");
+  let sent = 0;
+  let consecutiveFailures = 0;
+  let autoPaused = false;
   for (const recipient of pending) {
     if (canceledCampaigns.has(id)) break;
 
@@ -176,6 +183,8 @@ async function runCampaign(id: string) {
     const text = substituteVariables(campaign.messageBody, recipient);
     try {
       await sendText(campaign.session, recipient.chatId, text);
+      sent++;
+      consecutiveFailures = 0;
       updateRecipient(id, recipient.chatId, { status: "sent", sentAt: new Date().toISOString() });
       logEvent({
         ownerId: campaign.ownerId,
@@ -191,6 +200,7 @@ async function runCampaign(id: string) {
       if (campaign.templateId) incrementUsage(campaign.templateId);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      consecutiveFailures++;
       refundQuota(owner);
       updateRecipient(id, recipient.chatId, { status: "failed", error: message });
       logEvent({
@@ -207,9 +217,34 @@ async function runCampaign(id: string) {
       });
     }
 
+    // Proteksi anti-ban: gagal kirim beruntun = kemungkinan nomor diblokir/
+    // terputus. Hentikan campaign agar tak mempercepat ban; sisa penerima tetap
+    // "pending" sehingga bisa dilanjutkan setelah nomor sehat kembali.
+    if (shouldAbortForFailures(consecutiveFailures)) {
+      autoPaused = true;
+      break;
+    }
+
     if (canceledCampaigns.has(id)) break;
-    const delay = MIN_DELAY_MS + Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS);
-    await new Promise((r) => setTimeout(r, delay));
+    // Jeda manusiawi (jitter + micro-break berkala) supaya pola kirim tak
+    // seragam seperti mesin — lihat sendPacing.ts.
+    await new Promise((r) => setTimeout(r, humanDelayMs(sent)));
+  }
+
+  if (autoPaused) {
+    const reason =
+      `Dihentikan otomatis: ${PACING.MAX_CONSECUTIVE_FAILURES} pengiriman gagal berturut-turut — ` +
+      `kemungkinan nomor WhatsApp diblokir atau terputus. Periksa koneksi/kesehatan nomor, ` +
+      `lalu lanjutkan campaign (sisa penerima masih tersimpan).`;
+    updateCampaign(id, { status: "draft", autoPausedReason: reason, autoPausedAt: new Date().toISOString() });
+    createNotification(
+      campaign.ownerId,
+      "campaign_paused",
+      `Campaign "${campaign.name}" dijeda otomatis`,
+      reason,
+      "/broadcast",
+    );
+    return;
   }
 
   campaign = getCampaignUnscoped(id);
