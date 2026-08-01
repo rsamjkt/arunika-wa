@@ -50,7 +50,13 @@ async function callAnthropic(
     body: JSON.stringify({
       model,
       max_tokens: MAX_TOKENS,
-      system: systemPrompt,
+      // Prompt caching: blok system (boilerplate + knowledge base tenant) stabil
+      // antar-pesan, jadi ditandai cache_control agar panggilan berikutnya dalam
+      // window cache menagih ~10% untuk bagian ini alih-alih harga penuh. Untuk
+      // CS auto-reply yang system-prompt-nya besar & dikirim tiap pesan, ini
+      // pemangkas biaya terbesar. (Provider OpenAI-compatible meng-cache prefix
+      // panjang otomatis, jadi tak perlu perubahan setara di sana.)
+      system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: userContent }],
     }),
   });
