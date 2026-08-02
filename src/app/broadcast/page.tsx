@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Megaphone } from "lucide-react";
 
 interface SessionInfo {
@@ -65,6 +65,10 @@ function BroadcastPageInner() {
   const [busy, setBusy] = useState<string | null>(null);
   const [campaignError, setCampaignError] = useState<string | null>(null);
 
+  // Panel state: "compose" shows the builder, a campaign id shows its detail.
+  const [view, setView] = useState<"compose" | "campaign" | null>(null);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+
   useEffect(() => {
     fetch("/api/sessions")
       .then((r) => r.json())
@@ -107,6 +111,28 @@ function BroadcastPageInner() {
     const id = setInterval(loadCampaigns, 3000);
     return () => clearInterval(id);
   }, [campaigns, loadCampaigns]);
+
+  const selectedCampaign = useMemo(
+    () => campaigns.find((c) => c.id === selectedCampaignId) ?? null,
+    [campaigns, selectedCampaignId],
+  );
+
+  function openCompose() {
+    setView("compose");
+    setSelectedCampaignId(null);
+    setMessage(null);
+  }
+
+  function openCampaign(id: string) {
+    setSelectedCampaignId(id);
+    setView("campaign");
+    setCampaignError(null);
+  }
+
+  function closePanel() {
+    setView(null);
+    setSelectedCampaignId(null);
+  }
 
   function pickTemplate(id: string) {
     setTemplateId(id);
@@ -208,6 +234,7 @@ function BroadcastPageInner() {
       setManualText("");
       setScheduledAt("");
       await loadCampaigns();
+      closePanel();
     } catch (err) {
       setMessage({ ok: false, text: err instanceof Error ? err.message : "Gagal mengirim" });
     } finally {
@@ -281,254 +308,327 @@ function BroadcastPageInner() {
   }
 
   return (
-    <div>
-      <div style={{ display: "flex", gap: 22, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <div style={{ flex: "2 1 480px", minWidth: 320 }}>
-          <div className="card cpad mb16" style={{ padding: 22 }}>
-            <div className="ch">
-              <h2 style={{ fontSize: "1rem" }}>Susun Broadcast</h2>
-            </div>
-
-            <label className="lbl">Nama campaign</label>
-            <input
-              className="field"
-              style={{ marginBottom: 14 }}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Promo Gajian Juli 2026"
-            />
-
-            <div className="grid2" style={{ marginBottom: 14 }}>
-              <div>
-                <label className="lbl">Kirim dari perangkat</label>
-                <select className="field" value={session} onChange={(e) => setSession(e.target.value)}>
-                  <option value="">Pilih perangkat…</option>
-                  {sessions.map((s) => (
-                    <option key={s.name} value={s.name} disabled={s.status !== "WORKING"}>
-                      {s.name} {s.status !== "WORKING" ? `(${s.status})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="lbl">Pakai template (opsional)</label>
-                <select className="field" value={templateId} onChange={(e) => pickTemplate(e.target.value)}>
-                  <option value="">Tanpa template</option>
-                  {templates.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <label className="lbl">Isi pesan</label>
-            <textarea className="compose" value={body} onChange={(e) => setBody(e.target.value)} />
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 11 }}>
-              <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--ink-soft)", alignSelf: "center" }}>
-                Variabel:
-              </span>
-              <button type="button" className="varchip" onClick={() => insertVar("{nama}")}>
-                {"{nama}"}
-              </button>
-              <button type="button" className="varchip" onClick={() => insertVar("{nomor}")}>
-                {"{nomor}"}
-              </button>
-            </div>
-          </div>
-
-          <div className="card cpad" style={{ padding: 22 }}>
-            <div className="ch">
-              <h2 style={{ fontSize: "1rem" }}>Audiens</h2>
-              <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
-                <button
-                  type="button"
-                  className={audienceMode === "contacts" ? "btn" : "btn secondary"}
-                  onClick={() => setAudienceMode("contacts")}
-                >
-                  Dari Kontak
-                </button>
-                <button
-                  type="button"
-                  className={audienceMode === "manual" ? "btn" : "btn secondary"}
-                  onClick={() => setAudienceMode("manual")}
-                >
-                  Tempel Manual
-                </button>
-                <label className="btn secondary" style={{ cursor: "pointer", margin: 0 }}>
-                  Upload CSV
-                  <input type="file" accept=".csv,.txt" onChange={handleCsvUpload} style={{ display: "none" }} />
-                </label>
-              </div>
-            </div>
-
-            {audienceMode === "contacts" ? (
-              <>
-                <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-                  <input
-                    className="field"
-                    style={{ flex: 1, minWidth: 160 }}
-                    placeholder="Cari kontak…"
-                    value={contactSearch}
-                    onChange={(e) => setContactSearch(e.target.value)}
-                  />
-                  <button type="button" className="btn secondary" onClick={selectAllFiltered}>
-                    Pilih Semua ({filteredContacts.length})
-                  </button>
-                  <button type="button" className="btn secondary" onClick={clearSelection}>
-                    Kosongkan
-                  </button>
-                </div>
-                <div
-                  style={{
-                    maxHeight: 260,
-                    overflowY: "auto",
-                    border: "1px solid var(--border)",
-                    borderRadius: 11,
-                  }}
-                >
-                  {!contactsLoaded && (
-                    <p style={{ padding: 16, color: "var(--ink-soft)", fontSize: "0.82rem" }}>Memuat kontak…</p>
-                  )}
-                  {contactsLoaded && filteredContacts.map((c) => (
-                    <label
-                      key={c.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "8px 12px",
-                        borderBottom: "1px solid var(--border)",
-                        fontSize: "0.85rem",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleContact(c.id)} />
-                      <span style={{ fontWeight: 600 }}>{c.name || c.pushname || c.number || c.id}</span>
-                      <span className="mono" style={{ color: "var(--ink-soft)", marginLeft: "auto" }}>
-                        {c.number || c.id}
-                      </span>
-                    </label>
-                  ))}
-                  {contactsLoaded && filteredContacts.length === 0 && (
-                    <p style={{ padding: 16, color: "var(--ink-soft)", fontSize: "0.82rem" }}>Tidak ada kontak.</p>
-                  )}
-                </div>
-                <p style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginTop: 10 }}>
-                  {selected.size} kontak dipilih
-                </p>
-              </>
-            ) : (
-              <>
-                <textarea
-                  className="compose"
-                  style={{ minHeight: 140 }}
-                  placeholder={"628123456789,Budi\n628987654321,Sari\n628111222333"}
-                  value={manualText}
-                  onChange={(e) => setManualText(e.target.value)}
-                />
-                <p style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginTop: 8 }}>
-                  Satu nomor per baris. Format: <span className="mono">nomor,nama</span> (nama opsional).
-                </p>
-              </>
-            )}
-
-            <div style={{ display: "flex", gap: 10, marginTop: 18, paddingTop: 16, borderTop: "1px solid var(--border)", flexWrap: "wrap" }}>
-              <button className="btn" disabled={sending} onClick={() => send(true)}>
-                {sending ? "Mengirim…" : "Kirim Sekarang"}
-              </button>
-              <button className="btn secondary" disabled={sending} onClick={() => send(false)}>
-                Simpan Draft
-              </button>
-              <input
-                type="datetime-local"
-                className="field"
-                style={{ width: 200 }}
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-              />
-              <button
-                className="btn secondary"
-                disabled={sending || !scheduledAt}
-                onClick={() => send(false, scheduledAt)}
-              >
-                Jadwalkan
-              </button>
-            </div>
-            {message && (
-              <p style={{ marginTop: 12, fontSize: "0.82rem", color: message.ok ? "var(--success)" : "var(--danger)" }}>
-                {message.text}
-              </p>
-            )}
-            <p style={{ fontSize: "0.75rem", color: "var(--ink-soft)", marginTop: 10 }}>
-              Pesan dikirim satu per satu dengan jeda acak 4–9 detik untuk menghindari pemblokiran oleh WhatsApp.
-            </p>
+    <div className={`split-shell${view ? " open" : ""}`}>
+      <div className="split-list">
+        <div className="sl-head">
+          <div className="sl-title">
+            <h2>Broadcast</h2>
+            <button className="btn" onClick={openCompose}>
+              + Baru
+            </button>
           </div>
         </div>
-
-        <div style={{ flex: "1 1 320px", minWidth: 300 }}>
-          <div className="card cpad" style={{ padding: 18 }}>
-            <h2 style={{ fontSize: "0.9rem", marginBottom: 12 }}>Riwayat Campaign</h2>
-            {campaignError && (
-              <p style={{ fontSize: "0.78rem", color: "var(--danger)", marginBottom: 10 }}>{campaignError}</p>
-            )}
-            {!campaignsLoaded && (
-              <p style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>Memuat…</p>
-            )}
-            {campaignsLoaded && campaigns.map((c) => {
+        <div className="sl-items">
+          {campaignError && (
+            <p style={{ fontSize: "0.78rem", color: "var(--danger)", padding: "10px 14px" }}>{campaignError}</p>
+          )}
+          {!campaignsLoaded && (
+            <p style={{ color: "var(--ink-soft)", fontSize: "0.82rem", padding: "28px 16px", textAlign: "center" }}>Memuat…</p>
+          )}
+          {campaignsLoaded && campaigns.length === 0 && (
+            <div className="empty-state" style={{ padding: "36px 20px" }}>
+              <span className="ic">
+                <Megaphone size={20} />
+              </span>
+              <div className="ttl">Belum ada campaign</div>
+              <div className="sub">Klik "+ Baru" untuk menyusun broadcast pertama, lalu kirim sekarang atau simpan sebagai draft.</div>
+            </div>
+          )}
+          {campaignsLoaded &&
+            campaigns.map((c) => {
               const total = c.recipients.length;
               const sent = c.recipients.filter((r) => r.status === "sent").length;
               const failed = c.recipients.filter((r) => r.status === "failed").length;
               const pct = total > 0 ? Math.round(((sent + failed) / total) * 100) : 0;
               return (
-                <div key={c.id} style={{ padding: "12px 0", borderBottom: "1px solid var(--border)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
-                    <strong style={{ fontSize: "0.85rem" }}>{c.name}</strong>
+                <button
+                  key={c.id}
+                  className={`split-row${selectedCampaignId === c.id ? " active" : ""}`}
+                  onClick={() => openCampaign(c.id)}
+                  style={{ alignItems: "flex-start", flexDirection: "column", gap: 6 }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", width: "100%", gap: 8 }}>
+                    <span className="sr-title">{c.name}</span>
                     {statusBadge(c.status)}
                   </div>
-                  {c.status === "draft" && c.scheduledAt && (
-                    <p style={{ fontSize: "0.72rem", color: "var(--primary)", marginBottom: 6 }}>
-                      Terjadwal: {new Date(c.scheduledAt).toLocaleString("id-ID")}
-                    </p>
-                  )}
-                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, width: "100%" }}>
                     <div className="progress" style={{ flex: 1 }}>
                       <span style={{ width: `${pct}%` }} />
                     </div>
-                    <span style={{ fontSize: "0.72rem", color: "var(--ink-soft)", fontWeight: 700 }}>
+                    <span style={{ fontSize: "0.7rem", color: "var(--ink-soft)", fontWeight: 700 }}>
                       {sent}/{total}
                     </span>
                   </div>
-                  {failed > 0 && (
-                    <p style={{ fontSize: "0.72rem", color: "var(--danger)", marginBottom: 6 }}>{failed} gagal</p>
-                  )}
-                  <div style={{ display: "flex", gap: 6 }}>
-                    {c.status === "draft" && (
-                      <button className="btn secondary" style={{ padding: "5px 10px" }} disabled={busy === c.id} onClick={() => startDraft(c)}>
-                        Mulai Kirim
-                      </button>
-                    )}
-                    {c.status === "sending" && (
-                      <button className="btn danger" style={{ padding: "5px 10px" }} disabled={busy === c.id} onClick={() => cancel(c)}>
-                        Batalkan
-                      </button>
-                    )}
-                  </div>
-                </div>
+                </button>
               );
             })}
-            {campaignsLoaded && campaigns.length === 0 && (
-              <div className="empty-state">
-                <span className="ic">
-                  <Megaphone size={20} />
-                </span>
-                <div className="ttl">Belum ada campaign</div>
-                <div className="sub">Susun broadcast pertama di form sebelah kiri, lalu kirim sekarang atau simpan sebagai draft.</div>
-              </div>
-            )}
-          </div>
         </div>
+      </div>
+
+      <div className="split-detail">
+        {view === "compose" ? (
+          <>
+            <div className="sd-head">
+              <button className="split-back" onClick={closePanel} aria-label="Kembali">
+                ‹
+              </button>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: "1.05rem" }}>Susun Broadcast</div>
+                <div style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>Kirim satu pesan ke banyak kontak.</div>
+              </div>
+            </div>
+            <div className="sd-inner">
+              <div className="card cpad" style={{ padding: 20 }}>
+                <label className="lbl">Nama campaign</label>
+                <input
+                  className="field"
+                  style={{ marginBottom: 14 }}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Promo Gajian Juli 2026"
+                />
+                <div className="grid2" style={{ marginBottom: 14 }}>
+                  <div>
+                    <label className="lbl">Kirim dari perangkat</label>
+                    <select className="field" value={session} onChange={(e) => setSession(e.target.value)}>
+                      <option value="">Pilih perangkat…</option>
+                      {sessions.map((s) => (
+                        <option key={s.name} value={s.name} disabled={s.status !== "WORKING"}>
+                          {s.name} {s.status !== "WORKING" ? `(${s.status})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="lbl">Pakai template (opsional)</label>
+                    <select className="field" value={templateId} onChange={(e) => pickTemplate(e.target.value)}>
+                      <option value="">Tanpa template</option>
+                      {templates.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <label className="lbl">Isi pesan</label>
+                <textarea className="compose" value={body} onChange={(e) => setBody(e.target.value)} />
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 11 }}>
+                  <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--ink-soft)", alignSelf: "center" }}>
+                    Variabel:
+                  </span>
+                  <button type="button" className="varchip" onClick={() => insertVar("{nama}")}>
+                    {"{nama}"}
+                  </button>
+                  <button type="button" className="varchip" onClick={() => insertVar("{nomor}")}>
+                    {"{nomor}"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="card cpad" style={{ padding: 20 }}>
+                <div className="ch">
+                  <h2 style={{ fontSize: "0.95rem" }}>Audiens</h2>
+                  <div style={{ display: "flex", gap: 8, marginLeft: "auto", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className={audienceMode === "contacts" ? "btn" : "btn secondary"}
+                      onClick={() => setAudienceMode("contacts")}
+                    >
+                      Dari Kontak
+                    </button>
+                    <button
+                      type="button"
+                      className={audienceMode === "manual" ? "btn" : "btn secondary"}
+                      onClick={() => setAudienceMode("manual")}
+                    >
+                      Tempel Manual
+                    </button>
+                    <label className="btn secondary" style={{ cursor: "pointer", margin: 0 }}>
+                      Upload CSV
+                      <input type="file" accept=".csv,.txt" onChange={handleCsvUpload} style={{ display: "none" }} />
+                    </label>
+                  </div>
+                </div>
+
+                {audienceMode === "contacts" ? (
+                  <>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+                      <input
+                        className="field"
+                        style={{ flex: 1, minWidth: 160 }}
+                        placeholder="Cari kontak…"
+                        value={contactSearch}
+                        onChange={(e) => setContactSearch(e.target.value)}
+                      />
+                      <button type="button" className="btn secondary" onClick={selectAllFiltered}>
+                        Pilih Semua ({filteredContacts.length})
+                      </button>
+                      <button type="button" className="btn secondary" onClick={clearSelection}>
+                        Kosongkan
+                      </button>
+                    </div>
+                    <div
+                      style={{
+                        maxHeight: 260,
+                        overflowY: "auto",
+                        border: "1px solid var(--border)",
+                        borderRadius: 11,
+                      }}
+                    >
+                      {!contactsLoaded && (
+                        <p style={{ padding: 16, color: "var(--ink-soft)", fontSize: "0.82rem" }}>Memuat kontak…</p>
+                      )}
+                      {contactsLoaded &&
+                        filteredContacts.map((c) => (
+                          <label
+                            key={c.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 10,
+                              padding: "8px 12px",
+                              borderBottom: "1px solid var(--border)",
+                              fontSize: "0.85rem",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleContact(c.id)} />
+                            <span style={{ fontWeight: 600 }}>{c.name || c.pushname || c.number || c.id}</span>
+                            <span className="mono" style={{ color: "var(--ink-soft)", marginLeft: "auto" }}>
+                              {c.number || c.id}
+                            </span>
+                          </label>
+                        ))}
+                      {contactsLoaded && filteredContacts.length === 0 && (
+                        <p style={{ padding: 16, color: "var(--ink-soft)", fontSize: "0.82rem" }}>Tidak ada kontak.</p>
+                      )}
+                    </div>
+                    <p style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginTop: 10 }}>
+                      {selected.size} kontak dipilih
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <textarea
+                      className="compose"
+                      style={{ minHeight: 140 }}
+                      placeholder={"628123456789,Budi\n628987654321,Sari\n628111222333"}
+                      value={manualText}
+                      onChange={(e) => setManualText(e.target.value)}
+                    />
+                    <p style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginTop: 8 }}>
+                      Satu nomor per baris. Format: <span className="mono">nomor,nama</span> (nama opsional).
+                    </p>
+                  </>
+                )}
+
+                <div style={{ display: "flex", gap: 10, marginTop: 18, paddingTop: 16, borderTop: "1px solid var(--border)", flexWrap: "wrap" }}>
+                  <button className="btn" disabled={sending} onClick={() => send(true)}>
+                    {sending ? "Mengirim…" : "Kirim Sekarang"}
+                  </button>
+                  <button className="btn secondary" disabled={sending} onClick={() => send(false)}>
+                    Simpan Draft
+                  </button>
+                  <input
+                    type="datetime-local"
+                    className="field"
+                    style={{ width: 200 }}
+                    value={scheduledAt}
+                    onChange={(e) => setScheduledAt(e.target.value)}
+                  />
+                  <button
+                    className="btn secondary"
+                    disabled={sending || !scheduledAt}
+                    onClick={() => send(false, scheduledAt)}
+                  >
+                    Jadwalkan
+                  </button>
+                </div>
+                {message && (
+                  <p style={{ marginTop: 12, fontSize: "0.82rem", color: message.ok ? "var(--success)" : "var(--danger)" }}>
+                    {message.text}
+                  </p>
+                )}
+                <p style={{ fontSize: "0.75rem", color: "var(--ink-soft)", marginTop: 10 }}>
+                  Pesan dikirim satu per satu dengan jeda acak 4–9 detik untuk menghindari pemblokiran oleh WhatsApp.
+                </p>
+              </div>
+            </div>
+          </>
+        ) : view === "campaign" && selectedCampaign ? (
+          (() => {
+            const c = selectedCampaign;
+            const total = c.recipients.length;
+            const sent = c.recipients.filter((r) => r.status === "sent").length;
+            const failed = c.recipients.filter((r) => r.status === "failed").length;
+            const pending = total - sent - failed;
+            const pct = total > 0 ? Math.round(((sent + failed) / total) * 100) : 0;
+            return (
+              <>
+                <div className="sd-head">
+                  <button className="split-back" onClick={closePanel} aria-label="Kembali">
+                    ‹
+                  </button>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: "1.05rem" }}>{c.name}</div>
+                    <div style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>
+                      {new Date(c.createdAt).toLocaleString("id-ID")} · {c.session}
+                    </div>
+                  </div>
+                  {statusBadge(c.status)}
+                </div>
+                <div className="sd-inner">
+                  {c.status === "draft" && c.scheduledAt && (
+                    <p style={{ fontSize: "0.82rem", color: "var(--primary)" }}>
+                      Terjadwal: {new Date(c.scheduledAt).toLocaleString("id-ID")}
+                    </p>
+                  )}
+                  <div className="card cpad" style={{ padding: 18 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                      <div className="progress" style={{ flex: 1 }}>
+                        <span style={{ width: `${pct}%` }} />
+                      </div>
+                      <span style={{ fontSize: "0.8rem", color: "var(--ink-soft)", fontWeight: 700 }}>{pct}%</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: "0.85rem" }}>
+                      <span><strong>{sent}</strong> terkirim</span>
+                      {failed > 0 && <span style={{ color: "var(--danger)" }}><strong>{failed}</strong> gagal</span>}
+                      <span style={{ color: "var(--ink-soft)" }}><strong>{pending}</strong> menunggu</span>
+                      <span style={{ color: "var(--ink-soft)", marginLeft: "auto" }}>Total {total}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                      {c.status === "draft" && (
+                        <button className="btn" disabled={busy === c.id} onClick={() => startDraft(c)}>
+                          Mulai Kirim
+                        </button>
+                      )}
+                      {c.status === "sending" && (
+                        <button className="btn danger" disabled={busy === c.id} onClick={() => cancel(c)}>
+                          Batalkan
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="card cpad" style={{ padding: 18 }}>
+                    <div style={{ fontSize: "0.72rem", color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>
+                      Isi pesan
+                    </div>
+                    <p style={{ fontSize: "0.88rem", whiteSpace: "pre-wrap", margin: 0 }}>{c.messageBody}</p>
+                  </div>
+                </div>
+              </>
+            );
+          })()
+        ) : (
+          <div className="sd-empty">
+            <div className="sd-emoji">📣</div>
+            <div>
+              <strong style={{ display: "block", color: "var(--ink)", marginBottom: 4 }}>Broadcast</strong>
+              Pilih campaign di kiri untuk melihat progres, atau klik "+ Baru" untuk menyusun broadcast.
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
