@@ -48,6 +48,7 @@ function ContactsPageInner() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const [checkPhone, setCheckPhone] = useState("");
   const [checkResult, setCheckResult] = useState<string | null>(null);
@@ -91,6 +92,11 @@ function ContactsPageInner() {
       return name.includes(q) || number.includes(q);
     });
   }, [contacts, search]);
+
+  const activeContact = useMemo(
+    () => contacts.find((c) => c.id === activeId) ?? null,
+    [contacts, activeId],
+  );
 
   async function toggleBlock(contactId: string, block: boolean) {
     if (!activeSession) return;
@@ -138,136 +144,167 @@ function ContactsPageInner() {
     return <p style={{ color: "var(--ink-soft)" }}>Belum ada perangkat terhubung.</p>;
   }
 
+  const checkTool = (
+    <div className="card" style={{ padding: 16 }}>
+      <div style={{ fontWeight: 700, fontSize: "0.9rem", marginBottom: 10 }}>Cek nomor terdaftar WhatsApp</div>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <input
+          className="field"
+          style={{ flex: 1, minWidth: 180 }}
+          placeholder="mis. 6281234567890"
+          value={checkPhone}
+          onChange={(e) => setCheckPhone(e.target.value)}
+        />
+        <button className="btn secondary" onClick={runCheck} disabled={checking || !checkPhone.trim()}>
+          {checking ? "Mengecek…" : "Cek nomor"}
+        </button>
+      </div>
+      {checkResult && <p style={{ marginTop: 10, fontSize: "0.85rem" }}>{checkResult}</p>}
+    </div>
+  );
+
   return (
-    <div>
-      <div className="card cpad" style={{ padding: 18, marginBottom: 18 }}>
-        <div className="ch">
-          <div className="chttl">Cek nomor terdaftar WhatsApp</div>
-          <select
-            className="field"
-            style={{ maxWidth: 220, marginLeft: "auto" }}
-            value={activeSession ?? ""}
-            onChange={(e) => router.push(`/contacts?session=${encodeURIComponent(e.target.value)}`)}
-          >
-            {sessions.map((s) => (
-              <option key={s.name} value={s.name}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <input
-            className="field"
-            style={{ flex: 1, minWidth: 200 }}
-            placeholder="mis. 6281234567890"
-            value={checkPhone}
-            onChange={(e) => setCheckPhone(e.target.value)}
-          />
-          <button className="btn secondary" onClick={runCheck} disabled={checking || !checkPhone.trim()}>
-            {checking ? "Mengecek…" : "Cek nomor"}
-          </button>
-        </div>
-        {checkResult && <p style={{ marginTop: 10, fontSize: "0.85rem" }}>{checkResult}</p>}
-      </div>
-
-      <input
-        className="field"
-        placeholder="Cari kontak berdasarkan nama/nomor…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        style={{ marginBottom: 14, maxWidth: 360 }}
-      />
-
-      <div className="table-wrap">
-        <table className="dtable">
-          <thead>
-            <tr>
-              <th>Kontak</th>
-              <th>Nomor</th>
-              <th>Tipe</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!loading && filtered.length === 0 && (
-              <tr>
-                <td colSpan={4} style={{ textAlign: "center", color: "var(--ink-soft)", padding: "28px 16px" }}>
-                  Tidak ada kontak yang cocok.
-                </td>
-              </tr>
-            )}
-            {loading && (
-              <tr>
-                <td colSpan={4} style={{ textAlign: "center", color: "var(--ink-soft)", padding: "28px 16px" }}>
-                  Memuat kontak…
-                </td>
-              </tr>
-            )}
-            {!loading &&
-              filtered.slice(0, 100).map((c) => (
-                <tr key={c.id}>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div className="avatar-sm">{initials(c.name ?? c.pushname ?? c.id)}</div>
-                      <strong style={{ fontSize: "0.86rem" }}>{c.name ?? c.pushname ?? "Tanpa nama"}</strong>
-                    </div>
-                  </td>
-                  <td className="mono" style={{ color: "var(--ink-soft)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      {c.number ?? c.id.replace(/@.*/, "")}
-                      {c.id.endsWith("@lid") && (
-                        <span
-                          className="chip"
-                          title="ID privasi WhatsApp — bukan nomor telepon, ditampilkan oleh WhatsApp untuk melindungi nomor asli kontak ini"
-                          style={{ fontSize: "0.62rem", padding: "1px 7px" }}
-                        >
-                          LID
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    {c.isBusiness ? (
-                      <span className="badge good">Bisnis</span>
-                    ) : c.isMyContact ? (
-                      <span className="badge off">Tersimpan</span>
-                    ) : (
-                      <span className="badge off">Tidak tersimpan</span>
-                    )}
-                  </td>
-                  <td>
-                    <div className="actions-cell">
-                      {c.isBlocked ? (
-                        <button
-                          className="btn secondary"
-                          onClick={() => toggleBlock(c.id, false)}
-                          disabled={busy === c.id}
-                        >
-                          Buka blokir
-                        </button>
-                      ) : (
-                        <button
-                          className="btn secondary"
-                          style={{ color: "var(--danger)" }}
-                          onClick={() => toggleBlock(c.id, true)}
-                          disabled={busy === c.id}
-                        >
-                          Blokir
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+    <div className={`split-shell${activeId ? " open" : ""}`}>
+      <div className="split-list">
+        <div className="sl-head">
+          <div className="sl-title">
+            <h2>Kontak</h2>
+            <select
+              className="field"
+              style={{ maxWidth: 150 }}
+              value={activeSession ?? ""}
+              onChange={(e) => router.push(`/contacts?session=${encodeURIComponent(e.target.value)}`)}
+            >
+              {sessions.map((s) => (
+                <option key={s.name} value={s.name}>
+                  {s.name}
+                </option>
               ))}
-          </tbody>
-        </table>
+            </select>
+          </div>
+          <div className="sl-search">
+            <input
+              placeholder="Cari nama atau nomor…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="sl-items">
+          {loading && (
+            <p style={{ textAlign: "center", color: "var(--ink-soft)", padding: "28px 16px", fontSize: "0.85rem" }}>
+              Memuat kontak…
+            </p>
+          )}
+          {!loading && filtered.length === 0 && (
+            <p style={{ textAlign: "center", color: "var(--ink-soft)", padding: "28px 16px", fontSize: "0.85rem" }}>
+              Tidak ada kontak yang cocok.
+            </p>
+          )}
+          {!loading &&
+            filtered.slice(0, 200).map((c) => (
+              <button
+                key={c.id}
+                className={`split-row${c.id === activeId ? " active" : ""}`}
+                onClick={() => setActiveId(c.id)}
+              >
+                <div className="avatar-sm">{initials(c.name ?? c.pushname ?? c.id)}</div>
+                <div className="sr-body">
+                  <div className="sr-title">{c.name ?? c.pushname ?? "Tanpa nama"}</div>
+                  <div className="sr-sub mono">{c.number ?? c.id.replace(/@.*/, "")}</div>
+                </div>
+                {c.isBlocked && (
+                  <span className="badge off" style={{ fontSize: "0.6rem" }}>
+                    Diblokir
+                  </span>
+                )}
+              </button>
+            ))}
+          {filtered.length > 200 && (
+            <p style={{ fontSize: "0.76rem", color: "var(--ink-soft)", padding: "10px 14px" }}>
+              Menampilkan 200 dari {filtered.length} kontak. Persempit pencarian untuk melihat sisanya.
+            </p>
+          )}
+        </div>
       </div>
-      {filtered.length > 100 && (
-        <p style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginTop: 10 }}>
-          Menampilkan 100 dari {filtered.length} kontak yang cocok. Persempit pencarian untuk melihat sisanya.
-        </p>
-      )}
+
+      <div className="split-detail">
+        {!activeContact ? (
+          <div className="sd-empty">
+            <div className="sd-emoji">👤</div>
+            <div>
+              <strong style={{ display: "block", color: "var(--ink)", marginBottom: 4 }}>Pilih kontak</strong>
+              Pilih kontak di kiri untuk melihat detail, atau cek nomor baru di bawah.
+            </div>
+            <div style={{ width: "100%", maxWidth: 420, marginTop: 6 }}>{checkTool}</div>
+          </div>
+        ) : (
+          <>
+            <div className="sd-head">
+              <button className="split-back" onClick={() => setActiveId(null)} aria-label="Kembali">
+                ‹
+              </button>
+              <div className="sd-avatar">{initials(activeContact.name ?? activeContact.pushname ?? activeContact.id)}</div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: "1.05rem" }}>
+                  {activeContact.name ?? activeContact.pushname ?? "Tanpa nama"}
+                </div>
+                <div className="mono" style={{ color: "var(--ink-soft)", fontSize: "0.85rem" }}>
+                  {activeContact.number ?? activeContact.id.replace(/@.*/, "")}
+                  {activeContact.id.endsWith("@lid") && (
+                    <span
+                      className="chip"
+                      title="ID privasi WhatsApp — bukan nomor telepon, ditampilkan oleh WhatsApp untuk melindungi nomor asli kontak ini"
+                      style={{ fontSize: "0.62rem", padding: "1px 7px", marginLeft: 6 }}
+                    >
+                      LID
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="sd-inner">
+              <div className="card" style={{ padding: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: "0.72rem", color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                      Tipe kontak
+                    </div>
+                    <div style={{ marginTop: 6 }}>
+                      {activeContact.isBusiness ? (
+                        <span className="badge good">Bisnis</span>
+                      ) : activeContact.isMyContact ? (
+                        <span className="badge off">Tersimpan</span>
+                      ) : (
+                        <span className="badge off">Tidak tersimpan</span>
+                      )}
+                    </div>
+                  </div>
+                  {activeContact.isBlocked ? (
+                    <button
+                      className="btn secondary"
+                      onClick={() => toggleBlock(activeContact.id, false)}
+                      disabled={busy === activeContact.id}
+                    >
+                      Buka blokir
+                    </button>
+                  ) : (
+                    <button
+                      className="btn secondary"
+                      style={{ color: "var(--danger)" }}
+                      onClick={() => toggleBlock(activeContact.id, true)}
+                      disabled={busy === activeContact.id}
+                    >
+                      Blokir kontak
+                    </button>
+                  )}
+                </div>
+              </div>
+              {checkTool}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
