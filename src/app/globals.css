@@ -928,9 +928,35 @@ table.dtable .actions-cell button {
 }
 
 /* ---------- inbox three-pane ---------- */
+/* ---------- Inbox (WhatsApp-Web style) ---------- */
+:root {
+  --wa-wall: #efeae2;
+  --wa-panel-2: #f0f2f5;
+  --wa-header: #f0f2f5;
+  --wa-bub-in: #ffffff;
+  --wa-tick: #53bdeb;
+  --wa-unread: #25d366;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wa-wall: #0b141a;
+    --wa-panel-2: #202c33;
+    --wa-header: #202c33;
+    --wa-bub-in: #202c33;
+    --wa-unread: #00a884;
+  }
+}
+:root[data-theme="dark"] {
+  --wa-wall: #0b141a;
+  --wa-panel-2: #202c33;
+  --wa-header: #202c33;
+  --wa-bub-in: #202c33;
+  --wa-unread: #00a884;
+}
+
 .inbox-shell {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 340px 1fr;
   height: calc(100vh - 130px);
   min-height: 460px;
   border: 1px solid var(--border);
@@ -944,17 +970,18 @@ table.dtable .actions-cell button {
   flex-direction: column;
   min-height: 0;
   border-right: 1px solid var(--border);
+  background: var(--surface);
 }
 .thread .back-btn {
   display: none;
 }
 @media (max-width: 880px) {
-  /* Two fixed panes side by side don't fit a phone screen — show one at a
-   * time instead: the conversation list until a chat is picked, then the
-   * thread (with a back button to return), mirroring how every mobile
-   * messaging app handles this same layout. */
+  /* Two fixed panes don't fit a phone — show one at a time: the list until a
+   * chat is picked, then the thread (with a back button), like every mobile
+   * messaging app. Header actions collapse to icons so the name never clips. */
   .inbox-shell {
     grid-template-columns: 1fr;
+    height: calc(100vh - 90px);
   }
   .inbox-shell:not(.chat-open) .thread {
     display: none;
@@ -965,11 +992,31 @@ table.dtable .actions-cell button {
   .thread .back-btn {
     display: inline-flex;
   }
+  .thread .head {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .thread .head .lbl {
+    display: none;
+  }
+  .thread .head .hide-mobile {
+    display: none;
+  }
+  .thread .head .btn {
+    padding: 6px 9px;
+  }
+  .thread .msgs {
+    padding: 14px 4% 10px;
+  }
+  .bub {
+    max-width: 82%;
+  }
 }
 .sess-switch {
-  padding: 12px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  background: var(--wa-header);
 }
 .sess-switch select {
   width: 100%;
@@ -983,28 +1030,54 @@ table.dtable .actions-cell button {
   min-height: 0;
 }
 .convlist .search {
-  margin: 12px;
-  padding: 8px 12px;
-  background: var(--bg);
-  border-radius: 8px;
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-  border: 1px solid var(--border);
+  margin: 10px 12px;
+  padding: 9px 14px 9px 36px;
+  background: var(--wa-panel-2);
+  border-radius: 100px;
+  font-size: 0.82rem;
+  color: var(--ink);
+  border: 1px solid transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M15 15l-4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+}
+.convlist .search:focus {
+  outline: none;
+  border-color: var(--primary);
+  background-color: var(--surface);
 }
 .conv {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   padding: 10px 14px;
   align-items: center;
   cursor: pointer;
   background: transparent;
   border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
   text-align: left;
   width: 100%;
+  transition: background 0.12s;
+}
+.conv:hover {
+  background: var(--wa-panel-2);
 }
 .conv.active {
-  background: var(--success-bg);
-  border-right: 2px solid var(--primary);
+  background: var(--wa-panel-2);
+}
+.avatar-sm {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #25d366, #128c7e);
+  letter-spacing: 0.3px;
 }
 .conv .meta {
   min-width: 0;
@@ -1014,9 +1087,10 @@ table.dtable .actions-cell button {
   display: flex;
   justify-content: space-between;
   gap: 6px;
+  align-items: baseline;
 }
 .conv .name {
-  font-size: 0.84rem;
+  font-size: 0.9rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -1024,17 +1098,17 @@ table.dtable .actions-cell button {
   color: var(--ink);
 }
 .conv .time {
-  font-family: var(--font-mono), monospace;
-  font-size: 0.62rem;
+  font-size: 0.68rem;
   color: var(--ink-soft);
   flex-shrink: 0;
 }
 .conv .snippet {
-  font-size: 0.76rem;
+  font-size: 0.8rem;
   color: var(--ink-soft);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-top: 1px;
 }
 
 .thread {
@@ -1043,67 +1117,120 @@ table.dtable .actions-cell button {
   min-width: 0;
   min-height: 0;
   position: relative;
+  background: var(--wa-wall);
 }
 .thread .head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 18px;
+  gap: 12px;
+  padding: 9px 16px;
   border-bottom: 1px solid var(--border);
+  background: var(--wa-header);
+  flex-shrink: 0;
+}
+.thread .head .avatar-sm {
+  width: 40px;
+  height: 40px;
 }
 .thread .head .who {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .thread .head .who small {
   display: block;
   font-weight: 400;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .thread .msgs {
   flex: 1;
-  padding: 16px 18px;
+  padding: 18px 6% 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
   overflow-y: auto;
-  background: var(--bg);
+  background-color: var(--wa-wall);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='.04' stroke-width='2'%3E%3Cpath d='M30 40h26a6 6 0 016 6v14a6 6 0 01-6 6H44l-8 8v-8h-6a6 6 0 01-6-6V46a6 6 0 016-6z'/%3E%3Ccircle cx='210' cy='40' r='14'/%3E%3Cpath d='M204 40h12M210 34v12'/%3E%3Cpath d='M120 90c-6-8-20-6-20 6 0 10 20 20 20 20s20-10 20-20c0-12-14-14-20-6z'/%3E%3Crect x='40' y='150' width='34' height='24' rx='4'/%3E%3Ccircle cx='57' cy='162' r='6'/%3E%3Cpath d='M200 150v22M200 150l10 4M200 172a6 6 0 11-8 0'/%3E%3Cpath d='M150 200l6 6 12-14'/%3E%3Ccircle cx='90' cy='215' r='13'/%3E%3Cpath d='M85 213a2 2 0 004 0M93 213a2 2 0 00-4 0M85 220c3 3 7 3 10 0'/%3E%3C/g%3E%3C/svg%3E");
+}
+.msg-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.msg-row.out {
+  align-items: flex-end;
+}
+.msg-row.in {
+  align-items: flex-start;
 }
 .bub {
-  max-width: 68%;
-  padding: 8px 12px;
-  border-radius: 10px;
-  font-size: 0.85rem;
+  max-width: 65%;
+  padding: 6px 9px 8px;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  line-height: 1.32;
   position: relative;
   white-space: pre-wrap;
   word-break: break-word;
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
 }
 .bub.in {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--wa-bub-in);
+  color: var(--ink);
   align-self: flex-start;
-  border-bottom-left-radius: 2px;
+  border-top-left-radius: 0;
 }
 .bub.out {
   background: var(--bubble-out-bg);
   color: var(--bubble-out-ink);
   align-self: flex-end;
-  border-bottom-right-radius: 2px;
+  border-top-right-radius: 0;
+}
+.bub.in::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -8px;
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-top-color: var(--wa-bub-in);
+  border-right-color: var(--wa-bub-in);
+}
+.bub.out::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -8px;
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-top-color: var(--bubble-out-bg);
+  border-left-color: var(--bubble-out-bg);
 }
 .bub .t {
-  display: block;
+  display: inline-block;
   font-family: var(--font-mono), monospace;
-  font-size: 0.58rem;
-  opacity: 0.7;
-  margin-top: 3px;
-  text-align: right;
+  font-size: 0.6rem;
+  opacity: 0.55;
+  margin-left: 8px;
+  float: right;
+  position: relative;
+  top: 5px;
 }
 .bub-media {
   display: block;
   max-width: 100%;
-  max-height: 320px;
-  border-radius: 8px;
+  max-height: 300px;
+  border-radius: 6px;
   object-fit: cover;
   cursor: pointer;
 }
@@ -1112,7 +1239,7 @@ table.dtable .actions-cell button {
   max-width: 240px;
 }
 .bub-caption {
-  margin-top: 6px;
+  margin-top: 5px;
 }
 .media-fallback {
   font-size: 0.82rem;
@@ -1127,12 +1254,12 @@ a.media-fallback:hover {
   text-decoration: underline;
 }
 .ack {
-  margin-left: 4px;
-  letter-spacing: -1px;
-  opacity: 0.75;
+  margin-left: 3px;
+  letter-spacing: -2px;
+  opacity: 0.7;
 }
 .ack.read {
-  color: #53bdeb;
+  color: var(--wa-tick);
   opacity: 1;
 }
 .new-msgs-pill {
@@ -1140,9 +1267,9 @@ a.media-fallback:hover {
   bottom: 84px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--ink);
-  color: var(--surface);
-  border: none;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
   border-radius: 100px;
   padding: 7px 16px;
   font-size: 0.78rem;
@@ -1179,22 +1306,12 @@ a.media-fallback:hover {
   font-size: 1rem;
   cursor: pointer;
 }
-.msg-row {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.msg-row.out {
-  align-items: flex-end;
-}
-.msg-row.in {
-  align-items: flex-start;
-}
 .msg-actions {
   display: flex;
   gap: 2px;
   opacity: 0;
   transition: opacity 0.12s ease;
+  margin: 1px 3px 0;
 }
 .msg-row:hover .msg-actions,
 .msg-row:focus-within .msg-actions {
@@ -1207,9 +1324,10 @@ a.media-fallback:hover {
   font-size: 0.72rem;
   padding: 2px 6px;
   color: var(--ink-soft);
+  cursor: pointer;
 }
 .msg-actions button:hover {
-  background: var(--bg);
+  background: var(--wa-panel-2);
 }
 .reply-banner {
   display: flex;
@@ -1217,7 +1335,7 @@ a.media-fallback:hover {
   justify-content: space-between;
   gap: 10px;
   padding: 8px 18px;
-  background: var(--bg);
+  background: var(--wa-header);
   border-top: 1px solid var(--border);
   font-size: 0.78rem;
   color: var(--ink-soft);
@@ -1231,22 +1349,47 @@ a.media-fallback:hover {
   border: none;
   color: var(--ink-soft);
   font-size: 0.8rem;
+  cursor: pointer;
 }
 .thread .composer {
   display: flex;
   gap: 8px;
-  padding: 12px 18px;
+  padding: 10px 16px;
   border-top: 1px solid var(--border);
   align-items: center;
-  background: var(--surface);
+  background: var(--wa-header);
+  flex-shrink: 0;
+}
+.thread .composer .icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.thread .composer .icon-btn:hover {
+  background: var(--wa-panel-2);
+}
+.thread .composer .icon-btn.active {
+  color: var(--primary);
 }
 .thread .composer .field {
   flex: 1;
   border-radius: 100px;
+  background: var(--surface);
+  border: 1px solid transparent;
+  padding: 10px 16px;
 }
 .thread .composer .send {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: var(--primary-gradient);
   color: var(--primary-ink);
@@ -1254,9 +1397,10 @@ a.media-fallback:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 1rem;
   flex-shrink: 0;
   border: none;
+  cursor: pointer;
 }
 .thread .empty {
   flex: 1;
@@ -1265,6 +1409,7 @@ a.media-fallback:hover {
   justify-content: center;
   color: var(--ink-soft);
   font-size: 0.85rem;
+  background: var(--wa-panel-2);
 }
 
 /* ---------- API docs ---------- */

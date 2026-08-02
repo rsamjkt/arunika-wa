@@ -494,25 +494,44 @@ function InboxPageInner() {
 
   async function send() {
     if (!activeSession || !activeChatId || !text.trim()) return;
+    const body = text.trim();
+    const currentReply = replyTo;
+    // Optimistic: tampilkan pesan seketika & kosongkan input — terasa realtime
+    // seperti WhatsApp. loadMessages() setelah kirim merekonsiliasi dengan data
+    // server (mengganti pesan sementara ini); rollback bila gagal.
+    const tempId = `temp-${Date.now()}`;
+    setMessages((m) => [
+      ...m,
+      { id: tempId, timestamp: Math.floor(Date.now() / 1000), fromMe: true, body, ack: 0 },
+    ]);
+    setText("");
+    setReplyTo(null);
     setSending(true);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingRef.current = false;
+    const rollback = () => {
+      setMessages((m) => m.filter((x) => x.id !== tempId));
+      setText(body);
+      setReplyTo(currentReply);
+    };
     try {
-      const res = await fetch(replyTo ? "/api/message-reply" : "/api/send-text", {
+      const res = await fetch(currentReply ? "/api/message-reply" : "/api/send-text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          replyTo
-            ? { session: activeSession, chatId: activeChatId, replyTo: replyTo.id, text: text.trim() }
-            : { session: activeSession, chatId: activeChatId, text: text.trim() },
+          currentReply
+            ? { session: activeSession, chatId: activeChatId, replyTo: currentReply.id, text: body }
+            : { session: activeSession, chatId: activeChatId, text: body },
         ),
       });
       if (res.ok) {
-        setText("");
-        setReplyTo(null);
         await loadMessages();
         await loadChats();
+      } else {
+        rollback();
       }
+    } catch {
+      rollback();
     } finally {
       setSending(false);
     }
@@ -710,14 +729,17 @@ function InboxPageInner() {
               >
                 ←
               </button>
+              <div className="avatar-sm">{avatarLabel(activeChat?.name ?? activeChatId)}</div>
               <div className="who">
                 {activeChat?.name ?? activeChatId.split("@")[0]}
-                <small className="mono">{activeChatId}</small>
+                <small className="mono">
+                  {activeChatId.endsWith("@g.us") ? "Grup" : `+${activeChatId.split("@")[0]}`}
+                </small>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
                 {teamMembers.length > 1 && (
                   <select
-                    className="field"
+                    className="field hide-mobile"
                     style={{ width: 150, fontSize: "0.78rem", padding: "6px 8px" }}
                     value={(assignments[activeChatId] ?? UNASSIGNED).assignedTo ?? ""}
                     onChange={(e) => updateAssignment(activeChatId, { assignedTo: e.target.value || null })}
@@ -740,7 +762,10 @@ function InboxPageInner() {
                     })
                   }
                 >
-                  {(assignments[activeChatId] ?? UNASSIGNED).status === "resolved" ? "Buka Lagi" : "Tandai Selesai"}
+                  {(assignments[activeChatId] ?? UNASSIGNED).status === "resolved" ? "↺ " : "✓ "}
+                  <span className="lbl">
+                    {(assignments[activeChatId] ?? UNASSIGNED).status === "resolved" ? "Buka Lagi" : "Tandai Selesai"}
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -748,9 +773,9 @@ function InboxPageInner() {
                   style={{ padding: "6px 12px", fontSize: "0.78rem" }}
                   onClick={() => setShowNotes((v) => !v)}
                 >
-                  📝 Catatan
+                  📝 <span className="lbl">Catatan</span>
                 </button>
-                <span className="badge good">Terhubung</span>
+                <span className="badge good hide-mobile">Terhubung</span>
               </div>
             </div>
             {showNotes && (
@@ -933,8 +958,7 @@ function InboxPageInner() {
                 onChange={(e) => sendAttachment(e.target.files)}
               />
               <button
-                className="btn secondary"
-                style={{ padding: "8px 10px" }}
+                className="icon-btn"
                 title="Lampirkan gambar, video, atau dokumen"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={sendingImage}
@@ -943,8 +967,7 @@ function InboxPageInner() {
               </button>
               <button
                 type="button"
-                className={showTemplates ? "btn" : "btn secondary"}
-                style={{ padding: "8px 10px" }}
+                className={showTemplates ? "icon-btn active" : "icon-btn"}
                 title="Pakai template"
                 onClick={() => setShowTemplates((v) => !v)}
               >
