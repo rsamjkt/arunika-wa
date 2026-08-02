@@ -169,8 +169,8 @@ h3 {
 .sidebar {
   width: 240px;
   flex-shrink: 0;
-  background: var(--sidebar-bg);
-  color: var(--sidebar-text);
+  background: linear-gradient(190deg, #0a6b5d, #075e54 58%, #064b44);
+  color: rgba(255, 255, 255, 0.72);
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -202,7 +202,7 @@ h3 {
 .sidebar .brand .btag {
   font-size: 0.63rem;
   font-weight: 700;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.55);
   letter-spacing: 0.03em;
   margin-top: 2px;
 }
@@ -210,15 +210,15 @@ h3 {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: var(--sun-gradient);
-  color: #0a3d36;
+  background: #ffffff;
+  color: #075e54;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.9rem;
   font-weight: 800;
   flex-shrink: 0;
-  box-shadow: 0 6px 16px rgba(255, 138, 61, 0.3);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 .sidebar nav {
   display: flex;
@@ -231,7 +231,7 @@ h3 {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.5);
   padding: 14px 12px 6px;
 }
 .sidebar .nav-link {
@@ -243,7 +243,7 @@ h3 {
   font-size: 0.87rem;
   font-weight: 600;
   text-decoration: none;
-  color: var(--sidebar-text);
+  color: rgba(255, 255, 255, 0.82);
   transition: background 0.12s ease, color 0.12s ease;
 }
 .sidebar .nav-link .ic {
@@ -256,16 +256,15 @@ h3 {
   color: #fff;
 }
 .sidebar .nav-link.active {
-  background: var(--sidebar-active-bg);
-  color: var(--sidebar-active-ink);
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
   font-weight: 700;
-  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.28);
 }
 .sidebar .foot {
   margin-top: auto;
   padding: 14px 20px 20px;
   font-size: 0.7rem;
-  color: #64748b;
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .app-main {
@@ -273,6 +272,7 @@ h3 {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  background: var(--wa-panel-2);
 }
 .topbar {
   display: flex;
@@ -281,7 +281,7 @@ h3 {
   gap: 16px;
   padding: 14px 24px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--wa-header);
   position: sticky;
   top: 0;
   z-index: 20;
