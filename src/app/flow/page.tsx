@@ -51,6 +51,7 @@ export default function FlowPage() {
 
   const [ai, setAi] = useState<AISettings | null>(null);
   const [aiSaving, setAiSaving] = useState<string | null>(null);
+  const [section, setSection] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -167,11 +168,17 @@ export default function FlowPage() {
     return <p style={{ color: "var(--ink-soft)" }}>Memuat…</p>;
   }
 
-  return (
-    <div className="grid2" style={{ gridTemplateColumns: "1.3fr 1fr", alignItems: "start", gap: 22 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {ai && (
-          <div className="card cpad" style={{ padding: 20 }}>
+  const sections: { key: string; emoji: string; title: string; sub: string; show?: boolean }[] = [
+    { key: "ai", emoji: "🤖", title: "Balasan AI", sub: "Jawab pakai AI dari info bisnismu", show: !!ai },
+    { key: "rules", emoji: "🔑", title: "Balasan Kata Kunci", sub: `${settings.rules.length} aturan` },
+    { key: "quick", emoji: "⚡", title: "Pengaturan Cepat", sub: "Nyalakan/matikan bot" },
+    { key: "hours", emoji: "🕒", title: "Jam Operasional", sub: "Atur hari & jam kerja" },
+    { key: "welcome", emoji: "👋", title: "Pesan Welcome", sub: "Salam pertama untuk kontak baru" },
+    { key: "outside", emoji: "🌙", title: "Balasan di Luar Jam", sub: "Auto-info saat tutup" },
+  ].filter((s) => s.show !== false);
+
+  const aiSection = ai && (
+        <div className="card cpad" style={{ padding: 20 }}>
             <div className="ch">
               <div>
                 <h2 style={{ fontSize: "1rem" }}>
@@ -247,8 +254,9 @@ export default function FlowPage() {
               tim, tidak mengarang jawaban.
             </p>
           </div>
-        )}
+  );
 
+  const rulesSection = (
         <div className="card cpad" style={{ padding: 20 }}>
           <div className="ch">
             <div>
@@ -315,9 +323,9 @@ export default function FlowPage() {
             <p style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>Belum ada aturan kata kunci.</p>
           )}
         </div>
-      </div>
+  );
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+  const quickSection = (
         <div className="card cpad" style={{ padding: 20 }}>
           <div className="ch">
             <h2 style={{ fontSize: "1rem" }}>Pengaturan Cepat</h2>
@@ -359,7 +367,9 @@ export default function FlowPage() {
             />
           </div>
         </div>
+  );
 
+  const hoursSection = (
         <div className="card cpad" style={{ padding: 20 }}>
           <div className="ch">
             <h2 style={{ fontSize: "1rem" }}>Jam Operasional</h2>
@@ -408,7 +418,9 @@ export default function FlowPage() {
             </div>
           </div>
         </div>
+  );
 
+  const welcomeSection = (
         <div className="card cpad" style={{ padding: 20 }}>
           <div className="ch">
             <h2 style={{ fontSize: "1rem" }}>Pesan Welcome</h2>
@@ -428,7 +440,9 @@ export default function FlowPage() {
             Simpan Pesan Welcome
           </button>
         </div>
+  );
 
+  const outsideSection = (
         <div className="card cpad" style={{ padding: 20 }}>
           <div className="ch">
             <h2 style={{ fontSize: "1rem" }}>Balasan di Luar Jam</h2>
@@ -448,9 +462,75 @@ export default function FlowPage() {
             Simpan Balasan
           </button>
         </div>
+  );
 
-        {message && (
-          <p style={{ fontSize: "0.82rem", color: message.ok ? "var(--success)" : "var(--danger)" }}>{message.text}</p>
+  const sectionContent: Record<string, React.ReactNode> = {
+    ai: aiSection,
+    rules: rulesSection,
+    quick: quickSection,
+    hours: hoursSection,
+    welcome: welcomeSection,
+    outside: outsideSection,
+  };
+  const current = section ? sections.find((s) => s.key === section) : null;
+
+  return (
+    <div className={`split-shell${section ? " open" : ""}`}>
+      <div className="split-list">
+        <div className="sl-head">
+          <div className="sl-title">
+            <h2>Auto-Reply</h2>
+            <span className={`badge ${settings.enabled ? "good" : "off"}`}>{settings.enabled ? "Aktif" : "Mati"}</span>
+          </div>
+        </div>
+        <div className="sl-items">
+          {sections.map((s) => (
+            <button
+              key={s.key}
+              className={`split-row${section === s.key ? " active" : ""}`}
+              onClick={() => setSection(s.key)}
+            >
+              <div className="avatar-sm" style={{ background: "var(--wa-panel-2)", color: "var(--ink)", fontSize: "1.1rem" }}>
+                {s.emoji}
+              </div>
+              <div className="sr-body">
+                <div className="sr-title">{s.title}</div>
+                <div className="sr-sub">{s.sub}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="split-detail">
+        {!current ? (
+          <div className="sd-empty">
+            <div className="sd-emoji">🤖</div>
+            <div>
+              <strong style={{ display: "block", color: "var(--ink)", marginBottom: 4 }}>Auto-Reply</strong>
+              Pilih bagian di kiri untuk mengatur balasan otomatis WhatsApp Anda.
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="sd-head">
+              <button className="split-back" onClick={() => setSection(null)} aria-label="Kembali">
+                ‹
+              </button>
+              <div className="avatar-sm" style={{ background: "var(--wa-panel-2)", color: "var(--ink)", fontSize: "1.15rem" }}>
+                {current.emoji}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: "1.05rem" }}>{current.title}</div>
+                <div style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>{current.sub}</div>
+              </div>
+            </div>
+            <div className="sd-inner">
+              {sectionContent[section!]}
+              {message && (
+                <p style={{ fontSize: "0.82rem", color: message.ok ? "var(--success)" : "var(--danger)" }}>{message.text}</p>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>
