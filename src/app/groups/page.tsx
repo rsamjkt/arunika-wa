@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 interface SessionInfo {
@@ -17,6 +17,17 @@ interface WAGroup {
   name?: string;
   subject?: string;
   participants?: Participant[];
+}
+
+function initials(text: string) {
+  return (
+    text
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join("") || "#"
+  );
 }
 
 export default function GroupsPage() {
@@ -67,12 +78,11 @@ function GroupsPageInner() {
     load();
   }, [load]);
 
+  const activeGroup = useMemo(() => groups.find((g) => g.id === openId) ?? null, [groups, openId]);
+
   async function openGroup(id: string) {
-    if (openId === id) {
-      setOpenId(null);
-      return;
-    }
     setOpenId(id);
+    setParticipants([]);
     setParticipantsLoading(true);
     try {
       const res = await fetch(
@@ -104,96 +114,103 @@ function GroupsPageInner() {
   }
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem" }}>
-          Grup WhatsApp yang diikuti oleh perangkat ini.
-        </p>
-        <select
-          className="field"
-          style={{ maxWidth: 220 }}
-          value={activeSession ?? ""}
-          onChange={(e) => router.push(`/groups?session=${encodeURIComponent(e.target.value)}`)}
-        >
-          {sessions.map((s) => (
-            <option key={s.name} value={s.name}>
-              {s.name}
-            </option>
-          ))}
-        </select>
+    <div className={`split-shell${openId ? " open" : ""}`}>
+      <div className="split-list">
+        <div className="sl-head">
+          <div className="sl-title">
+            <h2>Grup</h2>
+            <select
+              className="field"
+              style={{ maxWidth: 150 }}
+              value={activeSession ?? ""}
+              onChange={(e) => router.push(`/groups?session=${encodeURIComponent(e.target.value)}`)}
+            >
+              {sessions.map((s) => (
+                <option key={s.name} value={s.name}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="sl-items">
+          {loading && (
+            <p style={{ textAlign: "center", color: "var(--ink-soft)", padding: "28px 16px", fontSize: "0.85rem" }}>
+              Memuat grup…
+            </p>
+          )}
+          {!loading && groups.length === 0 && (
+            <p style={{ textAlign: "center", color: "var(--ink-soft)", padding: "28px 16px", fontSize: "0.85rem" }}>
+              Belum tergabung di grup mana pun.
+            </p>
+          )}
+          {!loading &&
+            groups.map((g) => (
+              <button
+                key={g.id}
+                className={`split-row${openId === g.id ? " active" : ""}`}
+                onClick={() => openGroup(g.id)}
+              >
+                <div className="avatar-sm">{initials(g.name ?? g.subject ?? "#")}</div>
+                <div className="sr-body">
+                  <div className="sr-title">{g.name ?? g.subject ?? g.id}</div>
+                  <div className="sr-sub">{g.participants?.length ?? "—"} anggota</div>
+                </div>
+              </button>
+            ))}
+        </div>
       </div>
 
-      <div className="table-wrap">
-        <table className="dtable">
-          <thead>
-            <tr>
-              <th>Grup</th>
-              <th>Anggota</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr>
-                <td colSpan={3} style={{ textAlign: "center", color: "var(--ink-soft)", padding: "28px 16px" }}>
-                  Memuat grup…
-                </td>
-              </tr>
-            )}
-            {!loading && groups.length === 0 && (
-              <tr>
-                <td colSpan={3} style={{ textAlign: "center", color: "var(--ink-soft)", padding: "28px 16px" }}>
-                  Belum tergabung di grup mana pun.
-                </td>
-              </tr>
-            )}
-            {!loading &&
-              groups.map((g) => (
-                <Fragment key={g.id}>
-                  <tr>
-                    <td>
-                      <button
-                        onClick={() => openGroup(g.id)}
-                        style={{ background: "none", border: "none", padding: 0, textAlign: "left", color: "inherit" }}
-                      >
-                        <strong style={{ fontSize: "0.86rem" }}>{g.name ?? g.subject ?? g.id}</strong>
-                      </button>
-                    </td>
-                    <td className="mono" style={{ color: "var(--ink-soft)" }}>
-                      {g.participants?.length ?? "—"}
-                    </td>
-                    <td>
-                      <div className="actions-cell">
-                        <button className="btn secondary" onClick={() => openGroup(g.id)}>
-                          {openId === g.id ? "Tutup" : "Lihat anggota"}
-                        </button>
-                        <button className="btn danger" onClick={() => leave(g.id)} disabled={busy}>
-                          Keluar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  {openId === g.id && (
-                    <tr>
-                      <td colSpan={3} style={{ background: "var(--bg)" }}>
-                        {participantsLoading ? (
-                          <span style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>Memuat anggota…</span>
-                        ) : (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "6px 0" }}>
-                            {participants.map((p) => (
-                              <span key={p.id} className="badge off mono">
-                                {p.id.replace(/@.*/, "")}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              ))}
-          </tbody>
-        </table>
+      <div className="split-detail">
+        {!activeGroup ? (
+          <div className="sd-empty">
+            <div className="sd-emoji">👥</div>
+            <div>
+              <strong style={{ display: "block", color: "var(--ink)", marginBottom: 4 }}>Pilih grup</strong>
+              Pilih grup di kiri untuk melihat daftar anggotanya.
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="sd-head">
+              <button className="split-back" onClick={() => setOpenId(null)} aria-label="Kembali">
+                ‹
+              </button>
+              <div className="sd-avatar">{initials(activeGroup.name ?? activeGroup.subject ?? "#")}</div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: "1.05rem" }}>
+                  {activeGroup.name ?? activeGroup.subject ?? activeGroup.id}
+                </div>
+                <div style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>
+                  {activeGroup.participants?.length ?? participants.length} anggota
+                </div>
+              </div>
+              <button className="btn danger" onClick={() => leave(activeGroup.id)} disabled={busy}>
+                Keluar
+              </button>
+            </div>
+            <div className="sd-inner">
+              <div className="card cpad" style={{ padding: 18 }}>
+                <div style={{ fontSize: "0.72rem", color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 10 }}>
+                  Anggota
+                </div>
+                {participantsLoading ? (
+                  <span style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>Memuat anggota…</span>
+                ) : participants.length === 0 ? (
+                  <span style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>Tidak ada data anggota.</span>
+                ) : (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {participants.map((p) => (
+                      <span key={p.id} className="badge off mono">
+                        {p.id.replace(/@.*/, "")}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
