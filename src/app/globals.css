@@ -705,6 +705,29 @@ button.chip {
   gap: 8px;
   height: 100%;
   justify-content: flex-end;
+  cursor: pointer;
+  border-radius: 7px;
+  padding: 4px 2px 0;
+  transition: background 0.12s ease;
+}
+.barcol:hover {
+  background: var(--wa-panel-2);
+}
+.barcol.active {
+  background: var(--success-bg);
+}
+.bargroup {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+}
+.bargroup .barstack,
+.bargroup .bar.recv {
+  width: 13px;
+  flex: 0 0 auto;
 }
 .barstack {
   width: 100%;
@@ -726,11 +749,42 @@ button.chip {
 .bar.recv {
   background: var(--info);
 }
+.barcol.active .barlbl {
+  color: var(--success);
+}
 .barlbl {
   font-size: 0.62rem;
   font-weight: 700;
   color: var(--ink-soft);
   white-space: nowrap;
+}
+.chart-detail {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--wa-panel-2);
+  font-size: 0.82rem;
+}
+.chart-detail .cd-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chart-detail .cd-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.chart-hint {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  margin-top: 10px;
 }
 .leg {
   display: flex;

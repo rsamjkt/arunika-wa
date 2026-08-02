@@ -47,10 +47,12 @@ export default function ReportsPage() {
   const [period, setPeriod] = useState(14);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
     setError(false);
+    setSelectedDate(null);
     fetch(`/api/reports?days=${period}`)
       .then((r) => {
         if (!r.ok) throw new Error("Gagal memuat laporan");
@@ -139,22 +141,66 @@ export default function ReportsPage() {
           </div>
           <div className="bars">
             {stats.days.map((d) => (
-              <div className="barcol" key={d.date}>
-                <div className="barstack" style={{ height: `${Math.max(2, ((d.sent + d.failed) / maxVal) * 100)}%` }}>
-                  {d.failed > 0 && (
-                    <div
-                      className="bar fail"
-                      style={{ height: `${(d.failed / (d.sent + d.failed || 1)) * 100}%` }}
-                    />
-                  )}
-                  {d.sent > 0 && (
-                    <div className="bar" style={{ height: `${(d.sent / (d.sent + d.failed || 1)) * 100}%` }} />
-                  )}
+              <div
+                className={`barcol${selectedDate === d.date ? " active" : ""}`}
+                key={d.date}
+                role="button"
+                tabIndex={0}
+                title={`${d.date} — Terkirim ${d.sent}, Gagal ${d.failed}, Masuk ${d.received}`}
+                onClick={() => setSelectedDate((cur) => (cur === d.date ? null : d.date))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedDate((cur) => (cur === d.date ? null : d.date));
+                  }
+                }}
+              >
+                <div className="bargroup">
+                  <div className="barstack" style={{ height: `${Math.max(2, ((d.sent + d.failed) / maxVal) * 100)}%` }}>
+                    {d.failed > 0 && (
+                      <div
+                        className="bar fail"
+                        style={{ height: `${(d.failed / (d.sent + d.failed || 1)) * 100}%` }}
+                      />
+                    )}
+                    {d.sent > 0 && (
+                      <div className="bar" style={{ height: `${(d.sent / (d.sent + d.failed || 1)) * 100}%` }} />
+                    )}
+                  </div>
+                  <div className="bar recv" style={{ height: `${Math.max(d.received > 0 ? 2 : 0, (d.received / maxVal) * 100)}%` }} />
                 </div>
                 <span className="barlbl">{d.date.slice(5)}</span>
               </div>
             ))}
           </div>
+          {(() => {
+            const sel = selectedDate ? stats.days.find((d) => d.date === selectedDate) : null;
+            if (!sel) {
+              return <p className="chart-hint">Klik salah satu batang untuk melihat rincian harian.</p>;
+            }
+            const dayTotal = sel.sent + sel.failed;
+            const rate = dayTotal > 0 ? Math.round((sel.sent / dayTotal) * 100) : 0;
+            return (
+              <div className="chart-detail">
+                <strong>{new Date(sel.date).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" })}</strong>
+                <span className="cd-stat">
+                  <span className="cd-dot" style={{ background: "var(--primary)" }} />
+                  Terkirim <strong>{sel.sent}</strong>
+                </span>
+                <span className="cd-stat">
+                  <span className="cd-dot" style={{ background: "var(--danger)" }} />
+                  Gagal <strong>{sel.failed}</strong>
+                </span>
+                <span className="cd-stat">
+                  <span className="cd-dot" style={{ background: "var(--info)" }} />
+                  Masuk <strong>{sel.received}</strong>
+                </span>
+                <span className="cd-stat" style={{ marginLeft: "auto", color: "var(--ink-soft)" }}>
+                  Keberhasilan <strong style={{ color: "var(--ink)" }}>{rate}%</strong>
+                </span>
+              </div>
+            );
+          })()}
         </div>
 
         <div className="card cpad" style={{ padding: 18 }}>
