@@ -19,6 +19,7 @@ export default function TemplatesPage() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(EMPTY);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -40,12 +41,21 @@ export default function TemplatesPage() {
   function startEdit(t: MessageTemplate) {
     setEditingId(t.id);
     setForm({ name: t.name, category: t.category, body: t.body });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setMessage(null);
+    setEditorOpen(true);
+  }
+
+  function startNew() {
+    setEditingId(null);
+    setForm(EMPTY);
+    setMessage(null);
+    setEditorOpen(true);
   }
 
   function cancelEdit() {
     setEditingId(null);
     setForm(EMPTY);
+    setEditorOpen(false);
   }
 
   async function submit(e: React.FormEvent) {
@@ -73,6 +83,7 @@ export default function TemplatesPage() {
       }
       setEditingId(null);
       setForm(EMPTY);
+      setEditorOpen(false);
       await load();
     } catch (err) {
       setMessage({ ok: false, text: err instanceof Error ? err.message : "Gagal menyimpan" });
@@ -98,122 +109,141 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div>
-      <div className="card cpad mb16" style={{ padding: 22 }}>
-        <div className="ch">
-          <div>
-            <h2 style={{ fontSize: "1rem" }}>{editingId ? "Ubah template" : "Buat template baru"}</h2>
-            <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: 4 }}>
-              Template bisa dipakai ulang saat Kirim Pesan atau Broadcast.
-            </p>
+    <div className={`split-shell${editorOpen ? " open" : ""}`}>
+      <div className="split-list">
+        <div className="sl-head">
+          <div className="sl-title">
+            <h2>Template</h2>
+            <button className="btn" onClick={startNew}>
+              + Baru
+            </button>
           </div>
         </div>
-        <form onSubmit={submit}>
-          <div className="grid2" style={{ marginBottom: 14 }}>
-            <div>
-              <label className="lbl">Nama template</label>
-              <input
-                className="field"
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Promo Gajian"
-              />
+        <div className="sl-items">
+          {loading && (
+            <p style={{ textAlign: "center", color: "var(--ink-soft)", padding: "28px 16px", fontSize: "0.85rem" }}>
+              Memuat template…
+            </p>
+          )}
+          {!loading && templates.length === 0 && (
+            <div className="empty-state" style={{ padding: "36px 20px" }}>
+              <span className="ic">
+                <FileText size={20} />
+              </span>
+              <div className="ttl">Belum ada template</div>
+              <div className="sub">Klik "+ Baru" untuk membuat template pertama yang bisa dipakai ulang saat Kirim Pesan atau Broadcast.</div>
             </div>
-            <div>
-              <label className="lbl">Kategori</label>
-              <input
-                className="field"
-                value={form.category}
-                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                placeholder="Promosi, Notifikasi, dll"
-              />
-            </div>
-          </div>
-          <label className="lbl">Isi pesan</label>
-          <textarea
-            className="compose"
-            value={form.body}
-            onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-            placeholder="Halo {nama}! Ada promo spesial untuk Anda..."
-          />
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 11 }}>
-            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--ink-soft)", alignSelf: "center" }}>
-              Variabel:
-            </span>
-            <button type="button" className="varchip" onClick={() => insertVar("{nama}")}>
-              {"{nama}"}
-            </button>
-            <button type="button" className="varchip" onClick={() => insertVar("{nomor}")}>
-              {"{nomor}"}
-            </button>
-          </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-            <button className="btn" type="submit" disabled={saving || !form.name.trim() || !form.body.trim()}>
-              {saving ? "Menyimpan…" : editingId ? "Update Template" : "Simpan Template"}
-            </button>
-            {editingId && (
-              <button type="button" className="btn secondary" onClick={cancelEdit}>
-                Batal
+          )}
+          {!loading &&
+            templates.map((t) => (
+              <button
+                key={t.id}
+                className={`split-row${editingId === t.id ? " active" : ""}`}
+                onClick={() => startEdit(t)}
+              >
+                <div className="sr-body">
+                  <div className="sr-title">{t.name}</div>
+                  <div className="sr-sub">{t.body}</div>
+                </div>
+                <span className="chip" style={{ fontSize: "0.62rem" }}>
+                  {t.category || "—"}
+                </span>
               </button>
-            )}
-          </div>
-        </form>
-        {message && (
-          <p style={{ marginTop: 12, fontSize: "0.82rem", color: message.ok ? "var(--success)" : "var(--danger)" }}>
-            {message.text}
-          </p>
-        )}
+            ))}
+        </div>
       </div>
 
-      {!loading && templates.length === 0 ? (
-        <div className="card">
-          <div className="empty-state">
-            <span className="ic">
-              <FileText size={20} />
-            </span>
-            <div className="ttl">Belum ada template</div>
-            <div className="sub">Buat template pertama di form di atas untuk dipakai ulang saat Kirim Pesan atau Broadcast.</div>
+      <div className="split-detail">
+        {!editorOpen ? (
+          <div className="sd-empty">
+            <div className="sd-emoji">📝</div>
+            <div>
+              <strong style={{ display: "block", color: "var(--ink)", marginBottom: 4 }}>Kelola template</strong>
+              Pilih template di kiri untuk mengubahnya, atau klik "+ Baru" untuk membuat template baru.
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="table-wrap">
-          <table className="dtable">
-            <thead>
-              <tr>
-                <th>Nama</th>
-                <th>Kategori</th>
-                <th>Pratinjau</th>
-                <th>Dipakai</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {templates.map((t) => (
-                <tr key={t.id}>
-                  <td style={{ fontWeight: 700 }}>{t.name}</td>
-                  <td>
-                    <span className="chip">{t.category}</span>
-                  </td>
-                  <td style={{ maxWidth: 320, color: "var(--ink-soft)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {t.body}
-                  </td>
-                  <td className="mono" style={{ color: "var(--ink-soft)" }}>
-                    {t.usedCount}x
-                  </td>
-                  <td className="actions-cell">
-                    <button className="btn secondary" onClick={() => startEdit(t)}>
-                      Ubah
-                    </button>
-                    <button className="btn danger" disabled={busy === t.id} onClick={() => remove(t)}>
-                      Hapus
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        ) : (
+          <>
+            <div className="sd-head">
+              <button className="split-back" onClick={cancelEdit} aria-label="Kembali">
+                ‹
+              </button>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: "1.05rem" }}>{editingId ? "Ubah template" : "Buat template baru"}</div>
+                <div style={{ color: "var(--ink-soft)", fontSize: "0.82rem" }}>Bisa dipakai ulang saat Kirim Pesan atau Broadcast.</div>
+              </div>
+              {editingId && (
+                <button
+                  className="btn danger"
+                  style={{ marginLeft: "auto" }}
+                  disabled={busy === editingId}
+                  onClick={() => {
+                    const t = templates.find((x) => x.id === editingId);
+                    if (t) remove(t);
+                  }}
+                >
+                  Hapus
+                </button>
+              )}
+            </div>
+            <div className="sd-inner">
+              <form onSubmit={submit}>
+                <div className="grid2" style={{ marginBottom: 14 }}>
+                  <div>
+                    <label className="lbl">Nama template</label>
+                    <input
+                      className="field"
+                      value={form.name}
+                      onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                      placeholder="Promo Gajian"
+                    />
+                  </div>
+                  <div>
+                    <label className="lbl">Kategori</label>
+                    <input
+                      className="field"
+                      value={form.category}
+                      onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                      placeholder="Promosi, Notifikasi, dll"
+                    />
+                  </div>
+                </div>
+                <label className="lbl">Isi pesan</label>
+                <textarea
+                  className="compose"
+                  value={form.body}
+                  onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+                  placeholder="Halo {nama}! Ada promo spesial untuk Anda..."
+                />
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 11 }}>
+                  <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--ink-soft)", alignSelf: "center" }}>
+                    Variabel:
+                  </span>
+                  <button type="button" className="varchip" onClick={() => insertVar("{nama}")}>
+                    {"{nama}"}
+                  </button>
+                  <button type="button" className="varchip" onClick={() => insertVar("{nomor}")}>
+                    {"{nomor}"}
+                  </button>
+                </div>
+                <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+                  <button className="btn" type="submit" disabled={saving || !form.name.trim() || !form.body.trim()}>
+                    {saving ? "Menyimpan…" : editingId ? "Update Template" : "Simpan Template"}
+                  </button>
+                  <button type="button" className="btn secondary" onClick={cancelEdit}>
+                    Batal
+                  </button>
+                </div>
+              </form>
+              {message && (
+                <p style={{ marginTop: 12, fontSize: "0.82rem", color: message.ok ? "var(--success)" : "var(--danger)" }}>
+                  {message.text}
+                </p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
