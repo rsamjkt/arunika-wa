@@ -3,6 +3,11 @@ import { getProviderBaseUrl, getProviderKey, isProviderConfigured } from "./aiPr
 
 const MAX_TOKENS = 400;
 
+// Fallback OpenRouter: model gratis sering 429 (shared pool). Dengan `models[]`,
+// OpenRouter otomatis coba model berikut bila yang di depan gagal/limit — maks 3
+// item total (batas API). Model utama (pilihan tenant) tetap dicoba pertama.
+const OPENROUTER_FALLBACKS = ["z-ai/glm-5.2:free", "google/gemma-4-31b-it:free"];
+
 type ProviderShape = { shape: "anthropic" | "openai-compatible"; label: string };
 
 // Deepseek, OpenAI, Gemini, Groq, Mistral, and Qwen all speak the same
@@ -75,7 +80,15 @@ async function callOpenAICompatible(
   userContent: string,
   model: AIModel,
   label: string,
+  fallbackModels?: string[],
 ): Promise<string> {
+  // Bila ada fallback (OpenRouter), pakai `models[]` (utama + cadangan, maks 3)
+  // agar provider merutekan otomatis saat model utama limit/gagal. Provider lain
+  // tetap pakai `model` tunggal seperti biasa.
+  const modelField =
+    fallbackModels && fallbackModels.length
+      ? { models: [model, ...fallbackModels].slice(0, 3) }
+      : { model };
   const res = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
@@ -83,7 +96,7 @@ async function callOpenAICompatible(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model,
+      ...modelField,
       max_tokens: MAX_TOKENS,
       messages: [
         { role: "system", content: systemPrompt },
@@ -108,5 +121,6 @@ export async function generateAIReply(systemPrompt: string, userContent: string,
   const baseUrl = getProviderBaseUrl(provider).replace(/\/$/, "");
 
   if (cfg.shape === "anthropic") return callAnthropic(baseUrl, apiKey, systemPrompt, userContent, model);
-  return callOpenAICompatible(baseUrl, apiKey, systemPrompt, userContent, model, cfg.label);
+  const fallbacks = provider === "openrouter" ? OPENROUTER_FALLBACKS : undefined;
+  return callOpenAICompatible(baseUrl, apiKey, systemPrompt, userContent, model, cfg.label, fallbacks);
 }
