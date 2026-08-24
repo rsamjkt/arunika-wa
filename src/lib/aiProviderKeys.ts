@@ -32,7 +32,7 @@ export const DEFAULT_BASE_URLS: Record<AIProvider, string> = {
   openrouter: "https://openrouter.ai/api/v1",
 };
 
-type ProviderEntry = { apiKey: string; baseUrl?: string };
+type ProviderEntry = { apiKey: string; baseUrl?: string; fallbackKeys?: string[] };
 type Store = Partial<Record<AIProvider, ProviderEntry>>;
 
 function all(): Store {
@@ -47,6 +47,15 @@ export function getProviderKey(provider: AIProvider): string {
 
 export function getProviderBaseUrl(provider: AIProvider): string {
   return all()[provider]?.baseUrl || DEFAULT_BASE_URLS[provider];
+}
+
+/** Semua kunci untuk provider: utama + kunci cadangan (bila ada), sudah dedup &
+ * tanpa kosong. Dipakai untuk ROTASI kunci saat satu akun kena rate-limit —
+ * mis. beberapa akun free-tier OpenRouter, tiap akun punya pool rate-limit sendiri. */
+export function getProviderKeys(provider: AIProvider): string[] {
+  const primary = getProviderKey(provider);
+  const extra = all()[provider]?.fallbackKeys ?? [];
+  return [...new Set([primary, ...extra].filter((k) => k && k.length > 0))];
 }
 
 export function isProviderConfigured(provider: AIProvider): boolean {

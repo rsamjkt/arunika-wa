@@ -1,5 +1,5 @@
 import { providerForModel, type AIModel, type AIProvider } from "./aiAutoReply";
-import { getProviderBaseUrl, getProviderKey, isProviderConfigured } from "./aiProviderKeys";
+import { getProviderBaseUrl, getProviderKey, getProviderKeys, isProviderConfigured } from "./aiProviderKeys";
 
 const MAX_TOKENS = 400;
 
@@ -122,5 +122,17 @@ export async function generateAIReply(systemPrompt: string, userContent: string,
 
   if (cfg.shape === "anthropic") return callAnthropic(baseUrl, apiKey, systemPrompt, userContent, model);
   const fallbacks = provider === "openrouter" ? OPENROUTER_FALLBACKS : undefined;
-  return callOpenAICompatible(baseUrl, apiKey, systemPrompt, userContent, model, cfg.label, fallbacks);
+  // Rotasi kunci: coba tiap kunci (utama + cadangan). Beda akun = beda pool
+  // rate-limit, jadi bila satu kena 429/gagal, kunci berikut dicoba. Digabung
+  // dgn fallback model di atas → mis. 2 kunci × 3 model = keandalan jauh lebih tinggi.
+  const keys = getProviderKeys(provider);
+  let lastErr: unknown;
+  for (const k of keys) {
+    try {
+      return await callOpenAICompatible(baseUrl, k, systemPrompt, userContent, model, cfg.label, fallbacks);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(`${cfg.label}: semua kunci gagal`);
 }
