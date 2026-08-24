@@ -154,7 +154,7 @@ function buildSystemPrompt(settings: AIAutoReplySettings): string {
 async function runAIAutoReply(ownerId: string, session: string, chatId: string, aiSettings: AIAutoReplySettings) {
   if (!isModelConfigured(aiSettings.model) || !canUseAIToday(ownerId)) return;
   try {
-    const history = await getMessages(session, chatId, 10).catch(() => []);
+    const history = await getMessages(session, chatId, 20).catch(() => []);
     const transcript = history
       .slice()
       .reverse()
