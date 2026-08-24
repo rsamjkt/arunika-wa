@@ -13,6 +13,7 @@ const ENV_FALLBACK: Record<AIProvider, string> = {
   groq: "GROQ_API_KEY",
   mistral: "MISTRAL_API_KEY",
   qwen: "QWEN_API_KEY",
+  openrouter: "OPENROUTER_API_KEY",
 };
 
 // Sensible default endpoint per provider — shown as a pre-filled placeholder
@@ -28,6 +29,7 @@ export const DEFAULT_BASE_URLS: Record<AIProvider, string> = {
   groq: "https://api.groq.com/openai/v1",
   mistral: "https://api.mistral.ai/v1",
   qwen: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+  openrouter: "https://openrouter.ai/api/v1",
 };
 
 type ProviderEntry = { apiKey: string; baseUrl?: string };

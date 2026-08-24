@@ -18,6 +18,7 @@ const PROVIDERS: Record<AIProvider, ProviderShape> = {
   groq: { shape: "openai-compatible", label: "Groq" },
   mistral: { shape: "openai-compatible", label: "Mistral" },
   qwen: { shape: "openai-compatible", label: "Qwen" },
+  openrouter: { shape: "openai-compatible", label: "OpenRouter" },
 };
 
 /** True if ANY provider has a key set — used to decide whether the AI

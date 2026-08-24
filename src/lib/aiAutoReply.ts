@@ -1,6 +1,6 @@
 import { readJson, writeJson } from "./store";
 
-export type AIProvider = "anthropic" | "deepseek" | "openai" | "gemini" | "groq" | "mistral" | "qwen";
+export type AIProvider = "anthropic" | "deepseek" | "openai" | "gemini" | "groq" | "mistral" | "qwen" | "openrouter";
 
 export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
   anthropic: "Anthropic (Claude)",
@@ -10,9 +10,10 @@ export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
   groq: "Groq (Llama)",
   mistral: "Mistral AI",
   qwen: "Alibaba Qwen",
+  openrouter: "OpenRouter",
 };
 
-export const AI_PROVIDERS: AIProvider[] = ["anthropic", "deepseek", "openai", "gemini", "groq", "mistral", "qwen"];
+export const AI_PROVIDERS: AIProvider[] = ["anthropic", "deepseek", "openai", "gemini", "groq", "mistral", "qwen", "openrouter"];
 
 export type AIModel =
   | "claude-fable-5"
@@ -30,7 +31,8 @@ export type AIModel =
   | "mistral-small-latest"
   | "mistral-large-latest"
   | "qwen-turbo"
-  | "qwen-plus";
+  | "qwen-plus"
+  | "stealth/ox-alpha";
 
 export const AI_MODELS: { id: AIModel; provider: AIProvider; label: string; description: string }[] = [
   {
@@ -129,6 +131,12 @@ export const AI_MODELS: { id: AIModel; provider: AIProvider; label: string; desc
     label: "Qwen Plus",
     description: "Model Alibaba Qwen yang lebih pintar, biaya masih terjangkau.",
   },
+  {
+    id: "stealth/ox-alpha",
+    provider: "openrouter",
+    label: "OpenRouter — ox-alpha (stealth)",
+    description: "Model via OpenRouter (OpenAI-compatible). Base URL & key diatur di /admin/ai-providers.",
+  },
 ];
 
 export function isValidAIModel(model: unknown): model is AIModel {
@@ -151,6 +159,9 @@ export type AIAutoReplySettings = {
   knowledgeBase: string;
   tone: string;
   model: AIModel;
+  // Mode "bebas bicara": persona ngobrol santai & natural (bukan CS ketat yang
+  // hanya menjawab dari knowledge base). Default false → perilaku CS lama tak berubah.
+  freeChat?: boolean;
 };
 
 const FILE = "ai-autoreply.json";
@@ -163,6 +174,7 @@ const DEFAULTS: AIAutoReplySettings = {
   knowledgeBase: "",
   tone: "ramah, singkat, dan profesional",
   model: DEFAULT_MODEL,
+  freeChat: false,
 };
 
 type Store = Record<string, AIAutoReplySettings>;
