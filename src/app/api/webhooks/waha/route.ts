@@ -16,6 +16,7 @@ import {
 import { canUseAIToday, getAISettings, recordAIUsage, type AIAutoReplySettings } from "@/lib/aiAutoReply";
 import { generateAIReply, isModelConfigured } from "@/lib/aiClient";
 import { bumpAndShouldUpdate, getMemory, saveMemory } from "@/lib/aiMemory";
+import { isWebSearchConfigured, searchQueryFor, tavilySearch } from "@/lib/webSearch";
 import { getFullUser } from "@/lib/users";
 import { refundQuota, reserveQuota, userHasFeature } from "@/lib/authz";
 
@@ -176,9 +177,28 @@ async function runAIAutoReply(ownerId: string, session: string, chatId: string, 
       .join("\n");
 
     const memory = getMemory(session, chatId);
+
+    // Skill web search: bila dikonfigurasi & pesan terakhir butuh info terkini,
+    // cari ke web (Tavily) lalu suntik hasilnya sbg konteks agar jawaban akurat.
+    let webBlock = "";
+    if (isWebSearchConfigured()) {
+      const latest = history.find((m) => !m.fromMe)?.body ?? "";
+      const q = searchQueryFor(latest);
+      if (q) {
+        const sr = await tavilySearch(q);
+        if (sr && (sr.answer || sr.results.length)) {
+          webBlock =
+            "\n\n[HASIL PENCARIAN WEB terkini untuk membantumu menjawab — pakai bila relevan, " +
+            "sampaikan dengan bahasamu sendiri secara ringkas; jangan sebut kata 'hasil pencarian']:\n" +
+            (sr.answer ? `Ringkasan: ${sr.answer}\n` : "") +
+            sr.results.map((r, i) => `${i + 1}. ${r.title}: ${r.content}`).join("\n");
+        }
+      }
+    }
+
     const reply = await generateAIReply(
       buildSystemPrompt(aiSettings, memory),
-      `${transcript}\n\nBalas pesan terakhir dari pelanggan di atas.`,
+      `${transcript}${webBlock}\n\nBalas pesan terakhir dari pelanggan di atas.`,
       aiSettings.model,
     );
     recordAIUsage(ownerId);
