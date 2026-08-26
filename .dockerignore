@@ -1,0 +1,14 @@
+.git
+node_modules
+.next
+# JANGAN pernah bake state/rahasia ke image (repo & image bisa publik):
+data
+.env
+.env.*
+!.env.example
+# sampah
+*.log
+.DS_Store
+coverage
+playwright-report
+test-results

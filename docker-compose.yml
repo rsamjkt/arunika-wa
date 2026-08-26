@@ -1,0 +1,20 @@
+# Menjalankan arunika-wa lewat Docker Compose / Portainer.
+#
+# network_mode: host → identik dengan systemd: app dengar di :4000, bisa akses
+# WAHA di localhost:3000, dan webhook WAHA ke 127.0.0.1:4000 tetap sampai —
+# tanpa perlu mengubah WAHA_BASE_URL atau URL webhook apa pun.
+#
+# CLI:      docker compose up -d --build
+# Portainer: lihat CATATAN-DEPLOY-PORTAINER.md (build image dulu, lalu paste stack).
+services:
+  arunika-wa:
+    build: .
+    image: arunika-wa:local
+    container_name: arunika-wa
+    network_mode: host
+    env_file:
+      - .env.local
+    volumes:
+      # STATE penting (users, AI config, ingatan, session-owner, log). WAJIB persist.
+      - ./data:/app/data
+    restart: unless-stopped
