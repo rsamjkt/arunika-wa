@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Public_Sans, JetBrains_Mono } from "next/font/google";
 import AppShell from "@/components/AppShell";
 import "./globals.css";
 
-const sans = Plus_Jakarta_Sans({
+const sans = Public_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-sans",
