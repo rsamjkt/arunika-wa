@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Monitor, Sun, Moon, type LucideIcon } from "lucide-react";
 
 type Pref = "system" | "light" | "dark";
 
 const STORAGE_KEY = "arunika-theme";
-const ICON: Record<Pref, string> = { system: "◐", light: "☀", dark: "☾" };
+const ICON: Record<Pref, LucideIcon> = { system: Monitor, light: Sun, dark: Moon };
 const LABEL: Record<Pref, string> = {
   system: "Ikuti sistem",
   light: "Terang",
@@ -34,15 +35,17 @@ export default function ThemeToggle() {
     localStorage.setItem(STORAGE_KEY, next);
   }
 
+  const Icon = ICON[pref];
+
   return (
     <button
       onClick={cycle}
       title={`Tema: ${LABEL[pref]} — klik untuk ganti`}
       aria-label={`Tema: ${LABEL[pref]}`}
       className="btn secondary"
-      style={{ padding: "6px 10px", fontSize: "0.9rem" }}
+      style={{ padding: "6px 10px" }}
     >
-      {ICON[pref]}
+      <Icon size={16} strokeWidth={2} />
     </button>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Check } from "lucide-react";
 
 interface WebhookDelivery {
   id: string;
@@ -162,7 +163,9 @@ export default function WebhookSettingsPage() {
               }
               onClick={() => toggleEvent(ev.key)}
             >
-              {config.events.includes(ev.key) ? "✓ " : ""}
+              {config.events.includes(ev.key) ? (
+                <Check size={14} strokeWidth={2.5} style={{ verticalAlign: "-2px", marginRight: 4 }} />
+              ) : null}
               {ev.label}
             </button>
           ))}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Bot, Key, Zap, Clock, Hand, Moon, ChevronLeft } from "lucide-react";
 
 interface KeywordRule {
   id: string;
@@ -168,13 +169,13 @@ export default function FlowPage() {
     return <p style={{ color: "var(--ink-soft)" }}>Memuat…</p>;
   }
 
-  const sections: { key: string; emoji: string; title: string; sub: string; show?: boolean }[] = [
-    { key: "ai", emoji: "🤖", title: "Balasan AI", sub: "Jawab pakai AI dari info bisnismu", show: !!ai },
-    { key: "rules", emoji: "🔑", title: "Balasan Kata Kunci", sub: `${settings.rules.length} aturan` },
-    { key: "quick", emoji: "⚡", title: "Pengaturan Cepat", sub: "Nyalakan/matikan bot" },
-    { key: "hours", emoji: "🕒", title: "Jam Operasional", sub: "Atur hari & jam kerja" },
-    { key: "welcome", emoji: "👋", title: "Pesan Welcome", sub: "Salam pertama untuk kontak baru" },
-    { key: "outside", emoji: "🌙", title: "Balasan di Luar Jam", sub: "Auto-info saat tutup" },
+  const sections: { key: string; emoji: React.ReactNode; title: string; sub: string; show?: boolean }[] = [
+    { key: "ai", emoji: <Bot size={18} strokeWidth={2} />, title: "Balasan AI", sub: "Jawab pakai AI dari info bisnismu", show: !!ai },
+    { key: "rules", emoji: <Key size={18} strokeWidth={2} />, title: "Balasan Kata Kunci", sub: `${settings.rules.length} aturan` },
+    { key: "quick", emoji: <Zap size={18} strokeWidth={2} />, title: "Pengaturan Cepat", sub: "Nyalakan/matikan bot" },
+    { key: "hours", emoji: <Clock size={18} strokeWidth={2} />, title: "Jam Operasional", sub: "Atur hari & jam kerja" },
+    { key: "welcome", emoji: <Hand size={18} strokeWidth={2} />, title: "Pesan Welcome", sub: "Salam pertama untuk kontak baru" },
+    { key: "outside", emoji: <Moon size={18} strokeWidth={2} />, title: "Balasan di Luar Jam", sub: "Auto-info saat tutup" },
   ].filter((s) => s.show !== false);
 
   const aiSection = ai && (
@@ -504,7 +505,7 @@ export default function FlowPage() {
       <div className="split-detail">
         {!current ? (
           <div className="sd-empty">
-            <div className="sd-emoji">🤖</div>
+            <div className="sd-emoji"><Bot size={30} strokeWidth={2} /></div>
             <div>
               <strong style={{ display: "block", color: "var(--ink)", marginBottom: 4 }}>Auto-Reply</strong>
               Pilih bagian di kiri untuk mengatur balasan otomatis WhatsApp Anda.
@@ -514,7 +515,7 @@ export default function FlowPage() {
           <>
             <div className="sd-head">
               <button className="split-back" onClick={() => setSection(null)} aria-label="Kembali">
-                ‹
+                <ChevronLeft size={20} strokeWidth={2} />
               </button>
               <div className="avatar-sm" style={{ background: "var(--wa-panel-2)", color: "var(--ink)", fontSize: "1.15rem" }}>
                 {current.emoji}

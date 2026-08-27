@@ -726,17 +726,56 @@ button.chip {
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: var(--shadow);
-  padding: 16px 18px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.stat-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+.stat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 .stat-card .lbl {
-  font-size: 0.76rem;
+  font-size: 0.78rem;
+  font-weight: 500;
   color: var(--ink-soft);
-  margin-bottom: 8px;
+}
+.stat-ic {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-soft);
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.stat-card.ok .stat-ic {
+  background: var(--success-bg);
+  color: var(--success);
+}
+.stat-card.pending .stat-ic {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+.stat-card.bad .stat-ic {
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 .stat-card .val {
-  font-size: 1.6rem;
-  font-weight: 700;
-  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 .stat-card .val small {
   font-size: 0.85rem;
@@ -2174,7 +2213,11 @@ a.media-fallback:hover {
 }
 .split-detail .sd-empty .sd-emoji {
   font-size: 2.6rem;
-  opacity: 0.5;
+  opacity: 0.55;
+  color: var(--ink-soft);
+  display: flex;
+  justify-content: center;
+  margin-bottom: 6px;
 }
 .split-detail .sd-head {
   display: flex;

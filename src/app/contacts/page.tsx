@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronLeft, User } from "lucide-react";
 
 interface SessionInfo {
   name: string;
@@ -231,7 +232,7 @@ function ContactsPageInner() {
       <div className="split-detail">
         {!activeContact ? (
           <div className="sd-empty">
-            <div className="sd-emoji">👤</div>
+            <div className="sd-emoji"><User size={40} strokeWidth={2} /></div>
             <div>
               <strong style={{ display: "block", color: "var(--ink)", marginBottom: 4 }}>Pilih kontak</strong>
               Pilih kontak di kiri untuk melihat detail, atau cek nomor baru di bawah.
@@ -242,7 +243,7 @@ function ContactsPageInner() {
           <>
             <div className="sd-head">
               <button className="split-back" onClick={() => setActiveId(null)} aria-label="Kembali">
-                ‹
+                <ChevronLeft size={20} strokeWidth={2} />
               </button>
               <div className="sd-avatar">{initials(activeContact.name ?? activeContact.pushname ?? activeContact.id)}</div>
               <div style={{ minWidth: 0 }}>

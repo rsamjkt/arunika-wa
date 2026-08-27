@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { Megaphone } from "lucide-react";
+import { Megaphone, Plus, ChevronLeft } from "lucide-react";
 
 interface SessionInfo {
   name: string;
@@ -314,7 +314,7 @@ function BroadcastPageInner() {
           <div className="sl-title">
             <h2>Broadcast</h2>
             <button className="btn" onClick={openCompose}>
-              + Baru
+              <Plus size={16} strokeWidth={2} /> Baru
             </button>
           </div>
         </div>
@@ -370,7 +370,7 @@ function BroadcastPageInner() {
           <>
             <div className="sd-head">
               <button className="split-back" onClick={closePanel} aria-label="Kembali">
-                ‹
+                <ChevronLeft size={20} strokeWidth={2} />
               </button>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: "1.05rem" }}>Susun Broadcast</div>
@@ -568,7 +568,7 @@ function BroadcastPageInner() {
               <>
                 <div className="sd-head">
                   <button className="split-back" onClick={closePanel} aria-label="Kembali">
-                    ‹
+                    <ChevronLeft size={20} strokeWidth={2} />
                   </button>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: "1.05rem" }}>{c.name}</div>
@@ -622,7 +622,7 @@ function BroadcastPageInner() {
           })()
         ) : (
           <div className="sd-empty">
-            <div className="sd-emoji">📣</div>
+            <div className="sd-emoji"><Megaphone size={30} strokeWidth={2} /></div>
             <div>
               <strong style={{ display: "block", color: "var(--ink)", marginBottom: 4 }}>Broadcast</strong>
               Pilih campaign di kiri untuk melihat progres, atau klik "+ Baru" untuk menyusun broadcast.

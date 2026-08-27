@@ -4,7 +4,22 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { substituteVariables } from "@/lib/textVars";
-import { MessageSquare } from "lucide-react";
+import {
+  MessageSquare,
+  ArrowLeft,
+  ArrowDown,
+  RotateCcw,
+  Check,
+  StickyNote,
+  Star,
+  Reply,
+  Forward,
+  Trash2,
+  X,
+  Paperclip,
+  Clipboard,
+  Send,
+} from "lucide-react";
 
 type SessionStatus =
   | "STOPPED"
@@ -727,7 +742,7 @@ function InboxPageInner() {
                   flexShrink: 0,
                 }}
               >
-                ←
+                <ArrowLeft size={18} strokeWidth={2} />
               </button>
               <div className="avatar-sm">{avatarLabel(activeChat?.name ?? activeChatId)}</div>
               <div className="who">
@@ -762,7 +777,11 @@ function InboxPageInner() {
                     })
                   }
                 >
-                  {(assignments[activeChatId] ?? UNASSIGNED).status === "resolved" ? "↺ " : "✓ "}
+                  {(assignments[activeChatId] ?? UNASSIGNED).status === "resolved" ? (
+                    <RotateCcw size={16} strokeWidth={2} />
+                  ) : (
+                    <Check size={16} strokeWidth={2} />
+                  )}{" "}
                   <span className="lbl">
                     {(assignments[activeChatId] ?? UNASSIGNED).status === "resolved" ? "Buka Lagi" : "Tandai Selesai"}
                   </span>
@@ -773,7 +792,7 @@ function InboxPageInner() {
                   style={{ padding: "6px 12px", fontSize: "0.78rem" }}
                   onClick={() => setShowNotes((v) => !v)}
                 >
-                  📝 <span className="lbl">Catatan</span>
+                  <StickyNote size={16} strokeWidth={2} /> <span className="lbl">Catatan</span>
                 </button>
                 <span className="badge good hide-mobile">Terhubung</span>
               </div>
@@ -853,25 +872,25 @@ function InboxPageInner() {
                       disabled={actingOn === m.id}
                       onClick={() => starIt(m.id, true)}
                     >
-                      ⭐
+                      <Star size={16} strokeWidth={2} />
                     </button>
                     <button
                       title="Balas"
                       disabled={actingOn === m.id}
                       onClick={() => setReplyTo({ id: m.id, preview: m.body || "Media" })}
                     >
-                      ↩
+                      <Reply size={16} strokeWidth={2} />
                     </button>
                     <button
                       title="Teruskan"
                       disabled={actingOn === m.id}
                       onClick={() => forwardIt(m.id)}
                     >
-                      ↪
+                      <Forward size={16} strokeWidth={2} />
                     </button>
                     {m.fromMe && (
                       <button title="Hapus" disabled={actingOn === m.id} onClick={() => deleteIt(m.id)}>
-                        🗑
+                        <Trash2 size={16} strokeWidth={2} />
                       </button>
                     )}
                   </div>
@@ -888,7 +907,7 @@ function InboxPageInner() {
                   setHasNewBelow(false);
                 }}
               >
-                ↓ Pesan baru
+                <ArrowDown size={16} strokeWidth={2} /> Pesan baru
               </button>
             )}
             {imageError && (
@@ -901,7 +920,9 @@ function InboxPageInner() {
                 <span>
                   Membalas: <em>{replyTo.preview.slice(0, 80)}</em>
                 </span>
-                <button onClick={() => setReplyTo(null)}>✕</button>
+                <button onClick={() => setReplyTo(null)}>
+                  <X size={16} strokeWidth={2} />
+                </button>
               </div>
             )}
             {showTemplates && (
@@ -963,7 +984,7 @@ function InboxPageInner() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={sendingImage}
               >
-                {sendingImage ? "…" : "📎"}
+                {sendingImage ? "…" : <Paperclip size={16} strokeWidth={2} />}
               </button>
               <button
                 type="button"
@@ -971,7 +992,7 @@ function InboxPageInner() {
                 title="Pakai template"
                 onClick={() => setShowTemplates((v) => !v)}
               >
-                📋
+                <Clipboard size={16} strokeWidth={2} />
               </button>
               <input
                 className="field"
@@ -989,7 +1010,7 @@ function InboxPageInner() {
                 }}
               />
               <button className="send" onClick={send} disabled={sending || !text.trim()}>
-                ➤
+                <Send size={16} strokeWidth={2} />
               </button>
             </div>
           </>
@@ -1000,7 +1021,7 @@ function InboxPageInner() {
       <div className="lightbox" onClick={() => setLightbox(null)}>
         <img src={lightbox} alt="Gambar" />
         <button type="button" className="lightbox-close" onClick={() => setLightbox(null)}>
-          ✕
+          <X size={18} strokeWidth={2} />
         </button>
       </div>
     )}

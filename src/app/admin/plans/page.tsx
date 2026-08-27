@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Check } from "lucide-react";
 
 const FEATURE_OPTIONS: { key: string; label: string }[] = [
   { key: "broadcast", label: "Broadcast / Campaign" },
@@ -195,7 +196,9 @@ export default function AdminPlansPage() {
                 }
                 onClick={() => toggleFeature(f.key)}
               >
-                {form.features.includes(f.key) ? "✓ " : ""}
+                {form.features.includes(f.key) ? (
+                  <Check size={14} strokeWidth={2.5} style={{ verticalAlign: "-2px", marginRight: 4 }} />
+                ) : null}
                 {f.label}
               </button>
             ))}

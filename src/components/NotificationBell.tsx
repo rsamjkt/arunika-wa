@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Bell } from "lucide-react";
 
 interface Notification {
   id: string;
@@ -89,7 +90,7 @@ export default function NotificationBell() {
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifikasi"
       >
-        🔔
+        <Bell size={16} strokeWidth={2} />
         {unreadCount > 0 && (
           <span
             style={{

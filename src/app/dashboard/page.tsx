@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { Smartphone, CheckCircle2, QrCode, WifiOff } from "lucide-react";
 
 type SessionStatus =
   | "STOPPED"
@@ -231,23 +232,43 @@ export default function DashboardPage() {
       )}
       <div className="stat-grid">
         <div className="stat-card">
-          <div className="lbl">Total Perangkat</div>
+          <div className="stat-top">
+            <span className="lbl">Total Perangkat</span>
+            <span className="stat-ic">
+              <Smartphone size={20} strokeWidth={2} />
+            </span>
+          </div>
           <div className="val">{total}</div>
         </div>
-        <div className="stat-card">
-          <div className="lbl">Terhubung</div>
+        <div className="stat-card ok">
+          <div className="stat-top">
+            <span className="lbl">Terhubung</span>
+            <span className="stat-ic">
+              <CheckCircle2 size={20} strokeWidth={2} />
+            </span>
+          </div>
           <div className="val" style={{ color: active > 0 ? "var(--success)" : "var(--ink)" }}>
             {active}
           </div>
         </div>
-        <div className="stat-card">
-          <div className="lbl">Menunggu Scan</div>
+        <div className="stat-card pending">
+          <div className="stat-top">
+            <span className="lbl">Menunggu Scan</span>
+            <span className="stat-ic">
+              <QrCode size={20} strokeWidth={2} />
+            </span>
+          </div>
           <div className="val" style={{ color: pending > 0 ? "var(--warning)" : "var(--ink)" }}>
             {pending}
           </div>
         </div>
-        <div className="stat-card">
-          <div className="lbl">Terputus / Gagal</div>
+        <div className="stat-card bad">
+          <div className="stat-top">
+            <span className="lbl">Terputus / Gagal</span>
+            <span className="stat-ic">
+              <WifiOff size={20} strokeWidth={2} />
+            </span>
+          </div>
           <div className="val" style={{ color: down > 0 ? "var(--danger)" : "var(--ink)" }}>
             {down}
           </div>

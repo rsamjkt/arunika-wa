@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Send as SendIcon } from "lucide-react";
+import { Paperclip, Send as SendIcon, X } from "lucide-react";
 
 interface SessionInfo {
   name: string;
@@ -211,7 +211,7 @@ function SendPageInner() {
             onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
           />
           <button className="btn secondary" onClick={() => fileInputRef.current?.click()}>
-            📎 {imageFile ? "Ganti gambar" : "Lampirkan gambar"}
+            <Paperclip size={16} strokeWidth={2} /> {imageFile ? "Ganti gambar" : "Lampirkan gambar"}
           </button>
           {imageFile && (
             <span style={{ fontSize: "0.78rem", color: "var(--ink-soft)" }}>
@@ -223,7 +223,7 @@ function SendPageInner() {
                 }}
                 style={{ background: "none", border: "none", color: "var(--danger)" }}
               >
-                ✕
+                <X size={14} strokeWidth={2} />
               </button>
             </span>
           )}

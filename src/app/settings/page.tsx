@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Bell, KeyRound, User, Users } from "lucide-react";
+import { ArrowRight, Bell, KeyRound, SlidersHorizontal, User, Users } from "lucide-react";
 import { getCurrentFullUser } from "@/lib/currentUser";
 
 export default async function SettingsHubPage() {
@@ -66,7 +66,7 @@ export default async function SettingsHubPage() {
 
       <div className="split-detail">
         <div className="sd-empty">
-          <div className="sd-emoji">⚙️</div>
+          <div className="sd-emoji"><SlidersHorizontal size={20} strokeWidth={2} /></div>
           <div>
             <strong style={{ display: "block", color: "var(--ink)", marginBottom: 4 }}>Pengaturan</strong>
             Pilih salah satu menu di kiri untuk mengelola user, tim, API key, atau webhook.

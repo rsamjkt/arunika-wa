@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { FileText } from "lucide-react";
+import { FileText, Plus, ChevronLeft } from "lucide-react";
 
 interface MessageTemplate {
   id: string;
@@ -115,7 +115,7 @@ export default function TemplatesPage() {
           <div className="sl-title">
             <h2>Template</h2>
             <button className="btn" onClick={startNew}>
-              + Baru
+              <Plus size={16} strokeWidth={2} /> Baru
             </button>
           </div>
         </div>
@@ -156,7 +156,7 @@ export default function TemplatesPage() {
       <div className="split-detail">
         {!editorOpen ? (
           <div className="sd-empty">
-            <div className="sd-emoji">📝</div>
+            <div className="sd-emoji"><FileText size={30} strokeWidth={2} /></div>
             <div>
               <strong style={{ display: "block", color: "var(--ink)", marginBottom: 4 }}>Kelola template</strong>
               Pilih template di kiri untuk mengubahnya, atau klik "+ Baru" untuk membuat template baru.
@@ -166,7 +166,7 @@ export default function TemplatesPage() {
           <>
             <div className="sd-head">
               <button className="split-back" onClick={cancelEdit} aria-label="Kembali">
-                ‹
+                <ChevronLeft size={20} strokeWidth={2} />
               </button>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: "1.05rem" }}>{editingId ? "Ubah template" : "Buat template baru"}</div>

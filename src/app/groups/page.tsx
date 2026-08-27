@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronLeft, Users } from "lucide-react";
 
 interface SessionInfo {
   name: string;
@@ -164,7 +165,7 @@ function GroupsPageInner() {
       <div className="split-detail">
         {!activeGroup ? (
           <div className="sd-empty">
-            <div className="sd-emoji">👥</div>
+            <div className="sd-emoji"><Users size={40} strokeWidth={2} /></div>
             <div>
               <strong style={{ display: "block", color: "var(--ink)", marginBottom: 4 }}>Pilih grup</strong>
               Pilih grup di kiri untuk melihat daftar anggotanya.
@@ -174,7 +175,7 @@ function GroupsPageInner() {
           <>
             <div className="sd-head">
               <button className="split-back" onClick={() => setOpenId(null)} aria-label="Kembali">
-                ‹
+                <ChevronLeft size={20} strokeWidth={2} />
               </button>
               <div className="sd-avatar">{initials(activeGroup.name ?? activeGroup.subject ?? "#")}</div>
               <div style={{ minWidth: 0, flex: 1 }}>
