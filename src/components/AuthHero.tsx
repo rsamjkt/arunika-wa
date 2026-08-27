@@ -1,11 +1,4 @@
-import { CalendarClock, Users, Wallet, Webhook } from "lucide-react";
-
-const FEATURES = [
-  { icon: Users, text: "Staf/tim tak terbatas di setiap paket, termasuk yang gratis" },
-  { icon: Wallet, text: "Mulai dari Rp0 — paket berbayar dari Rp19.000/bulan" },
-  { icon: CalendarClock, text: "Broadcast terjadwal, template, dan auto-reply bawaan" },
-  { icon: Webhook, text: "API key sendiri untuk integrasi ke aplikasi Anda" },
-];
+import { CheckCheck, ShieldCheck, Users, Zap } from "lucide-react";
 
 export default function AuthHero({
   title,
@@ -17,21 +10,40 @@ export default function AuthHero({
   return (
     <div className="auth-hero">
       <div className="auth-hero-inner">
-        <div className="brand">
-          <span className="mark">A</span>
+        <div className="auth-brand">
+          <span className="m">A</span>
           Arunika · WA
         </div>
         <h1>{title}</h1>
         <p className="lead">{lead}</p>
-        <div className="auth-hero-features">
-          {FEATURES.map((f) => (
-            <div className="auth-hero-feature" key={f.text}>
-              <span className="ic">
-                <f.icon size={14} strokeWidth={2} />
-              </span>
-              <span>{f.text}</span>
-            </div>
-          ))}
+
+        {/* Mock percakapan — memperlihatkan produk (auto-reply Arunika) apa adanya */}
+        <div className="auth-chat">
+          <div className="au-bub in">
+            Halo, toko masih buka? mau order yang kemarin 🙏
+            <span className="m">19.42</span>
+          </div>
+          <div className="au-bub out">
+            Halo kak! 😊 Masih buka sampai jam 21.00. Mau aku bantu catat pesanannya sekarang?
+            <span className="m">
+              19.42 <CheckCheck size={13} strokeWidth={2.5} />
+            </span>
+          </div>
+          <span className="au-badge">
+            <Zap size={12} strokeWidth={2.5} /> Dibalas otomatis oleh Arunika
+          </span>
+        </div>
+
+        <div className="auth-trust">
+          <div>
+            <ShieldCheck size={17} strokeWidth={2} /> Data tiap akun terisolasi &amp; aman
+          </div>
+          <div>
+            <Users size={17} strokeWidth={2} /> Staf tak terbatas di semua paket
+          </div>
+          <div>
+            <Zap size={17} strokeWidth={2} /> Aktif dalam hitungan menit
+          </div>
         </div>
       </div>
     </div>

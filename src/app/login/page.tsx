@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Lock, User } from "lucide-react";
 import AuthHero from "@/components/AuthHero";
 
 export default function LoginPage() {
@@ -56,59 +57,65 @@ function LoginPageInner() {
         lead="Kelola pesan, broadcast, dan otomasi WhatsApp bisnis Anda dari satu dashboard — dengan staf sebanyak yang Anda perlukan, tanpa biaya tambahan."
       />
       <div className="auth-form-side">
-        <form className="card login-card" onSubmit={submit}>
-          <div className="brand">
-            <span className="mark">A</span>
-            Arunika · WA
-          </div>
-          <p className="sub">Masuk untuk mengelola dashboard WhatsApp Gateway Anda.</p>
+        <form className="auth-card" onSubmit={submit}>
+          <div className="auth-mark">A</div>
+          <h2>Selamat datang kembali</h2>
+          <p className="sub">Masuk untuk mengelola WhatsApp Gateway bisnis Anda.</p>
 
           <div className="field-group">
-          <label htmlFor="username">Username</label>
-          <input
-            id="username"
-            className="field"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoFocus
-            autoComplete="username"
-          />
-        </div>
-
-        <div className="field-group">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <label htmlFor="password">Password</label>
-            <a href="/forgot-password" style={{ fontSize: "0.75rem", color: "#0f172a", fontWeight: 700 }}>
-              Lupa password?
-            </a>
+            <label htmlFor="username">Username</label>
+            <div className="in-icon">
+              <User size={17} strokeWidth={2} />
+              <input
+                id="username"
+                className="field"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoFocus
+                autoComplete="username"
+                placeholder="username Anda"
+              />
+            </div>
           </div>
-          <input
-            id="password"
-            type="password"
-            className="field"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-          />
-        </div>
 
-        {error && (
-          <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14 }}>{error}</p>
-        )}
+          <div className="field-group">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <label htmlFor="password">Password</label>
+              <a href="/forgot-password" style={{ fontSize: "0.75rem", color: "var(--primary)", fontWeight: 700 }}>
+                Lupa password?
+              </a>
+            </div>
+            <div className="in-icon">
+              <Lock size={17} strokeWidth={2} />
+              <input
+                id="password"
+                type="password"
+                className="field"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
 
-        <button
-          className="btn"
-          type="submit"
-          disabled={busy || !username || !password}
-          style={{ width: "100%", background: "#0f172a", color: "#fff", boxShadow: "none" }}
-        >
-          {busy ? "Memproses…" : "Masuk"}
-        </button>
+          {error && (
+            <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14 }}>{error}</p>
+          )}
 
-          <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
+          <button
+            className="btn"
+            type="submit"
+            disabled={busy || !username || !password}
+            style={{ width: "100%" }}
+          >
+            {busy ? "Memproses…" : "Masuk"}
+          </button>
+
+          <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: 18, textAlign: "center" }}>
             Belum punya akun?{" "}
-            <a href="/register" style={{ color: "#0f172a", fontWeight: 700 }}>
-              Daftar
+            <a href="/register" style={{ color: "var(--primary)", fontWeight: 700 }}>
+              Daftar gratis
             </a>
           </p>
         </form>
