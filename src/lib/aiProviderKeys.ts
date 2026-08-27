@@ -14,6 +14,7 @@ const ENV_FALLBACK: Record<AIProvider, string> = {
   mistral: "MISTRAL_API_KEY",
   qwen: "QWEN_API_KEY",
   openrouter: "OPENROUTER_API_KEY",
+  vikey: "VIKEY_API_KEY",
 };
 
 // Sensible default endpoint per provider — shown as a pre-filled placeholder
@@ -30,6 +31,7 @@ export const DEFAULT_BASE_URLS: Record<AIProvider, string> = {
   mistral: "https://api.mistral.ai/v1",
   qwen: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
   openrouter: "https://openrouter.ai/api/v1",
+  vikey: "https://api.vikey.ai/v1",
 };
 
 type ProviderEntry = { apiKey: string; baseUrl?: string; fallbackKeys?: string[] };

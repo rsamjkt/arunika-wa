@@ -1,6 +1,6 @@
 import { readJson, writeJson } from "./store";
 
-export type AIProvider = "anthropic" | "deepseek" | "openai" | "gemini" | "groq" | "mistral" | "qwen" | "openrouter";
+export type AIProvider = "anthropic" | "deepseek" | "openai" | "gemini" | "groq" | "mistral" | "qwen" | "openrouter" | "vikey";
 
 export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
   anthropic: "Anthropic (Claude)",
@@ -11,9 +11,10 @@ export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
   mistral: "Mistral AI",
   qwen: "Alibaba Qwen",
   openrouter: "OpenRouter",
+  vikey: "Vikey.ai",
 };
 
-export const AI_PROVIDERS: AIProvider[] = ["anthropic", "deepseek", "openai", "gemini", "groq", "mistral", "qwen", "openrouter"];
+export const AI_PROVIDERS: AIProvider[] = ["anthropic", "deepseek", "openai", "gemini", "groq", "mistral", "qwen", "openrouter", "vikey"];
 
 export type AIModel =
   | "claude-fable-5"
@@ -32,7 +33,8 @@ export type AIModel =
   | "mistral-large-latest"
   | "qwen-turbo"
   | "qwen-plus"
-  | "stealth/ox-alpha";
+  | "stealth/ox-alpha"
+  | "deepseek/deepseek-v4-flash";
 
 export const AI_MODELS: { id: AIModel; provider: AIProvider; label: string; description: string }[] = [
   {
@@ -136,6 +138,12 @@ export const AI_MODELS: { id: AIModel; provider: AIProvider; label: string; desc
     provider: "openrouter",
     label: "OpenRouter — ox-alpha (stealth)",
     description: "Model via OpenRouter (OpenAI-compatible). Base URL & key diatur di /admin/ai-providers.",
+  },
+  {
+    id: "deepseek/deepseek-v4-flash",
+    provider: "vikey",
+    label: "Vikey.ai — DeepSeek V4 Flash",
+    description: "Model via Vikey.ai (OpenAI-compatible). Base URL & key diatur di /admin/ai-providers.",
   },
 ];
 
