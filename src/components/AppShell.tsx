@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { Menu, LogOut } from "lucide-react";
 import Sidebar from "./Sidebar";
 import ThemeToggle from "./ThemeToggle";
 import NotificationBell from "./NotificationBell";
@@ -73,14 +74,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div className="topbar">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button className="menu-btn" onClick={() => setOpen(true)} aria-label="Buka menu">
-              ☰
+              <Menu size={20} strokeWidth={2} />
             </button>
             <h1>{title}</h1>
           </div>
           <div className="actions">
             <NotificationBell />
             <ThemeToggle />
-            <button className="btn secondary" onClick={logout} style={{ padding: "6px 12px" }}>
+            <button
+              className="btn secondary"
+              onClick={logout}
+              style={{ padding: "6px 12px", gap: 6 }}
+            >
+              <LogOut size={16} strokeWidth={2} />
               Keluar
             </button>
           </div>

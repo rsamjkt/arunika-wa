@@ -3,51 +3,76 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  MessagesSquare,
+  Send,
+  Megaphone,
+  FileText,
+  Bot,
+  Contact,
+  Users,
+  UsersRound,
+  BarChart3,
+  UserCog,
+  Smartphone,
+  Settings2,
+  FileCode2,
+  LifeBuoy,
+  CreditCard,
+  ReceiptText,
+  Gift,
+  Package,
+  Building2,
+  Target,
+  KeyRound,
+  type LucideIcon,
+} from "lucide-react";
 
-type NavItem = { href: string; label: string; icon: string; feature?: string };
+type NavItem = { href: string; label: string; icon: LucideIcon; feature?: string };
 type NavGroup = { label: string; items: NavItem[] };
 
 const NAV_GROUPS: NavGroup[] = [
   {
     label: "Menu",
     items: [
-      { href: "/dashboard", label: "Dashboard", icon: "▤" },
-      { href: "/inbox", label: "Inbox", icon: "💬" },
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/inbox", label: "Inbox", icon: MessagesSquare },
     ],
   },
   {
     label: "Pesan",
     items: [
-      { href: "/send", label: "Kirim Pesan", icon: "📤" },
-      { href: "/broadcast", label: "Broadcast", icon: "📣", feature: "broadcast" },
-      { href: "/templates", label: "Template", icon: "📝", feature: "templates" },
-      { href: "/flow", label: "Auto-Reply", icon: "🤖", feature: "autoreply" },
+      { href: "/send", label: "Kirim Pesan", icon: Send },
+      { href: "/broadcast", label: "Broadcast", icon: Megaphone, feature: "broadcast" },
+      { href: "/templates", label: "Template", icon: FileText, feature: "templates" },
+      { href: "/flow", label: "Auto-Reply", icon: Bot, feature: "autoreply" },
     ],
   },
   {
     label: "Kontak",
     items: [
-      { href: "/contacts", label: "Kontak", icon: "👤" },
-      { href: "/groups", label: "Grup", icon: "👥" },
+      { href: "/contacts", label: "Kontak", icon: Contact },
+      { href: "/groups", label: "Grup", icon: Users },
     ],
   },
   {
     label: "Wawasan",
-    items: [{ href: "/reports", label: "Laporan", icon: "📊" }],
+    items: [{ href: "/reports", label: "Laporan", icon: BarChart3 }],
   },
   {
     label: "Perangkat",
     items: [
-      { href: "/profile", label: "Profil Akun", icon: "⚙" },
-      { href: "/connect", label: "Tambah Perangkat", icon: "➕" },
+      { href: "/profile", label: "Profil Akun", icon: UserCog },
+      { href: "/connect", label: "Tambah Perangkat", icon: Smartphone },
     ],
   },
   {
     label: "Lainnya",
     items: [
-      { href: "/settings", label: "Pengaturan", icon: "🛠" },
-      { href: "/docs", label: "Dokumentasi API", icon: "📄" },
-      { href: "/help", label: "Pusat Bantuan", icon: "❓" },
+      { href: "/settings", label: "Pengaturan", icon: Settings2 },
+      { href: "/docs", label: "Dokumentasi API", icon: FileCode2 },
+      { href: "/help", label: "Pusat Bantuan", icon: LifeBuoy },
     ],
   },
 ];
@@ -55,20 +80,20 @@ const NAV_GROUPS: NavGroup[] = [
 const TENANT_GROUP: NavGroup = {
   label: "Akun",
   items: [
-    { href: "/account/plan", label: "Paket Saya", icon: "💳" },
-    { href: "/account/billing", label: "Riwayat Tagihan", icon: "🧾" },
-    { href: "/settings/team", label: "Kelola Tim", icon: "👥" },
-    { href: "/account/referral", label: "Program Referral", icon: "🎁" },
+    { href: "/account/plan", label: "Paket Saya", icon: CreditCard },
+    { href: "/account/billing", label: "Riwayat Tagihan", icon: ReceiptText },
+    { href: "/settings/team", label: "Kelola Tim", icon: UsersRound },
+    { href: "/account/referral", label: "Program Referral", icon: Gift },
   ],
 };
 
 const SUPERADMIN_GROUP: NavGroup = {
   label: "Platform",
   items: [
-    { href: "/admin/plans", label: "Kelola Paket", icon: "📦" },
-    { href: "/admin/tenants", label: "Kelola Tenant", icon: "🏢" },
-    { href: "/admin/leads", label: "Leads & Marketing", icon: "🎯" },
-    { href: "/admin/ai-providers", label: "API Key AI", icon: "🔑" },
+    { href: "/admin/plans", label: "Kelola Paket", icon: Package },
+    { href: "/admin/tenants", label: "Kelola Tenant", icon: Building2 },
+    { href: "/admin/leads", label: "Leads & Marketing", icon: Target },
+    { href: "/admin/ai-providers", label: "API Key AI", icon: KeyRound },
   ],
 };
 
@@ -123,6 +148,7 @@ export default function Sidebar({
             <span className="nav-label">{group.label}</span>
             {group.items.map((item) => {
               const active = item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href);
+              const Icon = item.icon;
               return (
                 <Link
                   key={item.href}
@@ -130,7 +156,7 @@ export default function Sidebar({
                   className={`nav-link${active ? " active" : ""}`}
                   onClick={onNavigate}
                 >
-                  <span className="ic">{item.icon}</span>
+                  <Icon className="ic" size={18} strokeWidth={2} aria-hidden />
                   {item.label}
                 </Link>
               );
@@ -138,7 +164,7 @@ export default function Sidebar({
           </div>
         ))}
       </nav>
-      <div className="foot mono">Arunika Engine · WEBJS</div>
+      <div className="foot">© 2026 Arunika · WA</div>
     </aside>
   );
 }
