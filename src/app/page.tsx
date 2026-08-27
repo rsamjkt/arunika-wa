@@ -5,14 +5,18 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight,
   Banknote,
+  BellRing,
   Bot,
   ChartColumn,
   CheckCircle2,
+  Code2,
+  Headset,
   Megaphone,
   MessageSquare,
   QrCode,
   ShieldCheck,
   Smartphone,
+  Store,
   Users,
   Webhook,
   Wifi,
@@ -49,6 +53,28 @@ const PREVIEW_TILES: { icon: LucideIcon; label: string; value: string }[] = [
   { icon: Wifi, label: "Terhubung", value: "3" },
   { icon: MessageSquare, label: "Pesan hari ini", value: "1.284" },
   { icon: Users, label: "Anggota tim", value: "8" },
+];
+
+const STEPS: { title: string; body: string }[] = [
+  { title: "Hubungkan nomor", body: "Scan QR seperti WhatsApp Web. Nomor bisnis Anda langsung aktif — tanpa proses verifikasi bisnis yang panjang." },
+  { title: "Atur otomasi & tim", body: "Nyalakan auto-reply, siapkan template & broadcast, lalu undang staf sebanyak yang Anda perlukan — semua tanpa coding." },
+  { title: "Kelola dari satu tempat", body: "Balas chat, pantau laporan, dan sambungkan ke sistem Anda lewat API — dari dashboard yang sama." },
+];
+
+const USECASES: { icon: LucideIcon; title: string; body: string }[] = [
+  { icon: Store, title: "Toko online & UMKM", body: "Konfirmasi order, kirim katalog, dan follow-up pelanggan secara otomatis." },
+  { icon: Headset, title: "Customer service", body: "Bagi chat ke banyak agen tetap dalam satu nomor. Auto-reply saat di luar jam kerja." },
+  { icon: BellRing, title: "Notifikasi & reminder", body: "Kirim invoice, resi, jadwal, atau pengingat lewat API secara terjadwal." },
+  { icon: Code2, title: "Developer & integrasi", body: "REST API + webhook real-time untuk menyambungkan WhatsApp ke aplikasi Anda." },
+];
+
+const FAQ: { q: string; a: string }[] = [
+  { q: "Perlu WhatsApp Business API resmi?", a: "Tidak. Arunika memakai koneksi seperti WhatsApp Web — cukup scan QR dari nomor Anda, tanpa verifikasi bisnis yang panjang atau biaya per pesan." },
+  { q: "Apakah nomor saya aman?", a: "Data tiap akun terisolasi penuh. Gunakan pola pengiriman yang wajar (hindari spam) agar nomor tetap sehat — Arunika menyediakan jeda kirim dan kontrol kuota untuk membantu." },
+  { q: "Berapa nomor/perangkat yang bisa dihubungkan?", a: "Tergantung paket: gratis 1 perangkat, paket berbayar lebih banyak. Jumlah staf/tim selalu tak terbatas di semua paket." },
+  { q: "Bagaimana cara pembayarannya?", a: "Lewat QRIS — bisa semua e-wallet dan mobile banking. Anda bisa upgrade atau downgrade kapan saja." },
+  { q: "Bisa integrasi ke aplikasi saya sendiri?", a: "Bisa. Setiap akun mendapat API key sendiri plus webhook real-time untuk mengirim dan menerima pesan langsung dari sistem Anda." },
+  { q: "Apakah paket gratis benar-benar gratis?", a: "Ya, Rp0 dan bukan trial. Anda dapat 1 perangkat dengan kuota bulanan — cocok untuk mulai mencoba atau usaha berskala kecil." },
 ];
 
 export default function LandingPage() {
@@ -192,6 +218,45 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Cara kerja */}
+        <section className="lp-section">
+          <div className="lp-sec-head">
+            <h2>Aktif dalam 3 langkah</h2>
+            <p>Dari nomor kosong sampai otomatis membalas — tanpa tim teknis.</p>
+          </div>
+          <div className="lp-steps">
+            {STEPS.map((s, i) => (
+              <div key={s.title} className="lp-step">
+                <div className="num">{i + 1}</div>
+                <h3>{s.title}</h3>
+                <p>{s.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Untuk siapa */}
+        <section className="lp-section">
+          <div className="lp-sec-head">
+            <h2>Dipakai untuk apa saja</h2>
+            <p>Satu platform, banyak kebutuhan bisnis.</p>
+          </div>
+          <div className="lp-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))" }}>
+            {USECASES.map((u) => {
+              const Icon = u.icon;
+              return (
+                <div key={u.title} className="lp-card">
+                  <span className="lp-ic">
+                    <Icon size={20} strokeWidth={2} />
+                  </span>
+                  <h3>{u.title}</h3>
+                  <p>{u.body}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         {/* Pricing */}
         {plans.length > 0 && (
           <section className="lp-section" id="harga">
@@ -240,6 +305,22 @@ export default function LandingPage() {
             </div>
           </section>
         )}
+
+        {/* FAQ */}
+        <section className="lp-section" id="faq">
+          <div className="lp-sec-head">
+            <h2>Pertanyaan yang sering ditanya</h2>
+            <p>Masih ada yang mengganjal? Cek dulu di sini.</p>
+          </div>
+          <div className="lp-faq">
+            {FAQ.map((f) => (
+              <details key={f.q}>
+                <summary>{f.q}</summary>
+                <div className="a">{f.a}</div>
+              </details>
+            ))}
+          </div>
+        </section>
 
         {/* Final CTA */}
         <section className="lp-cta">
