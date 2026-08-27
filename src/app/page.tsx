@@ -12,9 +12,12 @@ import {
   MessageSquare,
   QrCode,
   ShieldCheck,
+  Smartphone,
   Users,
   Webhook,
+  Wifi,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 
 interface Plan {
@@ -26,74 +29,27 @@ interface Plan {
   isFree: boolean;
 }
 
-const FEATURES = [
+const FEATURES: { icon: LucideIcon; title: string; body: string }[] = [
   { icon: MessageSquare, title: "Kirim & Terima Pesan", body: "Teks, gambar, file, lokasi, kontak — dari dashboard atau API Anda sendiri." },
   { icon: Megaphone, title: "Broadcast Terjadwal", body: "Kirim ke banyak kontak sekaligus, langsung atau dijadwalkan, dengan variabel nama/nomor otomatis." },
-  { icon: Bot, title: "Auto-Reply Bawaan", body: "Balasan otomatis berbasis kata kunci, jam operasional, dan pesan sambutan — tanpa coding." },
+  { icon: Bot, title: "Auto-Reply Cerdas", body: "Balasan otomatis berbasis kata kunci, jam operasional, hingga AI — tanpa perlu coding." },
   { icon: Users, title: "Tim Tak Terbatas", body: "Tambahkan staf/agent sebanyak yang Anda perlukan, di paket apa pun — termasuk yang gratis." },
   { icon: Webhook, title: "API & Webhook", body: "Integrasikan langsung ke sistem Anda dengan API key sendiri dan event real-time." },
   { icon: ChartColumn, title: "Laporan Lengkap", body: "Volume pesan, performa tim, dan penggunaan API — semua dalam satu dashboard." },
 ];
 
-const WHY = [
+const WHY: { icon: LucideIcon; title: string; body: string }[] = [
   { icon: Banknote, title: "Harga jujur, mulai dari Rp0", body: "Tidak ada biaya tersembunyi. Paket gratis benar-benar bisa dipakai, bukan cuma demo." },
   { icon: Users, title: "Satu akun, satu tim", body: "Kebanyakan WA gateway kenakan biaya per-user. Di sini, staf tak terbatas gratis di semua paket." },
-  { icon: Zap, title: "Setup dalam hitungan menit", body: "Scan QR seperti WhatsApp Web — tidak perlu proses verifikasi bisnis yang panjang." },
+  { icon: Zap, title: "Setup dalam hitungan menit", body: "Scan QR seperti WhatsApp Web — tanpa proses verifikasi bisnis yang panjang." },
 ];
 
-const INK = "#0f172a";
-const INK_SOFT = "#64748b";
-const BORDER = "#e2e8f0";
-const BG_SOFT = "#f8fafc";
-const ACCENT = "#2563eb";
-
-const btnPrimary: React.CSSProperties = {
-  background: INK,
-  color: "#fff",
-  border: "1px solid " + INK,
-  borderRadius: 8,
-  padding: "12px 22px",
-  fontSize: "0.92rem",
-  fontWeight: 600,
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 8,
-  textDecoration: "none",
-};
-
-const btnSecondary: React.CSSProperties = {
-  background: "#fff",
-  color: INK,
-  border: `1px solid ${BORDER}`,
-  borderRadius: 8,
-  padding: "12px 22px",
-  fontSize: "0.92rem",
-  fontWeight: 600,
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 8,
-  textDecoration: "none",
-};
-
-function IconBox({ icon: Icon }: { icon: typeof MessageSquare }) {
-  return (
-    <div
-      style={{
-        width: 38,
-        height: 38,
-        borderRadius: 9,
-        background: "#fff",
-        border: `1px solid ${BORDER}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 14,
-      }}
-    >
-      <Icon size={18} color={INK} strokeWidth={1.8} />
-    </div>
-  );
-}
+const PREVIEW_TILES: { icon: LucideIcon; label: string; value: string }[] = [
+  { icon: Smartphone, label: "Perangkat", value: "3" },
+  { icon: Wifi, label: "Terhubung", value: "3" },
+  { icon: MessageSquare, label: "Pesan hari ini", value: "1.284" },
+  { icon: Users, label: "Anggota tim", value: "8" },
+];
 
 export default function LandingPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -105,185 +61,178 @@ export default function LandingPage() {
       .catch(() => {});
   }, []);
 
+  const popularIdx = plans.length >= 3 ? 2 : plans.length - 1;
+
   return (
-    <div style={{ minHeight: "100vh", background: "#fff", color: INK }}>
-      <header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "16px 28px",
-          borderBottom: `1px solid ${BORDER}`,
-          background: "#fff",
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-        }}
-      >
-        <div className="brand">
-          <span className="mark">A</span>
+    <div className="lp">
+      <header className="lp-header">
+        <Link href="/" className="lp-brand">
+          <span className="m">A</span>
           Arunika · WA
-        </div>
-        <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
-          <Link href="/help" style={{ fontSize: "0.88rem", color: INK_SOFT, textDecoration: "none" }}>
+        </Link>
+        <nav className="lp-nav">
+          <Link href="#fitur" className="hide-sm">
             Fitur
           </Link>
-          <Link href="/help" style={{ fontSize: "0.88rem", color: INK_SOFT, textDecoration: "none" }}>
+          <Link href="#harga" className="hide-sm">
+            Harga
+          </Link>
+          <Link href="/help" className="hide-sm">
             Bantuan
           </Link>
-          <Link href="/login" style={{ fontSize: "0.88rem", color: INK, fontWeight: 600, textDecoration: "none" }}>
+          <Link href="/login" style={{ color: "var(--ink)", fontWeight: 600 }}>
             Masuk
           </Link>
-          <Link href="/register" style={btnPrimary}>
+          <Link href="/register" className="lp-btn lp-btn-primary" style={{ padding: "9px 18px" }}>
             Daftar Gratis
           </Link>
-        </div>
+        </nav>
       </header>
 
       {/* Hero */}
-      <section style={{ padding: "84px 20px 72px", borderBottom: `1px solid ${BORDER}` }}>
-        <div style={{ maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
-          <span
-            style={{
-              display: "inline-block",
-              color: INK_SOFT,
-              fontSize: "0.78rem",
-              fontWeight: 700,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              marginBottom: 20,
-            }}
-          >
+      <section className="lp-hero">
+        <div className="lp-hero-inner">
+          <span className="lp-eyebrow">
+            <Zap size={13} strokeWidth={2.5} />
             WhatsApp Gateway untuk Bisnis
           </span>
-          <h1 style={{ fontSize: "2.6rem", fontWeight: 800, lineHeight: 1.2, margin: "0 0 18px", letterSpacing: "-0.02em", color: INK }}>
-            Kelola WhatsApp bisnis Anda — bersama seluruh tim.
+          <h1 className="lp-h1">
+            Kelola WhatsApp bisnis Anda — <span className="g">bersama seluruh tim.</span>
           </h1>
-          <p style={{ color: INK_SOFT, fontSize: "1.02rem", lineHeight: 1.65, marginBottom: 36, maxWidth: 560, marginLeft: "auto", marginRight: "auto" }}>
+          <p className="lp-sub">
             Broadcast, auto-reply, API, dan staf tak terbatas — mulai gratis, upgrade kapan saja.
             Tidak perlu kartu kredit untuk mencoba.
           </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 44 }}>
-            <Link href="/register" style={btnPrimary}>
+          <div className="lp-cta-row">
+            <Link href="/register" className="lp-btn lp-btn-primary">
               Mulai Gratis Sekarang
               <ArrowRight size={17} />
             </Link>
-            <Link href="/help" style={btnSecondary}>
-              Pelajari Fitur
+            <Link href="#fitur" className="lp-btn lp-btn-ghost">
+              Lihat Fitur
             </Link>
           </div>
-          <div style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap", fontSize: "0.82rem", color: INK_SOFT }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <ShieldCheck size={16} color={INK} /> Data terisolasi per akun
+          <div className="lp-trust">
+            <span>
+              <ShieldCheck size={16} /> Data terisolasi per akun
             </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <QrCode size={16} color={INK} /> Pembayaran via QRIS
+            <span>
+              <QrCode size={16} /> Pembayaran via QRIS
             </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <Zap size={16} color={INK} /> Aktif dalam hitungan menit
+            <span>
+              <Zap size={16} /> Aktif dalam hitungan menit
             </span>
+          </div>
+
+          {/* Product preview mock */}
+          <div className="lp-preview">
+            <div className="lp-preview-bar">
+              <span className="lp-dot" style={{ background: "#ff5f57" }} />
+              <span className="lp-dot" style={{ background: "#febc2e" }} />
+              <span className="lp-dot" style={{ background: "#28c840" }} />
+            </div>
+            <div className="lp-preview-body">
+              {PREVIEW_TILES.map((t) => {
+                const Icon = t.icon;
+                return (
+                  <div key={t.label} className="lp-tile">
+                    <div className="t-top">
+                      <span className="t-lbl">{t.label}</span>
+                      <span className="t-ic">
+                        <Icon size={15} strokeWidth={2} />
+                      </span>
+                    </div>
+                    <div className="t-val">{t.value}</div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
 
-      <main style={{ maxWidth: 1080, margin: "0 auto", padding: "72px 20px 88px" }}>
+      <main className="lp-main">
         {/* Why */}
-        <section style={{ marginBottom: 80 }}>
-          <div className="grid3" style={{ gap: 1, background: BORDER, border: `1px solid ${BORDER}`, borderRadius: 12, overflow: "hidden" }}>
-            {WHY.map((w) => (
-              <div key={w.title} style={{ padding: 26, background: "#fff" }}>
-                <IconBox icon={w.icon} />
-                <strong style={{ fontSize: "0.98rem", display: "block", marginBottom: 8, color: INK }}>{w.title}</strong>
-                <p style={{ fontSize: "0.85rem", color: INK_SOFT, margin: 0, lineHeight: 1.65 }}>{w.body}</p>
-              </div>
-            ))}
+        <section className="lp-section">
+          <div className="lp-grid">
+            {WHY.map((w) => {
+              const Icon = w.icon;
+              return (
+                <div key={w.title} className="lp-card">
+                  <span className="lp-ic">
+                    <Icon size={20} strokeWidth={2} />
+                  </span>
+                  <h3>{w.title}</h3>
+                  <p>{w.body}</p>
+                </div>
+              );
+            })}
           </div>
         </section>
 
         {/* Features */}
-        <section style={{ marginBottom: 80 }}>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <h2 style={{ fontSize: "1.6rem", fontWeight: 800, marginBottom: 10, letterSpacing: "-0.01em", color: INK }}>
-              Semua yang Anda butuhkan
-            </h2>
-            <p style={{ color: INK_SOFT, fontSize: "0.92rem" }}>
-              Satu dashboard untuk seluruh operasional WhatsApp bisnis Anda.
-            </p>
+        <section className="lp-section" id="fitur">
+          <div className="lp-sec-head">
+            <h2>Semua yang Anda butuhkan</h2>
+            <p>Satu dashboard untuk seluruh operasional WhatsApp bisnis Anda.</p>
           </div>
-          <div className="grid3" style={{ gap: 16 }}>
-            {FEATURES.map((f) => (
-              <div key={f.title} style={{ padding: 22, border: `1px solid ${BORDER}`, borderRadius: 12 }}>
-                <IconBox icon={f.icon} />
-                <strong style={{ fontSize: "0.9rem", display: "block", marginBottom: 7, color: INK }}>{f.title}</strong>
-                <p style={{ fontSize: "0.81rem", color: INK_SOFT, margin: 0, lineHeight: 1.6 }}>{f.body}</p>
-              </div>
-            ))}
+          <div className="lp-grid">
+            {FEATURES.map((f) => {
+              const Icon = f.icon;
+              return (
+                <div key={f.title} className="lp-card">
+                  <span className="lp-ic">
+                    <Icon size={20} strokeWidth={2} />
+                  </span>
+                  <h3>{f.title}</h3>
+                  <p>{f.body}</p>
+                </div>
+              );
+            })}
           </div>
         </section>
 
         {/* Pricing */}
         {plans.length > 0 && (
-          <section style={{ marginBottom: 80 }}>
-            <div style={{ textAlign: "center", marginBottom: 14 }}>
-              <h2 style={{ fontSize: "1.6rem", fontWeight: 800, marginBottom: 10, letterSpacing: "-0.01em", color: INK }}>
-                Harga Transparan
-              </h2>
-              <p style={{ color: INK_SOFT, fontSize: "0.92rem", marginBottom: 14 }}>
-                Semua fitur tersedia di semua paket — bedanya cuma jumlah perangkat &amp; kuota pesan.
-              </p>
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 7,
-                  border: `1px solid ${BORDER}`,
-                  color: INK_SOFT,
-                  fontSize: "0.78rem",
-                  fontWeight: 600,
-                  padding: "6px 14px",
-                  borderRadius: 100,
-                  marginBottom: 32,
-                }}
-              >
-                <QrCode size={15} />
-                Pembayaran aman via QRIS — semua e-wallet &amp; mobile banking
-              </div>
+          <section className="lp-section" id="harga">
+            <div className="lp-sec-head">
+              <h2>Harga transparan</h2>
+              <p>Semua fitur tersedia di semua paket — bedanya cuma jumlah perangkat &amp; kuota pesan.</p>
             </div>
-            <div className="stat-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
-              {plans.map((p) => (
-                <div
-                  key={p.id}
-                  style={{
-                    padding: 22,
-                    border: p.isFree ? `1px solid ${BORDER}` : `1.5px solid ${INK}`,
-                    borderRadius: 12,
-                    position: "relative",
-                  }}
-                >
-                  <div style={{ fontWeight: 700, fontSize: "0.9rem", marginBottom: 8, color: INK_SOFT }}>{p.name}</div>
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontSize: "1.4rem", fontWeight: 800, color: INK }}>
-                      {p.priceRp === 0 ? "Gratis" : `Rp${p.priceRp.toLocaleString("id-ID")}`}
-                    </div>
-                    {p.priceRp > 0 && (
-                      <small style={{ fontSize: "0.65rem", fontWeight: 500, color: INK_SOFT, display: "block", marginTop: 2 }}>
-                        /bulan
-                      </small>
-                    )}
+            <div className="lp-price-grid">
+              {plans.map((p, i) => (
+                <div key={p.id} className={`lp-price${i === popularIdx ? " pop" : ""}`}>
+                  {i === popularIdx && <span className="lp-pill">Populer</span>}
+                  <div className="nm">{p.name}</div>
+                  <div className="amt">
+                    {p.priceRp === 0 ? "Gratis" : `Rp${p.priceRp.toLocaleString("id-ID")}`}
+                    {p.priceRp > 0 && <small> /bln</small>}
                   </div>
-                  <div style={{ fontSize: "0.78rem", color: INK_SOFT, marginBottom: 5 }}>
-                    {p.deviceLimit} perangkat WA
-                  </div>
-                  <div style={{ fontSize: "0.78rem", color: INK_SOFT }}>
-                    {p.monthlyMessageQuota ? `${p.monthlyMessageQuota.toLocaleString("id-ID")} pesan/bulan` : "Kuota tanpa batas"}
-                  </div>
+                  <ul>
+                    <li>
+                      <CheckCircle2 size={15} strokeWidth={2} />
+                      {p.deviceLimit} perangkat WA
+                    </li>
+                    <li>
+                      <CheckCircle2 size={15} strokeWidth={2} />
+                      {p.monthlyMessageQuota ? `${p.monthlyMessageQuota.toLocaleString("id-ID")} pesan/bln` : "Kuota tanpa batas"}
+                    </li>
+                    <li>
+                      <CheckCircle2 size={15} strokeWidth={2} />
+                      Staf/tim tak terbatas
+                    </li>
+                    <li>
+                      <CheckCircle2 size={15} strokeWidth={2} />
+                      Semua fitur termasuk
+                    </li>
+                  </ul>
                 </div>
               ))}
             </div>
-            <div style={{ textAlign: "center", marginTop: 26 }}>
+            <div style={{ textAlign: "center", marginTop: 28 }}>
               <Link
                 href="/help"
-                style={{ fontSize: "0.85rem", color: INK, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, textDecoration: "none" }}
+                style={{ fontSize: "0.85rem", color: "var(--primary)", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5, textDecoration: "none" }}
               >
                 Lihat detail fitur &amp; FAQ
                 <ArrowRight size={14} />
@@ -293,42 +242,18 @@ export default function LandingPage() {
         )}
 
         {/* Final CTA */}
-        <section
-          style={{
-            padding: 52,
-            textAlign: "center",
-            background: BG_SOFT,
-            border: `1px solid ${BORDER}`,
-            borderRadius: 16,
-          }}
-        >
-          <CheckCircle2 size={30} color={ACCENT} style={{ marginBottom: 14 }} />
-          <h2 style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: 10, color: INK }}>
-            Siap mulai? Daftar gratis dalam 2 menit.
-          </h2>
-          <p style={{ color: INK_SOFT, fontSize: "0.88rem", marginBottom: 26 }}>
-            Tidak perlu kartu kredit. Upgrade kapan saja saat bisnis Anda berkembang.
-          </p>
-          <Link href="/register" style={{ ...btnPrimary, padding: "13px 30px" }}>
+        <section className="lp-cta">
+          <h2>Siap mulai? Daftar gratis dalam 2 menit.</h2>
+          <p>Tidak perlu kartu kredit. Upgrade kapan saja saat bisnis Anda berkembang.</p>
+          <Link href="/register" className="lp-btn">
             Daftar Sekarang
             <ArrowRight size={17} />
           </Link>
         </section>
       </main>
 
-      <footer
-        style={{
-          borderTop: `1px solid ${BORDER}`,
-          padding: "26px 28px",
-          textAlign: "center",
-          fontSize: "0.78rem",
-          color: INK_SOFT,
-        }}
-      >
-        Arunika · WA — WhatsApp Gateway Platform ·{" "}
-        <Link href="/help" style={{ color: INK, fontWeight: 600 }}>
-          Pusat Bantuan
-        </Link>
+      <footer className="lp-footer">
+        Arunika · WA — WhatsApp Gateway Platform · <Link href="/help">Pusat Bantuan</Link>
       </footer>
     </div>
   );
