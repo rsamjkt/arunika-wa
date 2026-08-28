@@ -2,6 +2,7 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Lock } from "lucide-react";
 import AuthHero from "@/components/AuthHero";
 
 export default function ResetPasswordPage({ params }: { params: Promise<{ token: string }> }) {
@@ -45,12 +46,10 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
         lead="Pilih password yang kuat dan mudah Anda ingat. Semua sesi login lama otomatis diputus setelah ini."
       />
       <div className="auth-form-side">
-        <div className="card login-card">
-          <div className="brand">
-            <span className="mark">A</span>
-            Arunika · WA
-          </div>
-          <p className="sub">Atur password baru untuk akun Anda.</p>
+        <div className="auth-card">
+          <div className="auth-mark">A</div>
+          <h2>Atur password baru</h2>
+          <p className="sub">Pilih password baru untuk akun Anda.</p>
 
           {done ? (
             <div className="callout">
@@ -61,38 +60,47 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
             <form onSubmit={submit}>
               <div className="field-group">
                 <label htmlFor="password">Password baru</label>
-                <input
-                  id="password"
-                  type="password"
-                  className="field"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                  autoFocus
-                />
+                <div className="in-icon">
+                  <Lock size={17} strokeWidth={2} />
+                  <input
+                    id="password"
+                    type="password"
+                    className="field"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
+                    autoFocus
+                    placeholder="min. 6 karakter"
+                  />
+                </div>
               </div>
               <div className="field-group">
                 <label htmlFor="confirm">Ulangi password baru</label>
-                <input
-                  id="confirm"
-                  type="password"
-                  className="field"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  autoComplete="new-password"
-                />
+                <div className="in-icon">
+                  <Lock size={17} strokeWidth={2} />
+                  <input
+                    id="confirm"
+                    type="password"
+                    className="field"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    autoComplete="new-password"
+                    placeholder="ulangi password"
+                  />
+                </div>
               </div>
               {error && <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14 }}>{error}</p>}
-              <button
-                className="btn"
-                type="submit"
-                disabled={busy || password.length < 6 || !confirm}
-                style={{ width: "100%", background: "#0f172a", color: "#fff", boxShadow: "none" }}
-              >
+              <button className="btn" type="submit" disabled={busy || password.length < 6 || !confirm} style={{ width: "100%" }}>
                 {busy ? "Menyimpan…" : "Simpan Password Baru"}
               </button>
             </form>
           )}
+
+          <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: 18, textAlign: "center" }}>
+            <a href="/login" style={{ color: "var(--primary)", fontWeight: 700 }}>
+              Kembali ke halaman masuk
+            </a>
+          </p>
         </div>
       </div>
     </div>

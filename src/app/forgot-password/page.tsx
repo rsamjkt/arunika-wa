@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Mail } from "lucide-react";
 import AuthHero from "@/components/AuthHero";
 
 export default function ForgotPasswordPage() {
@@ -35,11 +36,9 @@ export default function ForgotPasswordPage() {
         lead="Masukkan email akun Anda, kami kirimkan link aman untuk mengatur ulang password dalam hitungan menit."
       />
       <div className="auth-form-side">
-        <div className="card login-card">
-          <div className="brand">
-            <span className="mark">A</span>
-            Arunika · WA
-          </div>
+        <div className="auth-card">
+          <div className="auth-mark">A</div>
+          <h2>Reset password</h2>
           <p className="sub">Masukkan email akun Anda, kami kirimkan link untuk mengatur ulang password.</p>
 
           {sent ? (
@@ -51,30 +50,29 @@ export default function ForgotPasswordPage() {
             <form onSubmit={submit}>
               <div className="field-group">
                 <label htmlFor="email">Email</label>
-                <input
-                  id="email"
-                  type="email"
-                  className="field"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  autoFocus
-                />
+                <div className="in-icon">
+                  <Mail size={17} strokeWidth={2} />
+                  <input
+                    id="email"
+                    type="email"
+                    className="field"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                    autoFocus
+                    placeholder="email@bisnis.com"
+                  />
+                </div>
               </div>
               {error && <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14 }}>{error}</p>}
-              <button
-                className="btn"
-                type="submit"
-                disabled={busy || !email}
-                style={{ width: "100%", background: "#0f172a", color: "#fff", boxShadow: "none" }}
-              >
+              <button className="btn" type="submit" disabled={busy || !email} style={{ width: "100%" }}>
                 {busy ? "Mengirim…" : "Kirim Link Reset"}
               </button>
             </form>
           )}
 
-          <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
-            <a href="/login" style={{ color: "#0f172a", fontWeight: 700 }}>
+          <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: 18, textAlign: "center" }}>
+            <a href="/login" style={{ color: "var(--primary)", fontWeight: 700 }}>
               Kembali ke halaman masuk
             </a>
           </p>
