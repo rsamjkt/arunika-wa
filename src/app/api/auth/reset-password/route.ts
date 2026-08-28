@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { changePassword } from "@/lib/users";
+import { changePassword, findUserById } from "@/lib/users";
 import { consumeResetToken } from "@/lib/passwordResets";
 import { deleteSessionsForUser } from "@/lib/sessions";
 import { parseJsonBody } from "@/lib/parseJsonBody";
+import { passwordChangedEmail, sendEmail } from "@/lib/email";
+import { notifyAdminPasswordChanged } from "@/lib/adminNotify";
 
 export async function POST(req: NextRequest) {
   const { body, response: parseError } = await parseJsonBody(req);
@@ -22,5 +24,16 @@ export async function POST(req: NextRequest) {
 
   changePassword(userId, password);
   deleteSessionsForUser(userId);
+
+  // Konfirmasi ke user + notifikasi ke admin — fire-and-forget.
+  const user = findUserById(userId);
+  if (user) {
+    if (user.email) {
+      const { subject, html } = passwordChangedEmail(user.username);
+      sendEmail(user.email, subject, html).catch(() => {});
+    }
+    notifyAdminPasswordChanged(user.username);
+  }
+
   return NextResponse.json({ ok: true });
 }

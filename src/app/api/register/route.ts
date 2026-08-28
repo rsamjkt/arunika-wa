@@ -5,6 +5,7 @@ import { getPlan } from "@/lib/plans";
 import { createTransaction, KlikQrisError } from "@/lib/klikqris";
 import { createTransactionRecord } from "@/lib/transactions";
 import { invoicePendingEmail, sendEmail, welcomeEmail } from "@/lib/email";
+import { notifyAdminNewRegistration } from "@/lib/adminNotify";
 import { recordReferral } from "@/lib/referrals";
 import { getAppUrl } from "@/lib/appUrl";
 import { sendInvoiceWhatsApp } from "@/lib/customerNotify";
@@ -71,6 +72,10 @@ export async function POST(req: NextRequest) {
       recordReferral(referrer.id, referrer.username, tenant.id, tenant.username);
     }
   }
+
+  // Monitoring: beri tahu admin platform ada tenant baru (untuk paket gratis
+  // maupun berbayar) — fire-and-forget, tidak boleh mengganggu pendaftaran.
+  notifyAdminNewRegistration(tenant.username, email.trim(), plan.name);
 
   if (plan.isFree) {
     const { subject, html } = welcomeEmail(tenant.username, plan.name);

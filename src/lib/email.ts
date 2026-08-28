@@ -283,3 +283,44 @@ export function leadOfferEmail(leadName: string, helpUrl: string): { subject: st
     ),
   };
 }
+
+/** Sent to the account owner when a new login is detected (security). */
+export function loginAlertEmail(username: string, whenWIB: string, ip: string, device: string): { subject: string; html: string } {
+  return {
+    subject: "Login baru ke akun Arunika · WA Anda",
+    html: WRAPPER(
+      "Login baru terdeteksi",
+      `<p>Halo <b>${escapeHtml(username)}</b>, kami mendeteksi login baru ke akun Anda:</p>
+       ${INVOICE_TABLE([
+         ["Waktu", whenWIB],
+         ["Alamat IP", ip],
+         ["Perangkat", device],
+       ])}
+       <p style="color:#8a9a94;font-size:13px">Kalau ini memang Anda, tidak perlu melakukan apa pun. Kalau bukan Anda, segera ganti password akun.</p>`,
+    ),
+  };
+}
+
+/** Sent to the account owner after their password is successfully changed. */
+export function passwordChangedEmail(username: string): { subject: string; html: string } {
+  return {
+    subject: "Password Arunika · WA Anda telah diubah",
+    html: WRAPPER(
+      "Password berhasil diubah",
+      `<p>Halo <b>${escapeHtml(username)}</b>, password akun Anda baru saja diubah dan semua sesi login lama telah diputus.</p>
+       <p style="color:#8a9a94;font-size:13px">Kalau Anda tidak melakukan perubahan ini, segera hubungi kami atau lakukan reset password.</p>`,
+    ),
+  };
+}
+
+/** Generic platform-admin monitoring email (registrasi/login/pembayaran/dll). */
+export function adminAlertEmail(title: string, rows: [string, string][]): { subject: string; html: string } {
+  return {
+    subject: `[Admin] ${title}`,
+    html: WRAPPER(
+      title,
+      `<p>Notifikasi aktivitas platform Arunika · WA:</p>
+       ${INVOICE_TABLE(rows)}`,
+    ),
+  };
+}

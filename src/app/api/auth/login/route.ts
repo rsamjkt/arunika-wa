@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGoverningUser, verifyLogin } from "@/lib/users";
 import { createSession } from "@/lib/sessions";
 import { checkRateLimit, clientIp, recordFailure, recordSuccess } from "@/lib/rateLimit";
+import { shouldNotifyLogin } from "@/lib/loginNotify";
+import { notifyAdminLogin, nowWIB } from "@/lib/adminNotify";
+import { loginAlertEmail, sendEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const ip = clientIp(req.headers);
@@ -36,6 +39,18 @@ export async function POST(req: NextRequest) {
     );
   }
   recordSuccess(ip);
+
+  // Notifikasi login — throttled (hanya hari baru / IP baru per user) & fire-and-forget,
+  // supaya tidak nge-spam dan tidak pernah memblokir/menggagalkan proses login.
+  if (shouldNotifyLogin(user.id, ip)) {
+    const ua = req.headers.get("user-agent") ?? "tidak diketahui";
+    const device = ua.length > 90 ? `${ua.slice(0, 90)}…` : ua;
+    if (user.email) {
+      const { subject, html } = loginAlertEmail(user.username, nowWIB(), ip, device);
+      sendEmail(user.email, subject, html).catch(() => {});
+    }
+    notifyAdminLogin(user.username, ip, device);
+  }
 
   const token = createSession(user.id, user.username);
   const res = NextResponse.json({ ok: true });

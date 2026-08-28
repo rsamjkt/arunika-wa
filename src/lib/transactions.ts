@@ -2,6 +2,7 @@ import { readJson, writeJson } from "./store";
 import { getPlan } from "./plans";
 import { activateSubscription, getFullUser } from "./users";
 import { paymentConfirmedEmail, sendEmail } from "./email";
+import { notifyAdminPayment } from "./adminNotify";
 import { rewardReferralIfPending } from "./referrals";
 
 export type Transaction = {
@@ -68,15 +69,19 @@ export function activateFromPaidTransaction(orderId: string, paidAt?: string): b
   rewardReferralIfPending(tx.userId);
 
   const user = getFullUser(tx.userId);
-  if (user?.email) {
-    const { subject, html } = paymentConfirmedEmail(
-      user.username,
-      plan.name,
-      tx.orderId,
-      tx.totalAmount,
-      resolvedPaidAt,
-    );
-    sendEmail(user.email, subject, html).catch(() => {});
+  if (user) {
+    if (user.email) {
+      const { subject, html } = paymentConfirmedEmail(
+        user.username,
+        plan.name,
+        tx.orderId,
+        tx.totalAmount,
+        resolvedPaidAt,
+      );
+      sendEmail(user.email, subject, html).catch(() => {});
+    }
+    // Monitoring pembayaran ke admin platform — fire-and-forget.
+    notifyAdminPayment(user.username, plan.name, tx.totalAmount, tx.orderId);
   }
   return true;
 }
