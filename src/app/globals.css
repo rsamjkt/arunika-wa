@@ -2904,3 +2904,113 @@ a.media-fallback:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- register wizard (senada login: split-screen) ---------- */
+.auth-form-side.scroll {
+  align-items: flex-start;
+  overflow-y: auto;
+  padding-top: 44px;
+  padding-bottom: 44px;
+}
+.auth-card.wide {
+  max-width: 440px;
+}
+.reg-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 4px 0 22px;
+}
+.reg-pill {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+}
+.reg-pill.on {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+.reg-note {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+.reg-plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.reg-plan {
+  width: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-align: left;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+.reg-plan:hover {
+  border-color: var(--ink-soft);
+}
+.reg-plan.sel {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+  background: var(--primary-soft);
+}
+.reg-plan .pl-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.reg-plan.sel .pl-check {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.reg-plan .pl-l {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.reg-plan .pl-name {
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+.reg-plan .pl-meta {
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+}
+.reg-plan .pl-price {
+  font-weight: 800;
+  font-size: 1rem;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.reg-plan .pl-price small {
+  font-weight: 500;
+  font-size: 0.66rem;
+  color: var(--ink-soft);
+}

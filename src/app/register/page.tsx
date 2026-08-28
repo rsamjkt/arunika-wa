@@ -2,14 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-const FEATURE_LABELS: Record<string, string> = {
-  broadcast: "Broadcast / Campaign",
-  templates: "Template Pesan",
-  autoreply: "Auto-Reply Bot",
-  apikeys: "API Key",
-  webhook: "Webhook Keluar",
-};
+import { ArrowRight, Check, Lock, Mail, Phone, Ticket, User } from "lucide-react";
+import AuthHero from "@/components/AuthHero";
 
 interface Plan {
   id: string;
@@ -20,28 +14,6 @@ interface Plan {
   monthlyMessageQuota: number | null;
   features: string[];
   isFree: boolean;
-}
-
-function stepPillStyle(active: boolean): React.CSSProperties {
-  return {
-    fontSize: "0.76rem",
-    fontWeight: 700,
-    padding: "5px 12px",
-    borderRadius: 100,
-    border: active ? "1px solid #0f172a" : "1px solid var(--border)",
-    color: active ? "#0f172a" : "var(--ink-soft)",
-    background: active ? "#f8fafc" : "transparent",
-  };
-}
-
-function StepHeader({ step }: { step: 1 | 2 }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 26 }}>
-      <span style={stepPillStyle(step === 1)}>1. Pilih Paket</span>
-      <span style={{ width: 24, height: 1, background: "var(--border)" }} />
-      <span style={stepPillStyle(step === 2)}>2. Buat Akun</span>
-    </div>
-  );
 }
 
 export default function RegisterPage() {
@@ -114,203 +86,152 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="login-shell">
-      <div className="card login-card" style={{ width: "100%", maxWidth: step === 1 ? 1320 : 420, padding: 36 }}>
-        <div className="brand" style={{ justifyContent: "center", marginBottom: 8 }}>
-          <span className="mark">A</span>
-          Arunika · WA
-        </div>
-        <StepHeader step={step} />
+    <div className="auth-shell">
+      <AuthHero
+        title="Mulai gratis dalam 2 menit."
+        lead="Pilih paket, buat akun, lalu hubungkan nomor WhatsApp bisnis Anda — semua tanpa kartu kredit."
+      />
+      <div className="auth-form-side scroll">
+        <div className="auth-card wide">
+          <div className="auth-mark">A</div>
+          <h2>{step === 1 ? "Pilih paket Anda" : "Buat akun"}</h2>
+          <p className="sub">
+            {step === 1
+              ? "Semua paket bisa di-upgrade kapan saja."
+              : "Isi data akun untuk menyelesaikan pendaftaran."}
+          </p>
 
-        {step === 1 && (
-          <>
-            <p className="sub" style={{ textAlign: "center" }}>
-              Pilih paket untuk mulai pakai WhatsApp Gateway Anda sendiri.
-            </p>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                gap: 14,
-                marginBottom: 24,
-              }}
-            >
-              {plans.map((p) => {
-                const selected = planId === p.id;
-                return (
+          <div className="reg-steps">
+            <span className={`reg-pill${step === 1 ? " on" : ""}`}>1. Pilih Paket</span>
+            <span style={{ width: 22, height: 1, background: "var(--border)" }} />
+            <span className={`reg-pill${step === 2 ? " on" : ""}`}>2. Buat Akun</span>
+          </div>
+
+          {step === 1 && (
+            <>
+              <p className="reg-note">
+                Semua paket dapat <strong>semua fitur</strong> + staf/tim tak terbatas — bedanya hanya jumlah perangkat &amp; kuota pesan.
+              </p>
+              <div className="reg-plan-list">
+                {plans.map((p) => {
+                  const selected = planId === p.id;
+                  return (
+                    <button
+                      type="button"
+                      key={p.id}
+                      onClick={() => setPlanId(p.id)}
+                      className={`reg-plan${selected ? " sel" : ""}`}
+                    >
+                      <span className="pl-check">{selected && <Check size={12} strokeWidth={3} />}</span>
+                      <span className="pl-l">
+                        <span className="pl-name">{p.name}</span>
+                        <span className="pl-meta">
+                          {p.deviceLimit} perangkat ·{" "}
+                          {p.monthlyMessageQuota
+                            ? `${p.monthlyMessageQuota.toLocaleString("id-ID")} pesan/bln`
+                            : "kuota tanpa batas"}
+                        </span>
+                      </span>
+                      <span className="pl-price">
+                        {p.priceRp === 0 ? "Gratis" : `Rp${p.priceRp.toLocaleString("id-ID")}`}
+                        {p.priceRp > 0 && <small> /bln</small>}
+                      </span>
+                    </button>
+                  );
+                })}
+                {plans.length === 0 && (
+                  <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem" }}>Memuat paket…</p>
+                )}
+              </div>
+              {error && (
+                <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14 }}>{error}</p>
+              )}
+              <button className="btn" type="button" disabled={!planId} style={{ width: "100%" }} onClick={goToAccountStep}>
+                Lanjut
+                <ArrowRight size={17} />
+              </button>
+              <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: 18, textAlign: "center" }}>
+                Sudah punya akun?{" "}
+                <a href="/login" style={{ color: "var(--primary)", fontWeight: 700 }}>
+                  Masuk
+                </a>
+              </p>
+            </>
+          )}
+
+          {step === 2 && (
+            <form onSubmit={submit}>
+              {selectedPlan && (
+                <div className="chip" style={{ width: "100%", justifyContent: "space-between", marginBottom: 20, padding: "8px 12px" }}>
+                  <span>
+                    Paket: <strong>{selectedPlan.name}</strong>{" "}
+                    {selectedPlan.priceRp > 0 ? `(Rp${selectedPlan.priceRp.toLocaleString("id-ID")}/bln)` : "(Gratis)"}
+                  </span>
                   <button
                     type="button"
-                    key={p.id}
-                    onClick={() => setPlanId(p.id)}
-                    className="card"
-                    style={{
-                      textAlign: "left",
-                      padding: 18,
-                      cursor: "pointer",
-                      background: selected ? "#f8fafc" : "var(--surface)",
-                      border: selected ? "1.5px solid #0f172a" : "1px solid var(--border)",
-                    }}
+                    onClick={() => setStep(1)}
+                    style={{ background: "none", border: "none", color: "var(--primary)", fontWeight: 700, cursor: "pointer" }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                      <span style={{ fontWeight: 800, fontSize: "0.95rem" }}>{p.name}</span>
-                      {selected && (
-                        <span
-                          style={{
-                            fontSize: "0.68rem",
-                            fontWeight: 700,
-                            color: "#fff",
-                            background: "#0f172a",
-                            padding: "2px 8px",
-                            borderRadius: 100,
-                          }}
-                        >
-                          Dipilih
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: "1.4rem", fontWeight: 800, marginBottom: 10 }}>
-                      {p.priceRp === 0 ? "Gratis" : `Rp${p.priceRp.toLocaleString("id-ID")}`}
-                      {p.priceRp > 0 && <small style={{ fontSize: "0.68rem", fontWeight: 500 }}> /bulan</small>}
-                    </div>
-                    <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 4 }}>
-                      {p.deviceLimit} perangkat WA
-                    </div>
-                    <div style={{ fontSize: "0.78rem", color: "var(--ink-soft)", marginBottom: 10 }}>
-                      {p.monthlyMessageQuota
-                        ? `${p.monthlyMessageQuota.toLocaleString("id-ID")} pesan/bulan`
-                        : "Kuota pesan tanpa batas"}
-                    </div>
-                    <ul style={{ fontSize: "0.75rem", color: "var(--ink-soft)", paddingLeft: 16, margin: 0 }}>
-                      {p.features.map((f) => (
-                        <li key={f}>{FEATURE_LABELS[f] ?? f}</li>
-                      ))}
-                      <li style={{ fontWeight: 700, color: "#0f172a" }}>Staf/tim tak terbatas</li>
-                    </ul>
+                    Ganti
                   </button>
-                );
-              })}
-              {plans.length === 0 && (
-                <p style={{ color: "var(--ink-soft)", fontSize: "0.85rem" }}>Memuat paket…</p>
+                </div>
               )}
-            </div>
-            {error && (
-              <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14, textAlign: "center" }}>
-                {error}
-              </p>
-            )}
-            <button
-              className="btn"
-              type="button"
-              disabled={!planId}
-              style={{ width: "100%", background: "#0f172a", color: "#fff", boxShadow: "none" }}
-              onClick={goToAccountStep}
-            >
-              Lanjut
-            </button>
-            <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
-              Sudah punya akun?{" "}
-              <a href="/login" style={{ color: "#0f172a", fontWeight: 700 }}>
-                Masuk
-              </a>
-            </p>
-          </>
-        )}
-
-        {step === 2 && (
-          <form onSubmit={submit}>
-            {selectedPlan && (
-              <div
-                className="chip"
-                style={{ width: "100%", justifyContent: "space-between", marginBottom: 20, padding: "8px 12px" }}
-              >
-                <span>
-                  Paket: <strong>{selectedPlan.name}</strong>{" "}
-                  {selectedPlan.priceRp > 0 ? `(Rp${selectedPlan.priceRp.toLocaleString("id-ID")}/bulan)` : "(Gratis)"}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  style={{ background: "none", border: "none", color: "var(--primary)", fontWeight: 700, cursor: "pointer" }}
-                >
-                  Ganti
-                </button>
+              <div className="field-group">
+                <label htmlFor="username">Username</label>
+                <div className="in-icon">
+                  <User size={17} strokeWidth={2} />
+                  <input id="username" className="field" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoFocus placeholder="pilih username" />
+                </div>
               </div>
-            )}
-            <div className="field-group">
-              <label htmlFor="username">Username</label>
-              <input
-                id="username"
-                className="field"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                autoFocus
-              />
-            </div>
-            <div className="field-group">
-              <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                className="field"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-              />
-            </div>
-            <div className="field-group">
-              <label htmlFor="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                className="field"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-              />
-              <p style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginTop: 4 }}>
-                Untuk notifikasi pembayaran dan reset password.
+              <div className="field-group">
+                <label htmlFor="password">Password</label>
+                <div className="in-icon">
+                  <Lock size={17} strokeWidth={2} />
+                  <input id="password" type="password" className="field" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" placeholder="min. 6 karakter" />
+                </div>
+              </div>
+              <div className="field-group">
+                <label htmlFor="email">Email</label>
+                <div className="in-icon">
+                  <Mail size={17} strokeWidth={2} />
+                  <input id="email" type="email" className="field" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" placeholder="email@bisnis.com" />
+                </div>
+                <p style={{ fontSize: "0.72rem", color: "var(--ink-soft)", marginTop: 4 }}>
+                  Untuk notifikasi pembayaran dan reset password.
+                </p>
+              </div>
+              <div className="field-group">
+                <label htmlFor="phone">Nomor HP (opsional)</label>
+                <div className="in-icon">
+                  <Phone size={17} strokeWidth={2} />
+                  <input id="phone" type="tel" className="field" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" placeholder="08xxxxxxxxxx" />
+                </div>
+              </div>
+              <div className="field-group">
+                <label htmlFor="referralCode">Kode referral (opsional)</label>
+                <div className="in-icon">
+                  <Ticket size={17} strokeWidth={2} />
+                  <input id="referralCode" className="field mono" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toUpperCase())} placeholder="mis. A1B2C3D4" />
+                </div>
+              </div>
+              {error && <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14 }}>{error}</p>}
+              <button
+                className="btn"
+                type="submit"
+                disabled={busy || !planId || username.trim().length < 3 || password.length < 6 || !emailValid}
+                style={{ width: "100%" }}
+              >
+                {busy ? "Memproses…" : "Daftar"}
+              </button>
+              <p style={{ fontSize: "0.82rem", color: "var(--ink-soft)", marginTop: 18, textAlign: "center" }}>
+                Sudah punya akun?{" "}
+                <a href="/login" style={{ color: "var(--primary)", fontWeight: 700 }}>
+                  Masuk
+                </a>
               </p>
-            </div>
-            <div className="field-group">
-              <label htmlFor="phone">Nomor HP (opsional)</label>
-              <input
-                id="phone"
-                type="tel"
-                className="field"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                autoComplete="tel"
-                placeholder="08xxxxxxxxxx"
-              />
-            </div>
-            <div className="field-group">
-              <label htmlFor="referralCode">Kode referral (opsional)</label>
-              <input
-                id="referralCode"
-                className="field mono"
-                value={referralCode}
-                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                placeholder="mis. A1B2C3D4"
-              />
-            </div>
-            {error && <p style={{ color: "var(--danger)", fontSize: "0.82rem", marginBottom: 14 }}>{error}</p>}
-            <button
-              className="btn"
-              type="submit"
-              disabled={busy || !planId || username.trim().length < 3 || password.length < 6 || !emailValid}
-              style={{ width: "100%", background: "#0f172a", color: "#fff", boxShadow: "none" }}
-            >
-              {busy ? "Memproses…" : "Daftar"}
-            </button>
-            <p style={{ fontSize: "0.8rem", color: "var(--ink-soft)", marginTop: 16, textAlign: "center" }}>
-              Sudah punya akun?{" "}
-              <a href="/login" style={{ color: "#0f172a", fontWeight: 700 }}>
-                Masuk
-              </a>
-            </p>
-          </form>
-        )}
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
