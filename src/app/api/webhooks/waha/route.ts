@@ -16,6 +16,7 @@ import {
 import { canUseAIToday, getAISettings, recordAIUsage, type AIAutoReplySettings, type AIModel } from "@/lib/aiAutoReply";
 import { generateAIReply, isModelConfigured } from "@/lib/aiClient";
 import { getCachedReply, setCachedReply } from "@/lib/aiResponseCache";
+import { retrieveKB } from "@/lib/kbRetrieval";
 import { bumpAndShouldUpdate, getMemory, saveMemory } from "@/lib/aiMemory";
 import { isWebSearchConfigured, searchQueryFor, tavilySearch } from "@/lib/webSearch";
 import { getFullUser } from "@/lib/users";
@@ -128,15 +129,6 @@ function waktuWIB(): string {
   }).format(new Date());
 }
 
-// Batasi panjang knowledge base yang dikirim ke LLM — knowledgeBase bisa
-// panjang tak terbatas dan ikut dibayar tiap pesan (token input). Potong pada
-// batas aman agar biaya terkendali tanpa memangkas info penting yang wajar.
-const MAX_KB_CHARS = 4000;
-function kbForPrompt(kb: string): string {
-  const t = kb.trim();
-  return t.length > MAX_KB_CHARS ? `${t.slice(0, MAX_KB_CHARS)}…` : t;
-}
-
 // Model router hemat: pesan pendek & sederhana dialihkan ke model "saudara"
 // yang lebih murah dari PROVIDER YANG SAMA (key-nya sudah dikonfigurasi) —
 // pesan rumit tetap memakai model pilihan tenant. (Fable 5 tervalidasi setara
@@ -168,8 +160,10 @@ function routeModel(chosen: AIModel, text: string): AIModel {
   return cheap && isModelConfigured(cheap) ? cheap : chosen;
 }
 
-function buildSystemPrompt(settings: AIAutoReplySettings, memory = ""): string {
-  const kb = kbForPrompt(settings.knowledgeBase);
+function buildSystemPrompt(settings: AIAutoReplySettings, memory = "", query = ""): string {
+  // RAG-lite: ambil hanya potongan KB paling relevan dgn pesan pelanggan
+  // (akurat + hemat token) — bukan menjejalkan seluruh KB tiap pesan.
+  const kb = retrieveKB(settings.knowledgeBase, query);
   // Mode "bebas bicara": persona ngobrol natural (bukan CS ketat knowledge-base).
   if (settings.freeChat) {
     const nama = settings.businessName || "Arunika";
@@ -252,7 +246,7 @@ async function runAIAutoReply(ownerId: string, session: string, chatId: string, 
       reply = cached; // cache hit → tak call LLM, tak menambah pemakaian harian
     } else {
       reply = await generateAIReply(
-        buildSystemPrompt(aiSettings, memory),
+        buildSystemPrompt(aiSettings, memory, latestInbound),
         `${transcript}${webBlock}\n\nBalas pesan terakhir dari pelanggan di atas.`,
         model,
       );

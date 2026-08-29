@@ -247,12 +247,13 @@ export default function FlowPage() {
               value={ai.knowledgeBase}
               onChange={(e) => setAi({ ...ai, knowledgeBase: e.target.value })}
               onBlur={() => saveAI({ knowledgeBase: ai.knowledgeBase }, "aiKb")}
-              placeholder={"Contoh:\nJam buka: Senin-Sabtu 09.00-20.00\nProduk: kue ulang tahun custom mulai Rp150.000\nPengiriman: Gojek/Grab area Jakarta, ongkir ditanggung pembeli\nPembayaran: transfer BCA atau QRIS"}
+              placeholder={"Tulis per topik, pisahkan tiap topik dengan BARIS KOSONG:\n\nJam buka: Senin-Sabtu 09.00-20.00, Minggu tutup.\n\nProduk: kue ulang tahun custom mulai Rp150.000. Pesan minimal H-2.\n\nPengiriman: Gojek/Grab area Jakarta, ongkir ditanggung pembeli.\n\nPembayaran: transfer BCA atau QRIS."}
               disabled={!ai.configured}
             />
             <p style={{ fontSize: "0.75rem", color: "var(--ink-soft)", marginTop: 8 }}>
-              AI hanya menjawab berdasarkan info di atas — kalau tidak tahu, dia bilang jujur akan menghubungkan ke
-              tim, tidak mengarang jawaban.
+              Boleh panjang — Arunika otomatis mengambil <strong>bagian yang paling relevan</strong> dengan pertanyaan
+              pelanggan (hemat & fokus). Tips: pisahkan tiap topik dengan baris kosong. Kalau info tak ada, dia jujur
+              akan menghubungkan ke tim, tidak mengarang.
             </p>
           </div>
   );
