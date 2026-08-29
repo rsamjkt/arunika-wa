@@ -28,6 +28,7 @@ const TITLES: Record<string, string> = {
   "/admin/tenants": "Kelola Tenant",
   "/admin/leads": "Leads & Marketing",
   "/admin/ai-providers": "API Key AI",
+  "/admin/integrasi": "Integrasi",
   "/account/plan": "Paket Saya",
   "/account/billing": "Riwayat Tagihan",
   "/account/referral": "Program Referral",

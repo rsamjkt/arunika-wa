@@ -1,4 +1,4 @@
-import { readJson } from "./store";
+import { readJson, writeJson } from "./store";
 
 // Integrasi kurir (cek resi & hitung ongkir). Pakai API Binderbyte (mendukung
 // banyak kurir Indonesia). Key disimpan di data/shipping.json (gitignored) atau
@@ -48,4 +48,13 @@ export async function calcOngkir(courier: string, origin: string, destination: s
   } catch {
     return "Gagal menghubungi layanan ongkir.";
   }
+}
+
+export function setShippingKey(key: string): void {
+  writeJson<Cfg>(FILE, { ...readJson<Cfg>(FILE, {}), apiKey: key.trim() });
+}
+export function maskedShippingKey(): string | null {
+  const k = getShippingKey();
+  if (!k) return null;
+  return k.length <= 8 ? "••••" : `${k.slice(0, 4)}••••${k.slice(-4)}`;
 }

@@ -66,3 +66,9 @@ export async function tavilySearch(query: string): Promise<SearchResult | null> 
     return null;
   }
 }
+
+export function maskedTavilyKey(): string | null {
+  const k = getTavilyKey();
+  if (!k) return null;
+  return k.length <= 8 ? "••••" : `${k.slice(0, 4)}••••${k.slice(-4)}`;
+}

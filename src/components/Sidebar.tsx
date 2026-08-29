@@ -26,6 +26,7 @@ import {
   Building2,
   Target,
   KeyRound,
+  Blocks,
   type LucideIcon,
 } from "lucide-react";
 
@@ -94,6 +95,7 @@ const SUPERADMIN_GROUP: NavGroup = {
     { href: "/admin/tenants", label: "Kelola Tenant", icon: Building2 },
     { href: "/admin/leads", label: "Leads & Marketing", icon: Target },
     { href: "/admin/ai-providers", label: "API Key AI", icon: KeyRound },
+    { href: "/admin/integrasi", label: "Integrasi", icon: Blocks },
   ],
 };
 
