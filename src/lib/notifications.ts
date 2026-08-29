@@ -3,6 +3,7 @@ import { readJson, writeJson } from "./store";
 
 export type NotificationType =
   | "chat_assigned"
+  | "chat_handoff"
   | "campaign_completed"
   | "campaign_paused"
   | "webhook_failing"

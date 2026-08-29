@@ -42,6 +42,9 @@ export async function PUT(req: NextRequest) {
   const next = setAssignment(tenantId, session, chatId, {
     assignedTo: assignedTo === null ? null : typeof assignedTo === "string" ? assignedTo : undefined,
     status: status === "open" || status === "resolved" ? status : undefined,
+    // Menandai chat "resolved" juga mematikan flag handoff → auto-reply
+    // (welcome/keyword/AI) aktif kembali untuk chat ini.
+    escalated: status === "resolved" ? false : undefined,
   });
 
   if (typeof assignedTo === "string" && assignedTo && assignedTo !== user!.id) {

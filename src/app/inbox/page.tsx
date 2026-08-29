@@ -65,6 +65,7 @@ interface TeamMember {
 interface Assignment {
   assignedTo: string | null;
   status: "open" | "resolved";
+  escalated?: boolean;
 }
 
 interface MessageTemplate {
@@ -693,20 +694,26 @@ function InboxPageInner() {
                     {c.lastMessage?.fromMe ? "Anda: " : ""}
                     {c.lastMessage?.body || (c.lastMessage?.hasMedia ? "📎 Media" : "")}
                   </div>
-                  {teamMembers.length > 1 && (a.assignedTo || a.status === "resolved") && (
-                    <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                      {assigneeName && (
+                  {(a.escalated && a.status === "open") ||
+                  (teamMembers.length > 1 && (a.assignedTo || a.status === "resolved")) ? (
+                    <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                      {a.escalated && a.status === "open" && (
+                        <span className="badge bad" style={{ fontSize: "0.65rem" }}>
+                          Minta CS
+                        </span>
+                      )}
+                      {teamMembers.length > 1 && assigneeName && (
                         <span className="badge pending" style={{ fontSize: "0.65rem" }}>
                           {assigneeName}
                         </span>
                       )}
-                      {a.status === "resolved" && (
+                      {teamMembers.length > 1 && a.status === "resolved" && (
                         <span className="badge good" style={{ fontSize: "0.65rem" }}>
                           Selesai
                         </span>
                       )}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </button>
             );

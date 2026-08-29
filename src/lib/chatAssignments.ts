@@ -3,10 +3,14 @@ import { readJson, writeJson } from "./store";
 export type ChatAssignment = {
   assignedTo: string | null;
   status: "open" | "resolved";
+  /** Ditandai saat pelanggan minta bantuan manusia / komplain (smart handoff)
+   * — auto-reply dijeda untuk chat ini sampai agen menanganinya. */
+  escalated?: boolean;
+  escalatedAt?: string;
 };
 
 const FILE = "chat-assignments.json";
-const DEFAULTS: ChatAssignment = { assignedTo: null, status: "open" };
+const DEFAULTS: ChatAssignment = { assignedTo: null, status: "open", escalated: false };
 
 type Store = Record<string, ChatAssignment>;
 

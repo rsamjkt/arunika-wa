@@ -17,6 +17,9 @@ import { canUseAIToday, getAISettings, recordAIUsage, type AIAutoReplySettings, 
 import { generateAIReply, isModelConfigured } from "@/lib/aiClient";
 import { getCachedReply, setCachedReply } from "@/lib/aiResponseCache";
 import { retrieveKB } from "@/lib/kbRetrieval";
+import { needsHumanHandoff } from "@/lib/handoff";
+import { getAssignment, setAssignment } from "@/lib/chatAssignments";
+import { createNotification } from "@/lib/notifications";
 import { bumpAndShouldUpdate, getMemory, saveMemory } from "@/lib/aiMemory";
 import { isWebSearchConfigured, searchQueryFor, tavilySearch } from "@/lib/webSearch";
 import { getFullUser } from "@/lib/users";
@@ -64,6 +67,31 @@ async function runAutoReply(ownerId: string, session: string, chatId: string, te
 
   const isNewContact = !hasSeenContact(session, chatId);
   markSeenContact(session, chatId);
+
+  // Jeda SEMUA auto-reply untuk chat yang sedang di-handoff ke agen (menunggu
+  // manusia) — termasuk pesan lanjutan yang bukan kata-kunci handoff, agar bot
+  // tak menimpa percakapan agen. Un-pause otomatis saat agen menandai "resolved".
+  const assignment = getAssignment(ownerId, session, chatId);
+  if (assignment.escalated && assignment.status === "open") return;
+
+  // Smart handoff: pelanggan minta manusia / komplain serius → alihkan ke agen,
+  // notifikasi owner (sekali), kirim ack singkat, lalu berhenti (jangan dijawab bot).
+  if ((settings.enabled || aiSettings.enabled) && owner && needsHumanHandoff(text)) {
+    setAssignment(ownerId, session, chatId, {
+      escalated: true,
+      escalatedAt: new Date().toISOString(),
+      status: "open",
+    });
+    createNotification(
+      ownerId,
+      "chat_handoff",
+      "Pelanggan minta bantuan manusia",
+      `Chat dari ${chatId.replace(/@.*/, "")} perlu ditangani agen — auto-reply dijeda untuk chat ini.`,
+      "/inbox",
+    );
+    await sendReply(ownerId, session, chatId, "Baik, saya sambungkan ke tim kami ya 🙏 Mohon tunggu sebentar.");
+    return;
+  }
 
   if (settings.enabled && owner && userHasFeature(owner, "autoreply")) {
     if (isNewContact && settings.welcomeEnabled) {
