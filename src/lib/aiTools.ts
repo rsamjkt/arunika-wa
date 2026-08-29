@@ -9,6 +9,8 @@ import { getSettings, isWithinBusinessHours } from "./autoreply";
 import { getAssignment, setAssignment } from "./chatAssignments";
 import { createNotification } from "./notifications";
 import { calcOngkir, isShippingConfigured, trackResi } from "./shipping";
+import { safeCalc } from "./calc";
+import { isWebSearchConfigured, tavilySearch } from "./webSearch";
 
 export type ToolContext = {
   ownerId: string;
@@ -103,6 +105,47 @@ export const TOOLS: AITool[] = [
       const berat = Number(args.berat) > 0 ? Number(args.berat) : 1000;
       if (!kurir || !asal || !tujuan) return "Butuh kurir, kota asal, dan kota tujuan.";
       return (await calcOngkir(kurir, asal, tujuan, berat)) || "Tarif tidak ditemukan.";
+    },
+  },
+  {
+    name: "hitung",
+    description: 'Hitung ekspresi matematika (total harga, diskon, kembalian, dll). Argumen: {"ekspresi":"150000*3"}. Hanya angka & operator + - * / ( ).',
+    run: (args) => {
+      const r = safeCalc(str(args.ekspresi));
+      return r === null ? "Ekspresi tidak valid — pakai hanya angka & operator." : `Hasil: ${r.toLocaleString("id-ID")}`;
+    },
+  },
+  {
+    name: "catat_pesanan",
+    description: 'Catat pesanan pelanggan untuk ditindaklanjuti agen. Argumen: {"ringkasan":"2x kue coklat, total Rp300.000, kirim ke Jakarta"}.',
+    run: (args, ctx) => {
+      const p = str(args.ringkasan);
+      if (!p) return "Ringkasan pesanan kosong.";
+      const current = getContactNote(ctx.ownerId, ctx.session, ctx.chatId);
+      const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
+      const merged = `${current.note ? current.note + "\n" : ""}[${stamp}] PESANAN: ${p}`.slice(0, 2000);
+      const tags = [...new Set([...(current.tags ?? []), "pesanan"])];
+      setContactNote(ctx.ownerId, ctx.session, ctx.chatId, { note: merged, tags });
+      return "Pesanan tercatat & diberi label 'pesanan'.";
+    },
+  },
+  {
+    name: "tandai_selesai",
+    description: "Tandai percakapan ini SELESAI, HANYA bila pertanyaan pelanggan sudah tuntas terjawab. Tanpa argumen.",
+    run: (_args, ctx) => {
+      setAssignment(ctx.ownerId, ctx.session, ctx.chatId, { status: "resolved", escalated: false });
+      return "Percakapan ditandai selesai.";
+    },
+  },
+  {
+    name: "cari_web",
+    description: 'Cari info TERKINI dari internet (berita, harga pasar, cuaca, aturan terbaru) yang tak ada di knowledge base. Argumen: {"query":"kata kunci"}.',
+    run: async (args) => {
+      if (!isWebSearchConfigured()) return "Pencarian web belum diaktifkan (perlu API key di menu Integrasi).";
+      const sr = await tavilySearch(str(args.query));
+      if (!sr || (!sr.answer && sr.results.length === 0)) return "Tidak ada hasil.";
+      return (sr.answer ? `Ringkasan: ${sr.answer}\n` : "") +
+        sr.results.slice(0, 3).map((r, i) => `${i + 1}. ${r.title}: ${r.content.slice(0, 200)}`).join("\n");
     },
   },
 ];
