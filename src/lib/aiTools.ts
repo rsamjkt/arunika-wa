@@ -11,6 +11,7 @@ import { createNotification } from "./notifications";
 import { calcOngkir, isShippingConfigured, trackResi } from "./shipping";
 import { safeCalc } from "./calc";
 import { isWebSearchConfigured, tavilySearch } from "./webSearch";
+import { addAppointment } from "./appointments";
 
 export type ToolContext = {
   ownerId: string;
@@ -146,6 +147,37 @@ export const TOOLS: AITool[] = [
       if (!sr || (!sr.answer && sr.results.length === 0)) return "Tidak ada hasil.";
       return (sr.answer ? `Ringkasan: ${sr.answer}\n` : "") +
         sr.results.slice(0, 3).map((r, i) => `${i + 1}. ${r.title}: ${r.content.slice(0, 200)}`).join("\n");
+    },
+  },
+  {
+    name: "buat_janji",
+    description: 'Buat janji/booking untuk pelanggan (kunjungan, reservasi, jadwal konsultasi, dll). Argumen: {"waktu":"kapan, mis. Sabtu 12 Jul 14.00","keperluan":"untuk apa","nama":"nama pelanggan (opsional)"}. Setelah dibuat, konfirmasikan ke pelanggan.',
+    run: (args, ctx) => {
+      const when = str(args.waktu);
+      const keperluan = str(args.keperluan);
+      const nama = str(args.nama);
+      if (!when || !keperluan) return "Butuh waktu dan keperluan janji.";
+      addAppointment(ctx.ownerId, { session: ctx.session, chatId: ctx.chatId, when, keperluan, nama: nama || undefined });
+      const num = ctx.chatId.replace(/@.*/, "");
+      createNotification(ctx.ownerId, "appointment", "Janji baru dari pelanggan",
+        `${nama ? nama + " — " : ""}${when}: ${keperluan} (dari ${num})`, "/inbox");
+      const note = getContactNote(ctx.ownerId, ctx.session, ctx.chatId);
+      const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
+      setContactNote(ctx.ownerId, ctx.session, ctx.chatId, {
+        note: `${note.note ? note.note + "\n" : ""}[${stamp}] JANJI: ${when} — ${keperluan}`.slice(0, 2000),
+        tags: [...new Set([...(note.tags ?? []), "janji"])],
+      });
+      return `Janji tercatat: ${when} — ${keperluan}. Konfirmasikan ke pelanggan bahwa jadwalnya sudah dicatat.`;
+    },
+  },
+  {
+    name: "cek_stok",
+    description: 'Cek ketersediaan/stok sebuah produk dari info bisnis. Argumen: {"produk":"nama produk"}. Pakai saat pelanggan tanya stok/ready/tersedia.',
+    run: (args, ctx) => {
+      const produk = str(args.produk);
+      if (!produk) return "Sebutkan nama produknya.";
+      const hit = retrieveKB(ctx.aiSettings.knowledgeBase, `stok ketersediaan ready ${produk}`);
+      return hit || `Tidak ada info stok untuk "${produk}" di knowledge base — sarankan cek ke agen.`;
     },
   },
 ];
