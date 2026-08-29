@@ -8,6 +8,7 @@ import { getContactNote, setContactNote } from "./contactNotes";
 import { getSettings, isWithinBusinessHours } from "./autoreply";
 import { getAssignment, setAssignment } from "./chatAssignments";
 import { createNotification } from "./notifications";
+import { calcOngkir, isShippingConfigured, trackResi } from "./shipping";
 
 export type ToolContext = {
   ownerId: string;
@@ -78,6 +79,30 @@ export const TOOLS: AITool[] = [
           `Chat dari ${ctx.chatId.replace(/@.*/, "")}: ${alasan}`, "/inbox");
       }
       return "Sudah dialihkan ke agen. Beri tahu pelanggan bahwa tim akan segera membantu.";
+    },
+  },
+  {
+    name: "cek_resi",
+    description: 'Lacak status paket/pengiriman. Argumen: {"kurir":"jne|jnt|sicepat|anteraja|pos|tiki|ninja|wahana|lion|dll","resi":"nomor resi"}. Pakai saat pelanggan menanyakan status kiriman/paketnya.',
+    run: async (args) => {
+      if (!isShippingConfigured()) return "Layanan cek resi belum diaktifkan (perlu API key kurir). Sampaikan ke pelanggan untuk cek manual sementara ini.";
+      const kurir = str(args.kurir).toLowerCase();
+      const resi = str(args.resi);
+      if (!kurir || !resi) return "Butuh nama kurir dan nomor resi.";
+      return (await trackResi(kurir, resi)) || "Tidak ada info resi.";
+    },
+  },
+  {
+    name: "hitung_ongkir",
+    description: 'Hitung ongkos kirim antar kota. Argumen: {"kurir":"jne|jnt|...","asal":"kode kota asal","tujuan":"kode kota tujuan","berat":gram}. Pakai saat pelanggan tanya ongkir. Jika kode kota tak diketahui, pakai tool cari_pengetahuan untuk info ongkir dari knowledge base.',
+    run: async (args) => {
+      if (!isShippingConfigured()) return "Layanan hitung ongkir belum diaktifkan (perlu API key kurir). Coba cari info ongkir lewat tool cari_pengetahuan.";
+      const kurir = str(args.kurir).toLowerCase();
+      const asal = str(args.asal);
+      const tujuan = str(args.tujuan);
+      const berat = Number(args.berat) > 0 ? Number(args.berat) : 1000;
+      if (!kurir || !asal || !tujuan) return "Butuh kurir, kota asal, dan kota tujuan.";
+      return (await calcOngkir(kurir, asal, tujuan, berat)) || "Tarif tidak ditemukan.";
     },
   },
 ];

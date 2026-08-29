@@ -36,6 +36,7 @@ const COOKIE_ONLY_PREFIXES = [
 const SELF_VERIFIED_PATHS = new Set([
   "/api/webhooks/waha",
   "/api/webhooks/klikqris",
+  "/api/webhooks/telegram",
   "/api/cron/downgrade-expired",
   "/api/cron/run-scheduled-campaigns",
   "/api/cron/lead-outreach",
