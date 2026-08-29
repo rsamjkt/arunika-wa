@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
   const { body, response: parseError } = await parseJsonBody(req);
   if (parseError) return parseError;
-  const { name, session, messageBody, templateId, recipients, startNow, scheduledAt } = body!;
+  const { name, session, messageBody, templateId, recipients, startNow, scheduledAt, precheck } = body!;
 
   if (!name || typeof name !== "string") {
     return NextResponse.json({ error: "Nama campaign wajib diisi" }, { status: 400 });
@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
     recipients,
     typeof templateId === "string" ? templateId : undefined,
     scheduledAtIso,
+    Boolean(precheck),
   );
 
   if (startNow && !scheduledAtIso) startCampaign(getEffectiveTenantId(user!), campaign.id);

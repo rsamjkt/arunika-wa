@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { readJson, writeJson } from "./store";
-import { sendText } from "./waha";
+import { checkNumberExists, sendText } from "./waha";
 import { getSessionSentToday, logEvent } from "./messageLog";
 import { incrementUsage } from "./templates";
 import { getFullUser } from "./users";
@@ -26,6 +26,9 @@ export type Campaign = {
   session: string;
   messageBody: string;
   templateId?: string;
+  /** Bila true: cek dulu tiap nomor terdaftar di WhatsApp sebelum kirim, dan
+   * lewati yang tidak terdaftar (anti-ban: kirim ke banyak nomor mati = sinyal spam). */
+  precheck?: boolean;
   recipients: CampaignRecipient[];
   status: "draft" | "sending" | "completed" | "canceled";
   createdAt: string;
@@ -85,6 +88,7 @@ export function createCampaign(
   recipients: { chatId: string; name?: string }[],
   templateId?: string,
   scheduledAt?: string | null,
+  precheck?: boolean,
 ): Campaign {
   const campaign: Campaign = {
     id: crypto.randomUUID(),
@@ -93,6 +97,7 @@ export function createCampaign(
     session,
     messageBody,
     templateId,
+    precheck: precheck ?? false,
     recipients: recipients.map((r) => ({ ...r, status: "pending" as const })),
     status: "draft",
     createdAt: new Date().toISOString(),
@@ -189,6 +194,22 @@ async function runCampaign(id: string) {
         `Dijeda otomatis: batas aman harian nomor tercapai (${warmupCap} pesan/hari untuk umur nomor saat ini). ` +
         `Ini melindungi nomor dari risiko blokir — lanjutkan besok. Makin lama nomor dipakai, batasnya makin besar.`;
       break;
+    }
+
+    // Pre-check nomor (opsional): lewati nomor yang tidak terdaftar di WhatsApp
+    // agar tak mengirim ke "nomor mati" — mengirim ke banyak nomor invalid
+    // adalah sinyal spam yang menaikkan risiko ban.
+    if (campaign.precheck) {
+      const phone = recipient.chatId.replace(/@.*/, "");
+      try {
+        const exists = await checkNumberExists(campaign.session, phone);
+        if (!exists.numberExists) {
+          updateRecipient(id, recipient.chatId, { status: "failed", error: "Nomor tidak terdaftar di WhatsApp" });
+          continue; // tak kirim, tak charge kuota, tak dihitung sebagai gagal-beruntun
+        }
+      } catch {
+        // Bila pengecekan gagal (mis. WAHA error), jangan blokir — kirim seperti biasa.
+      }
     }
 
     const owner = getFullUser(campaign.ownerId);

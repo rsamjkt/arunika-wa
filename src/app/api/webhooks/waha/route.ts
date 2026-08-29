@@ -13,7 +13,7 @@ import {
   markSeenContact,
   matchKeywordRule,
 } from "@/lib/autoreply";
-import { canUseAIToday, getAISettings, recordAIUsage, type AIAutoReplySettings } from "@/lib/aiAutoReply";
+import { canUseAIToday, getAISettings, recordAIUsage, type AIAutoReplySettings, type AIModel } from "@/lib/aiAutoReply";
 import { generateAIReply, isModelConfigured } from "@/lib/aiClient";
 import { getCachedReply, setCachedReply } from "@/lib/aiResponseCache";
 import { bumpAndShouldUpdate, getMemory, saveMemory } from "@/lib/aiMemory";
@@ -137,6 +137,37 @@ function kbForPrompt(kb: string): string {
   return t.length > MAX_KB_CHARS ? `${t.slice(0, MAX_KB_CHARS)}…` : t;
 }
 
+// Model router hemat: pesan pendek & sederhana dialihkan ke model "saudara"
+// yang lebih murah dari PROVIDER YANG SAMA (key-nya sudah dikonfigurasi) —
+// pesan rumit tetap memakai model pilihan tenant. (Fable 5 tervalidasi setara
+// Sonnet untuk CS, jadi downgrade untuk pesan simpel aman.)
+const CHEAP_SIBLING: Partial<Record<AIModel, AIModel>> = {
+  "claude-opus-4-8": "claude-fable-5",
+  "claude-sonnet-5": "claude-fable-5",
+  "claude-haiku-4-5-20251001": "claude-fable-5",
+  "gpt-4o": "gpt-4o-mini",
+  "gemini-2.5-pro": "gemini-2.5-flash",
+  "mistral-large-latest": "mistral-small-latest",
+  "qwen-plus": "qwen-turbo",
+  "deepseek-reasoner": "deepseek-chat",
+};
+
+function isSimpleMessage(text: string): boolean {
+  const t = text.trim();
+  if (t.length === 0 || t.length > 140) return false;
+  // Sinyal butuh model lebih pintar (permintaan tugas / pertanyaan kompleks).
+  if (/\b(jelas(kan|in)?|kenapa|mengapa|bagaimana|gimana|buat(kan|in)?|tulis(kan)?|terjemah\w*|hitung|rangkum|ringkas|analis\w*|banding\w*|langkah|kode|program)\b/i.test(t)) {
+    return false;
+  }
+  return true;
+}
+
+function routeModel(chosen: AIModel, text: string): AIModel {
+  if (!isSimpleMessage(text)) return chosen;
+  const cheap = CHEAP_SIBLING[chosen];
+  return cheap && isModelConfigured(cheap) ? cheap : chosen;
+}
+
 function buildSystemPrompt(settings: AIAutoReplySettings, memory = ""): string {
   const kb = kbForPrompt(settings.knowledgeBase);
   // Mode "bebas bicara": persona ngobrol natural (bukan CS ketat knowledge-base).
@@ -208,10 +239,13 @@ async function runAIAutoReply(ownerId: string, session: string, chatId: string, 
       }
     }
 
+    // Model router hemat: pesan simpel → model saudara termurah (provider sama).
+    const model = routeModel(aiSettings.model, latestInbound);
+
     // Response cache: hemat biaya untuk FAQ identik. Hanya mode CS (bukan
     // free-chat yang bergantung konteks/ingatan) & tanpa hasil web (time-sensitive).
     const cacheable = !aiSettings.freeChat && !webBlock;
-    const cached = cacheable ? getCachedReply(ownerId, aiSettings.model, latestInbound) : null;
+    const cached = cacheable ? getCachedReply(ownerId, model, latestInbound) : null;
 
     let reply: string;
     if (cached) {
@@ -220,10 +254,10 @@ async function runAIAutoReply(ownerId: string, session: string, chatId: string, 
       reply = await generateAIReply(
         buildSystemPrompt(aiSettings, memory),
         `${transcript}${webBlock}\n\nBalas pesan terakhir dari pelanggan di atas.`,
-        aiSettings.model,
+        model,
       );
       recordAIUsage(ownerId);
-      if (cacheable) setCachedReply(ownerId, aiSettings.model, latestInbound, reply);
+      if (cacheable) setCachedReply(ownerId, model, latestInbound, reply);
     }
     await sendReply(ownerId, session, chatId, reply);
     // Ingatan jangka panjang: perbarui berkala (non-blocking, best-effort).

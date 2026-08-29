@@ -1,7 +1,8 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { Megaphone, Plus, ChevronLeft } from "lucide-react";
+import { Megaphone, Plus, ChevronLeft, Shuffle } from "lucide-react";
+import { hasSpintax, spintaxVariants } from "@/lib/spintax";
 
 interface SessionInfo {
   name: string;
@@ -56,6 +57,7 @@ function BroadcastPageInner() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [manualText, setManualText] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
+  const [precheck, setPrecheck] = useState(false);
 
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -214,6 +216,7 @@ function BroadcastPageInner() {
           templateId: templateId || undefined,
           recipients,
           startNow,
+          precheck,
           scheduledAt: schedule ? new Date(schedule).toISOString() : undefined,
         }),
       });
@@ -423,7 +426,23 @@ function BroadcastPageInner() {
                   <button type="button" className="varchip" onClick={() => insertVar("{nomor}")}>
                     {"{nomor}"}
                   </button>
+                  <button type="button" className="varchip" onClick={() => insertVar("{Halo|Hai|Hei}")} title="Spintax: tiap penerima dapat satu varian acak">
+                    {"{a|b}"}
+                  </button>
                 </div>
+                {hasSpintax(body) && (
+                  <p style={{ fontSize: "0.73rem", color: "var(--primary)", marginTop: 9, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                    <Shuffle size={14} strokeWidth={2.5} />
+                    {spintaxVariants(body).toLocaleString("id-ID")} variasi pesan — tiap penerima dapat versi berbeda (lebih aman dari blokir).
+                  </p>
+                )}
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 14, fontSize: "0.82rem", cursor: "pointer", lineHeight: 1.45 }}>
+                  <input type="checkbox" checked={precheck} onChange={(e) => setPrecheck(e.target.checked)} style={{ marginTop: 2 }} />
+                  <span>
+                    Cek nomor dulu sebelum kirim — lewati nomor yang tidak terdaftar di WhatsApp{" "}
+                    <span style={{ color: "var(--ink-soft)" }}>(lebih aman dari blokir, sedikit lebih lambat)</span>
+                  </span>
+                </label>
               </div>
 
               <div className="card cpad" style={{ padding: 20 }}>
