@@ -58,6 +58,7 @@ function BroadcastPageInner() {
   const [manualText, setManualText] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [precheck, setPrecheck] = useState(false);
+  const [recurrence, setRecurrence] = useState<"none" | "daily" | "weekly">("none");
 
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -217,6 +218,7 @@ function BroadcastPageInner() {
           recipients,
           startNow,
           precheck,
+          recurrence,
           scheduledAt: schedule ? new Date(schedule).toISOString() : undefined,
         }),
       });
@@ -236,6 +238,7 @@ function BroadcastPageInner() {
       setSelected(new Set());
       setManualText("");
       setScheduledAt("");
+      setRecurrence("none");
       await loadCampaigns();
       closePanel();
     } catch (err) {
@@ -556,6 +559,17 @@ function BroadcastPageInner() {
                     value={scheduledAt}
                     onChange={(e) => setScheduledAt(e.target.value)}
                   />
+                  <select
+                    className="field"
+                    style={{ width: 160 }}
+                    value={recurrence}
+                    onChange={(e) => setRecurrence(e.target.value as "none" | "daily" | "weekly")}
+                    title="Broadcast berulang ke daftar yang sama"
+                  >
+                    <option value="none">Sekali saja</option>
+                    <option value="daily">Ulangi tiap hari</option>
+                    <option value="weekly">Ulangi tiap minggu</option>
+                  </select>
                   <button
                     className="btn secondary"
                     disabled={sending || !scheduledAt}

@@ -29,6 +29,9 @@ export type Campaign = {
   /** Bila true: cek dulu tiap nomor terdaftar di WhatsApp sebelum kirim, dan
    * lewati yang tidak terdaftar (anti-ban: kirim ke banyak nomor mati = sinyal spam). */
   precheck?: boolean;
+  /** Broadcast berulang: kirim ulang ke daftar yang sama tiap hari/minggu pada
+   * jam jadwal yang sama. undefined/"none" = sekali saja. */
+  recurrence?: "none" | "daily" | "weekly";
   recipients: CampaignRecipient[];
   status: "draft" | "sending" | "completed" | "canceled";
   createdAt: string;
@@ -89,6 +92,7 @@ export function createCampaign(
   templateId?: string,
   scheduledAt?: string | null,
   precheck?: boolean,
+  recurrence?: "none" | "daily" | "weekly",
 ): Campaign {
   const campaign: Campaign = {
     id: crypto.randomUUID(),
@@ -98,6 +102,7 @@ export function createCampaign(
     messageBody,
     templateId,
     precheck: precheck ?? false,
+    recurrence: recurrence ?? "none",
     recipients: recipients.map((r) => ({ ...r, status: "pending" as const })),
     status: "draft",
     createdAt: new Date().toISOString(),
@@ -168,6 +173,22 @@ export function startCampaign(ownerId: string, id: string) {
   runCampaign(id).finally(() => {
     activeCampaigns.delete(id);
   });
+}
+
+/** Waktu kemunculan berikutnya (ISO) untuk broadcast berulang, selalu di masa
+ * depan relatif `nowMs`. Mempertahankan jam yang sama dari `fromISO`. */
+export function nextOccurrence(
+  recurrence: "daily" | "weekly",
+  fromISO: string | null | undefined,
+  nowMs: number = Date.now(),
+): string {
+  const stepMs = recurrence === "weekly" ? 7 * 86_400_000 : 86_400_000;
+  let t = fromISO ? new Date(fromISO).getTime() : nowMs;
+  if (!Number.isFinite(t)) t = nowMs;
+  do {
+    t += stepMs;
+  } while (t <= nowMs);
+  return new Date(t).toISOString();
 }
 
 async function runCampaign(id: string) {
@@ -288,16 +309,38 @@ async function runCampaign(id: string) {
 
   campaign = getCampaignUnscoped(id);
   if (campaign && campaign.status === "sending") {
-    updateCampaign(id, { status: "completed", completedAt: new Date().toISOString() });
     const sent = campaign.recipients.filter((r) => r.status === "sent").length;
     const failed = campaign.recipients.filter((r) => r.status === "failed").length;
-    createNotification(
-      campaign.ownerId,
-      "campaign_completed",
-      `Campaign "${campaign.name}" selesai`,
-      `Terkirim ke ${sent} penerima${failed > 0 ? `, ${failed} gagal` : ""}.`,
-      "/broadcast",
-    );
+
+    if (campaign.recurrence && campaign.recurrence !== "none") {
+      // Broadcast berulang: reset penerima ke "pending" & jadwalkan siklus
+      // berikutnya (cron run-scheduled-campaigns akan menjalankannya lagi).
+      const nextAt = nextOccurrence(campaign.recurrence, campaign.scheduledAt, Date.now());
+      updateCampaign(id, {
+        status: "draft",
+        scheduledAt: nextAt,
+        startedAt: undefined,
+        completedAt: undefined,
+        recipients: campaign.recipients.map((r) => ({ chatId: r.chatId, name: r.name, status: "pending" as const })),
+      });
+      createNotification(
+        campaign.ownerId,
+        "campaign_completed",
+        `Broadcast berulang "${campaign.name}" terkirim`,
+        `Terkirim ke ${sent} penerima${failed > 0 ? `, ${failed} gagal` : ""}. ` +
+          `Dijadwalkan lagi: ${new Date(nextAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} WIB.`,
+        "/broadcast",
+      );
+    } else {
+      updateCampaign(id, { status: "completed", completedAt: new Date().toISOString() });
+      createNotification(
+        campaign.ownerId,
+        "campaign_completed",
+        `Campaign "${campaign.name}" selesai`,
+        `Terkirim ke ${sent} penerima${failed > 0 ? `, ${failed} gagal` : ""}.`,
+        "/broadcast",
+      );
+    }
   }
   canceledCampaigns.delete(id);
 }
