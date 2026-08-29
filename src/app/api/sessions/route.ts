@@ -11,6 +11,12 @@ import {
 } from "@/lib/tenancy";
 import { getEffectiveTenantId } from "@/lib/users";
 import { parseJsonBody } from "@/lib/parseJsonBody";
+import { sessionHealth, warmupStatus } from "@/lib/numberHealth";
+
+type WahaSession = Awaited<ReturnType<typeof listSessions>>[number];
+function withHealth(list: WahaSession[]) {
+  return list.map((s) => ({ ...s, health: sessionHealth(s.name), warmup: warmupStatus(s.name) }));
+}
 
 export async function GET() {
   const user = await getCurrentFullUser();
@@ -19,10 +25,10 @@ export async function GET() {
   try {
     const sessions = await listSessions();
     if (user.role === "superadmin") {
-      return NextResponse.json(sessions);
+      return NextResponse.json(withHealth(sessions));
     }
     const owned = new Set(getOwnedSessionNames(getEffectiveTenantId(user)));
-    return NextResponse.json(sessions.filter((s) => owned.has(s.name)));
+    return NextResponse.json(withHealth(sessions.filter((s) => owned.has(s.name))));
   } catch (err) {
     const status = err instanceof WahaError ? err.status : 500;
     return NextResponse.json(

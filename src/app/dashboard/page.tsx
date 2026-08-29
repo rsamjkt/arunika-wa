@@ -15,6 +15,8 @@ interface SessionInfo {
   name: string;
   status: SessionStatus;
   me?: { id: string; pushName: string } | null;
+  health?: { score: number; label: "baik" | "waspada" | "berisiko" };
+  warmup?: { cap: number; sentToday: number; remaining: number; ageDays: number };
 }
 
 function badgeClass(status: SessionStatus) {
@@ -22,6 +24,10 @@ function badgeClass(status: SessionStatus) {
   if (status === "SCAN_QR_CODE" || status === "STARTING") return "pending";
   if (status === "FAILED") return "bad";
   return "off";
+}
+
+function healthClass(label: "baik" | "waspada" | "berisiko") {
+  return label === "baik" ? "good" : label === "waspada" ? "pending" : "bad";
 }
 
 function label(status: SessionStatus) {
@@ -324,6 +330,21 @@ export default function DashboardPage() {
                 </td>
                 <td>
                   <span className={`badge ${badgeClass(s.status)}`}>{label(s.status)}</span>
+                  {s.status === "WORKING" && s.health && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}>
+                      <span
+                        className={`badge ${healthClass(s.health.label)}`}
+                        title={`Skor kesehatan nomor: ${s.health.score}/100 (7 hari terakhir)`}
+                      >
+                        Nomor {s.health.label}
+                      </span>
+                      {s.warmup && (
+                        <span style={{ fontSize: "0.68rem", color: "var(--ink-soft)" }} title="Batas aman kirim harian (warmup anti-ban)">
+                          Sisa kirim aman: {s.warmup.remaining.toLocaleString("id-ID")}/{s.warmup.cap.toLocaleString("id-ID")}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </td>
                 <td>
                   <div className="actions-cell">
