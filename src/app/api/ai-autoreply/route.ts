@@ -24,7 +24,7 @@ export async function PUT(req: NextRequest) {
 
   const { body, response: parseError } = await parseJsonBody(req);
   if (parseError) return parseError;
-  const { enabled, businessName, knowledgeBase, tone, model } = body!;
+  const { enabled, businessName, knowledgeBase, tone, model, agentMode } = body!;
   if (model !== undefined && !isValidAIModel(model)) {
     return NextResponse.json({ error: "Model AI tidak valid" }, { status: 400 });
   }
@@ -34,6 +34,7 @@ export async function PUT(req: NextRequest) {
     knowledgeBase: typeof knowledgeBase === "string" ? knowledgeBase.slice(0, 8000) : undefined,
     tone: typeof tone === "string" ? tone.slice(0, 200) : undefined,
     model: isValidAIModel(model) ? model : undefined,
+    agentMode: typeof agentMode === "boolean" ? agentMode : undefined,
   });
   return NextResponse.json(next);
 }

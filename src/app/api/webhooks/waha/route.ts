@@ -17,6 +17,7 @@ import { canUseAIToday, getAISettings, recordAIUsage, type AIAutoReplySettings, 
 import { generateAIReply, isModelConfigured } from "@/lib/aiClient";
 import { getCachedReply, setCachedReply } from "@/lib/aiResponseCache";
 import { retrieveKB } from "@/lib/kbRetrieval";
+import { runAgent } from "@/lib/aiAgent";
 import { needsHumanHandoff } from "@/lib/handoff";
 import { getAssignment, setAssignment } from "@/lib/chatAssignments";
 import { createNotification } from "@/lib/notifications";
@@ -263,23 +264,31 @@ async function runAIAutoReply(ownerId: string, session: string, chatId: string, 
 
     // Model router hemat: pesan simpel → model saudara termurah (provider sama).
     const model = routeModel(aiSettings.model, latestInbound);
-
-    // Response cache: hemat biaya untuk FAQ identik. Hanya mode CS (bukan
-    // free-chat yang bergantung konteks/ingatan) & tanpa hasil web (time-sensitive).
-    const cacheable = !aiSettings.freeChat && !webBlock;
-    const cached = cacheable ? getCachedReply(ownerId, model, latestInbound) : null;
+    const persona = buildSystemPrompt(aiSettings, memory, latestInbound);
 
     let reply: string;
-    if (cached) {
-      reply = cached; // cache hit → tak call LLM, tak menambah pemakaian harian
-    } else {
-      reply = await generateAIReply(
-        buildSystemPrompt(aiSettings, memory, latestInbound),
-        `${transcript}${webBlock}\n\nBalas pesan terakhir dari pelanggan di atas.`,
-        model,
-      );
+    if (aiSettings.agentMode) {
+      // Mode agent: Arunika boleh memanggil tools (cek waktu/jam, cari KB, catat
+      // pelanggan, alihkan ke agen) sebelum membalas. Beberapa panggilan LLM/pesan.
+      const result = await runAgent(persona, `${transcript}${webBlock}`, model, { ownerId, session, chatId, aiSettings });
+      reply = result.reply;
       recordAIUsage(ownerId);
-      if (cacheable) setCachedReply(ownerId, model, latestInbound, reply);
+    } else {
+      // Response cache: hemat biaya untuk FAQ identik. Hanya mode CS (bukan free-chat
+      // yang bergantung konteks/ingatan) & tanpa hasil web (time-sensitive).
+      const cacheable = !aiSettings.freeChat && !webBlock;
+      const cached = cacheable ? getCachedReply(ownerId, model, latestInbound) : null;
+      if (cached) {
+        reply = cached; // cache hit → tak call LLM, tak menambah pemakaian harian
+      } else {
+        reply = await generateAIReply(
+          persona,
+          `${transcript}${webBlock}\n\nBalas pesan terakhir dari pelanggan di atas.`,
+          model,
+        );
+        recordAIUsage(ownerId);
+        if (cacheable) setCachedReply(ownerId, model, latestInbound, reply);
+      }
     }
     await sendReply(ownerId, session, chatId, reply);
     // Ingatan jangka panjang: perbarui berkala (non-blocking, best-effort).

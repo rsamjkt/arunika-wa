@@ -170,6 +170,10 @@ export type AIAutoReplySettings = {
   // Mode "bebas bicara": persona ngobrol santai & natural (bukan CS ketat yang
   // hanya menjawab dari knowledge base). Default false → perilaku CS lama tak berubah.
   freeChat?: boolean;
+  // Mode "agent": Arunika boleh MEMANGGIL tools (cek waktu/jam buka, cari KB,
+  // catat pelanggan, alihkan ke agen) sebelum membalas — bukan sekadar teks.
+  // Lebih pintar & bisa bertindak, tapi memakai beberapa panggilan LLM per pesan.
+  agentMode?: boolean;
 };
 
 const FILE = "ai-autoreply.json";
@@ -183,6 +187,7 @@ const DEFAULTS: AIAutoReplySettings = {
   tone: "ramah, singkat, dan profesional",
   model: DEFAULT_MODEL,
   freeChat: false,
+  agentMode: false,
 };
 
 type Store = Record<string, AIAutoReplySettings>;

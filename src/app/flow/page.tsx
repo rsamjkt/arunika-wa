@@ -33,6 +33,7 @@ interface AISettings {
   knowledgeBase: string;
   tone: string;
   model: string;
+  agentMode?: boolean;
   configured: boolean;
   modelConfigured: boolean;
   availableModels: AIModelOption[];
@@ -255,6 +256,24 @@ export default function FlowPage() {
               pelanggan (hemat & fokus). Tips: pisahkan tiap topik dengan baris kosong. Kalau info tak ada, dia jujur
               akan menghubungkan ke tim, tidak mengarang.
             </p>
+
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginTop: 18, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
+              <div>
+                <div style={{ fontSize: "0.86rem", fontWeight: 700 }}>Mode Agent ⚡</div>
+                <p style={{ fontSize: "0.75rem", color: "var(--ink-soft)", marginTop: 3, maxWidth: 440 }}>
+                  Arunika bisa <strong>bertindak</strong>, bukan cuma membalas: cek jam buka, cari info di KB, catat
+                  pelanggan, dan alihkan ke agen bila perlu — sebelum menjawab. Lebih pintar, tapi memakai beberapa
+                  panggilan AI per pesan (biaya sedikit lebih).
+                </p>
+              </div>
+              <button
+                className={`toggle${ai.agentMode ? " on" : ""}`}
+                style={{ marginLeft: "auto", flexShrink: 0, alignSelf: "flex-start" }}
+                onClick={() => saveAI({ agentMode: !ai.agentMode }, "aiAgent")}
+                disabled={aiSaving === "aiAgent" || !ai.configured}
+                aria-label="Aktifkan Mode Agent"
+              />
+            </div>
           </div>
   );
 
