@@ -1,13 +1,15 @@
 import crypto from "node:crypto";
 import { readJson, writeJson } from "./store";
 import { sendText } from "./waha";
-import { logEvent } from "./messageLog";
+import { getSessionSentToday, logEvent } from "./messageLog";
 import { incrementUsage } from "./templates";
 import { getFullUser } from "./users";
 import { reserveQuota, refundQuota } from "./authz";
 import { substituteVariables } from "./textVars";
 import { createNotification } from "./notifications";
 import { humanDelayMs, shouldAbortForFailures, PACING } from "./sendPacing";
+import { applySpintax } from "./spintax";
+import { warmupCapForSession } from "./numberHealth";
 
 export type CampaignRecipient = {
   chatId: string;
@@ -170,9 +172,24 @@ async function runCampaign(id: string) {
   const pending = campaign.recipients.filter((r) => r.status === "pending");
   let sent = 0;
   let consecutiveFailures = 0;
-  let autoPaused = false;
+  let pauseReason: string | null = null;
+
+  // Warmup anti-ban: batasi total kirim harian nomor sesuai umurnya (nomor baru
+  // mengirim sedikit dulu, naik bertahap). Baseline = yang SUDAH terkirim hari
+  // ini dari semua sumber, ditambah `sent` selama run ini.
+  const warmupCap = warmupCapForSession(campaign.session);
+  const sentTodayBaseline = getSessionSentToday(campaign.session);
+
   for (const recipient of pending) {
     if (canceledCampaigns.has(id)) break;
+
+    // Batas warmup harian tercapai → jeda; sisa penerima tetap "pending".
+    if (sentTodayBaseline + sent >= warmupCap) {
+      pauseReason =
+        `Dijeda otomatis: batas aman harian nomor tercapai (${warmupCap} pesan/hari untuk umur nomor saat ini). ` +
+        `Ini melindungi nomor dari risiko blokir — lanjutkan besok. Makin lama nomor dipakai, batasnya makin besar.`;
+      break;
+    }
 
     const owner = getFullUser(campaign.ownerId);
     if (!owner || !reserveQuota(owner)) {
@@ -180,7 +197,9 @@ async function runCampaign(id: string) {
       continue;
     }
 
-    const text = substituteVariables(campaign.messageBody, recipient);
+    // Variasi spintax {a|b|c} diacak per-penerima (anti-ban: hindari pesan
+    // identik massal) — dijalankan SETELAH substitusi variabel {nama} dll.
+    const text = applySpintax(substituteVariables(campaign.messageBody, recipient));
     try {
       await sendText(campaign.session, recipient.chatId, text);
       sent++;
@@ -221,7 +240,10 @@ async function runCampaign(id: string) {
     // terputus. Hentikan campaign agar tak mempercepat ban; sisa penerima tetap
     // "pending" sehingga bisa dilanjutkan setelah nomor sehat kembali.
     if (shouldAbortForFailures(consecutiveFailures)) {
-      autoPaused = true;
+      pauseReason =
+        `Dihentikan otomatis: ${PACING.MAX_CONSECUTIVE_FAILURES} pengiriman gagal berturut-turut — ` +
+        `kemungkinan nomor WhatsApp diblokir atau terputus. Periksa koneksi/kesehatan nomor, ` +
+        `lalu lanjutkan campaign (sisa penerima masih tersimpan).`;
       break;
     }
 
@@ -231,17 +253,13 @@ async function runCampaign(id: string) {
     await new Promise((r) => setTimeout(r, humanDelayMs(sent)));
   }
 
-  if (autoPaused) {
-    const reason =
-      `Dihentikan otomatis: ${PACING.MAX_CONSECUTIVE_FAILURES} pengiriman gagal berturut-turut — ` +
-      `kemungkinan nomor WhatsApp diblokir atau terputus. Periksa koneksi/kesehatan nomor, ` +
-      `lalu lanjutkan campaign (sisa penerima masih tersimpan).`;
-    updateCampaign(id, { status: "draft", autoPausedReason: reason, autoPausedAt: new Date().toISOString() });
+  if (pauseReason) {
+    updateCampaign(id, { status: "draft", autoPausedReason: pauseReason, autoPausedAt: new Date().toISOString() });
     createNotification(
       campaign.ownerId,
       "campaign_paused",
       `Campaign "${campaign.name}" dijeda otomatis`,
-      reason,
+      pauseReason,
       "/broadcast",
     );
     return;

@@ -127,3 +127,48 @@ export function getApiKeyStats(ownerId: string, days = 14): { apiKeyId: string; 
     .map(([apiKeyId, v]) => ({ apiKeyId, ...v }))
     .sort((a, b) => b.sent - a.sent);
 }
+
+/** Timestamp entri paling awal untuk sebuah session — dipakai memperkirakan
+ * "umur" nomor (agar nomor lama tidak diperlakukan sebagai baru saat warmup). */
+export function getSessionFirstSeen(session: string): string | null {
+  const log = readJson<LogEntry[]>(FILE, []);
+  let earliest: string | null = null;
+  for (const e of log) {
+    if (e.session !== session) continue;
+    if (!earliest || e.timestamp < earliest) earliest = e.timestamp;
+  }
+  return earliest;
+}
+
+function wibDay(iso: string): string {
+  return new Date(new Date(iso).getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/** Jumlah pesan keluar BERHASIL hari ini (WIB) untuk sebuah session — untuk
+ * menegakkan batas warmup harian per-nomor. Menghitung semua sumber (broadcast,
+ * auto-reply, manual) karena warmup soal total volume harian sebuah nomor. */
+export function getSessionSentToday(session: string): number {
+  const today = wibDay(new Date().toISOString());
+  const log = readJson<LogEntry[]>(FILE, []);
+  let n = 0;
+  for (const e of log) {
+    if (e.session === session && e.direction === "out" && e.status === "sent" && wibDay(e.timestamp) === today) n++;
+  }
+  return n;
+}
+
+/** Kirim/gagal/masuk untuk sebuah session dalam N hari terakhir — untuk skor kesehatan. */
+export function getSessionCounts(session: string, days = 7): { sent: number; failed: number; received: number } {
+  const cutoff = Date.now() - days * 86_400_000;
+  const log = readJson<LogEntry[]>(FILE, []);
+  let sent = 0;
+  let failed = 0;
+  let received = 0;
+  for (const e of log) {
+    if (e.session !== session || new Date(e.timestamp).getTime() < cutoff) continue;
+    if (e.direction === "in") received += 1;
+    else if (e.status === "sent") sent += 1;
+    else if (e.status === "failed") failed += 1;
+  }
+  return { sent, failed, received };
+}
