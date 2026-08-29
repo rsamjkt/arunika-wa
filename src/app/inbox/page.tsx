@@ -19,6 +19,7 @@ import {
   Paperclip,
   Clipboard,
   Send,
+  Sparkles,
 } from "lucide-react";
 
 type SessionStatus =
@@ -184,12 +185,32 @@ function InboxPageInner() {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [hasNewBelow, setHasNewBelow] = useState(false);
   const [text, setText] = useState("");
+  const [suggesting, setSuggesting] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendingImage, setSendingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<{ id: string; preview: string } | null>(null);
   const [actingOn, setActingOn] = useState<string | null>(null);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+
+  async function suggestReply() {
+    if (!activeSession || !activeChatId || suggesting) return;
+    setSuggesting(true);
+    try {
+      const res = await fetch("/api/inbox/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session: activeSession, chatId: activeChatId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.suggestion) setText(data.suggestion);
+      else alert(data.error ?? "Gagal membuat saran AI");
+    } catch {
+      alert("Gagal membuat saran AI");
+    } finally {
+      setSuggesting(false);
+    }
+  }
   const [showTemplates, setShowTemplates] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [noteTags, setNoteTags] = useState("");
@@ -1000,6 +1021,15 @@ function InboxPageInner() {
                 onClick={() => setShowTemplates((v) => !v)}
               >
                 <Clipboard size={16} strokeWidth={2} />
+              </button>
+              <button
+                type="button"
+                className="icon-btn"
+                title="Saran balasan AI — draft otomatis untuk Anda edit & kirim"
+                onClick={suggestReply}
+                disabled={suggesting}
+              >
+                {suggesting ? "…" : <Sparkles size={16} strokeWidth={2} />}
               </button>
               <input
                 className="field"
