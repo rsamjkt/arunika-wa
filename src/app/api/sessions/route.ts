@@ -11,13 +11,11 @@ import {
 } from "@/lib/tenancy";
 import { getEffectiveTenantId } from "@/lib/users";
 import { parseJsonBody } from "@/lib/parseJsonBody";
-import { sessionHealth, warmupStatus } from "@/lib/numberHealth";
 
-type WahaSession = Awaited<ReturnType<typeof listSessions>>[number];
-function withHealth(list: WahaSession[]) {
-  return list.map((s) => ({ ...s, health: sessionHealth(s.name), warmup: warmupStatus(s.name) }));
-}
-
+// Catatan performa: endpoint ini dipolling sering oleh inbox/grup/dashboard,
+// jadi HARUS ringan. Skor kesehatan/warmup nomor (yang perlu memindai
+// message-log) dipindah ke endpoint terpisah /api/number-health yang hanya
+// dipakai dashboard — jangan tambahkan pemindaian log berat di sini.
 export async function GET() {
   const user = await getCurrentFullUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -25,10 +23,10 @@ export async function GET() {
   try {
     const sessions = await listSessions();
     if (user.role === "superadmin") {
-      return NextResponse.json(withHealth(sessions));
+      return NextResponse.json(sessions);
     }
     const owned = new Set(getOwnedSessionNames(getEffectiveTenantId(user)));
-    return NextResponse.json(withHealth(sessions.filter((s) => owned.has(s.name))));
+    return NextResponse.json(sessions.filter((s) => owned.has(s.name)));
   } catch (err) {
     const status = err instanceof WahaError ? err.status : 500;
     return NextResponse.json(

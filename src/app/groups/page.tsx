@@ -77,6 +77,8 @@ function GroupsPageInner() {
 
   useEffect(() => {
     load();
+    const id = setInterval(load, 15_000);
+    return () => clearInterval(id);
   }, [load]);
 
   const activeGroup = useMemo(() => groups.find((g) => g.id === openId) ?? null, [groups, openId]);

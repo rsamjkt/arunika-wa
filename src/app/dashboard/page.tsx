@@ -88,6 +88,7 @@ export default function DashboardPage() {
   const [me, setMe] = useState<Me | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [activity, setActivity] = useState<DayStat[] | null>(null);
+  const [healthMap, setHealthMap] = useState<Record<string, { health: SessionInfo["health"]; warmup: SessionInfo["warmup"] }>>({});
 
   const load = useCallback(async () => {
     try {
@@ -103,6 +104,19 @@ export default function DashboardPage() {
     const id = setInterval(load, 6_000);
     return () => clearInterval(id);
   }, [load]);
+
+  // Kesehatan/warmup nomor dari endpoint terpisah (memindai log) — dipolling
+  // longgar (30 dtk) supaya tak membebani, tak mengganggu polling sesi 6 dtk.
+  useEffect(() => {
+    const loadHealth = () =>
+      fetch("/api/number-health")
+        .then((r) => (r.ok ? r.json() : {}))
+        .then(setHealthMap)
+        .catch(() => {});
+    loadHealth();
+    const id = setInterval(loadHealth, 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     fetch("/api/server")
@@ -330,21 +344,25 @@ export default function DashboardPage() {
                 </td>
                 <td>
                   <span className={`badge ${badgeClass(s.status)}`}>{label(s.status)}</span>
-                  {s.status === "WORKING" && s.health && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}>
-                      <span
-                        className={`badge ${healthClass(s.health.label)}`}
-                        title={`Skor kesehatan nomor: ${s.health.score}/100 (7 hari terakhir)`}
-                      >
-                        Nomor {s.health.label}
-                      </span>
-                      {s.warmup && (
-                        <span style={{ fontSize: "0.68rem", color: "var(--ink-soft)" }} title="Batas aman kirim harian (warmup anti-ban)">
-                          Sisa kirim aman: {s.warmup.remaining.toLocaleString("id-ID")}/{s.warmup.cap.toLocaleString("id-ID")}
+                  {(() => {
+                    const h = healthMap[s.name];
+                    if (s.status !== "WORKING" || !h?.health) return null;
+                    return (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}>
+                        <span
+                          className={`badge ${healthClass(h.health.label)}`}
+                          title={`Skor kesehatan nomor: ${h.health.score}/100 (7 hari terakhir)`}
+                        >
+                          Nomor {h.health.label}
                         </span>
-                      )}
-                    </div>
-                  )}
+                        {h.warmup && (
+                          <span style={{ fontSize: "0.68rem", color: "var(--ink-soft)" }} title="Batas aman kirim harian (warmup anti-ban)">
+                            Sisa kirim aman: {h.warmup.remaining.toLocaleString("id-ID")}/{h.warmup.cap.toLocaleString("id-ID")}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </td>
                 <td>
                   <div className="actions-cell">

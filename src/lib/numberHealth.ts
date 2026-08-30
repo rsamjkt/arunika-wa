@@ -1,7 +1,7 @@
 // Kesehatan & warmup nomor WhatsApp (anti-ban). Umur nomor diperkirakan dari
 // entri log paling awal, jadi nomor lama tidak dianggap "baru". Skor kesehatan
 // menilai sinyal risiko ban: rasio gagal kirim tinggi & blast tanpa balasan.
-import { getSessionCounts, getSessionFirstSeen, getSessionSentToday } from "./messageLog";
+import { getSessionCounts, getSessionFirstSeen, getSessionSentToday, getSessionStatsBatch } from "./messageLog";
 import { warmupDailyCap } from "./sendPacing";
 
 export function sessionAgeDays(session: string): number {
@@ -54,4 +54,23 @@ export function computeHealth(sent: number, failed: number, received: number): S
 export function sessionHealth(session: string, days = 7): SessionHealth {
   const { sent, failed, received } = getSessionCounts(session, days);
   return computeHealth(sent, failed, received);
+}
+
+/** Health + warmup untuk banyak session dalam SATU baca log (efisien). Bila
+ * `sessions` kosong, pakai semua session yang ada di log. */
+export function healthAndWarmupBatch(sessions?: string[]): Record<string, { health: SessionHealth; warmup: WarmupStatus }> {
+  const stats = getSessionStatsBatch(7);
+  const names = sessions && sessions.length ? sessions : Object.keys(stats);
+  const now = Date.now();
+  const out: Record<string, { health: SessionHealth; warmup: WarmupStatus }> = {};
+  for (const s of names) {
+    const a = stats[s] ?? { firstSeen: new Date(now).toISOString(), sentToday: 0, sent: 0, failed: 0, received: 0 };
+    const ageDays = Math.max(0, Math.floor((now - new Date(a.firstSeen).getTime()) / 86_400_000));
+    const cap = warmupDailyCap(ageDays);
+    out[s] = {
+      health: computeHealth(a.sent, a.failed, a.received),
+      warmup: { ageDays, cap, sentToday: a.sentToday, remaining: Math.max(0, cap - a.sentToday) },
+    };
+  }
+  return out;
 }

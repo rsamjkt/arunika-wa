@@ -172,3 +172,25 @@ export function getSessionCounts(session: string, days = 7): { sent: number; fai
   }
   return { sent, failed, received };
 }
+
+/** Agregat per-session dalam SATU kali baca log (efisien untuk endpoint health
+ * dashboard). Kembalikan firstSeen, sentToday (WIB), dan sent/failed/received N hari. */
+export function getSessionStatsBatch(days = 7): Record<string, { firstSeen: string; sentToday: number; sent: number; failed: number; received: number }> {
+  const log = readJson<LogEntry[]>(FILE, []);
+  const today = wibDay(new Date().toISOString());
+  const cutoff = Date.now() - days * 86_400_000;
+  const out: Record<string, { firstSeen: string; sentToday: number; sent: number; failed: number; received: number }> = {};
+  for (const e of log) {
+    if (!e.session) continue;
+    let a = out[e.session];
+    if (!a) a = out[e.session] = { firstSeen: e.timestamp, sentToday: 0, sent: 0, failed: 0, received: 0 };
+    if (e.timestamp < a.firstSeen) a.firstSeen = e.timestamp;
+    if (e.direction === "out" && e.status === "sent" && wibDay(e.timestamp) === today) a.sentToday += 1;
+    if (new Date(e.timestamp).getTime() >= cutoff) {
+      if (e.direction === "in") a.received += 1;
+      else if (e.status === "sent") a.sent += 1;
+      else if (e.status === "failed") a.failed += 1;
+    }
+  }
+  return out;
+}

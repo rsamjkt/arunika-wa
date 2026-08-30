@@ -302,7 +302,7 @@ function InboxPageInner() {
     const id = setInterval(() => {
       loadChats();
       loadAssignments();
-    }, 8_000);
+    }, 4_000);
     return () => clearInterval(id);
   }, [activeSession, loadChats, loadAssignments]);
 
