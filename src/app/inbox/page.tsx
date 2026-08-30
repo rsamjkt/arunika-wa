@@ -187,6 +187,8 @@ function InboxPageInner() {
   const [text, setText] = useState("");
   const [suggesting, setSuggesting] = useState(false);
   const [liveConnected, setLiveConnected] = useState(false);
+  const [peerTyping, setPeerTyping] = useState<null | "composing" | "recording">(null);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [sending, setSending] = useState(false);
   const [sendingImage, setSendingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -361,10 +363,24 @@ function InboxPageInner() {
       setLiveConnected(true);
       try {
         const ev = JSON.parse(e.data);
-        if (ev.type !== "message") return;
-        // Hanya refresh bila event untuk sesi yang sedang dibuka (hindari
-        // memanggil engine WA untuk sesi lain tanpa perlu).
+        // Hanya untuk sesi yang sedang dibuka.
         if (ev.session && ev.session !== activeSessionRef.current) return;
+
+        if (ev.type === "presence") {
+          if (ev.chatId !== activeChatIdRef.current) return;
+          if (ev.typing) {
+            setPeerTyping(ev.recording ? "recording" : "composing");
+            if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+            typingTimerRef.current = setTimeout(() => setPeerTyping(null), 5000);
+          } else {
+            setPeerTyping(null);
+          }
+          return;
+        }
+
+        if (ev.type !== "message") return;
+        // Pesan masuk → lawan bicara berhenti mengetik.
+        if (ev.chatId === activeChatIdRef.current) setPeerTyping(null);
         loadChatsRef.current();
         loadAssignmentsRef.current();
         if (ev.chatId && ev.chatId === activeChatIdRef.current) loadMessagesRef.current();
@@ -377,6 +393,20 @@ function InboxPageInner() {
       es.close();
     };
   }, []);
+
+  // Saat membuka sebuah chat: reset status mengetik + minta WAHA mengirim
+  // presence untuk kontak ini (agar "sedang mengetik" bisa tampil).
+  useEffect(() => {
+    setPeerTyping(null);
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    if (activeSession && activeChatId) {
+      fetch("/api/inbox/subscribe-presence", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session: activeSession, chatId: activeChatId }),
+      }).catch(() => {});
+    }
+  }, [activeSession, activeChatId]);
 
   // Auto-scroll only when a genuinely new message just arrived (or the chat
   // was just opened) and the user isn't mid-scroll reading older history —
@@ -840,9 +870,15 @@ function InboxPageInner() {
               <div className="avatar-sm">{avatarLabel(activeChat?.name ?? activeChatId)}</div>
               <div className="who">
                 {activeChat?.name ?? activeChatId.split("@")[0]}
-                <small className="mono">
-                  {activeChatId.endsWith("@g.us") ? "Grup" : `+${activeChatId.split("@")[0]}`}
-                </small>
+                {peerTyping ? (
+                  <small style={{ color: "var(--success)", fontWeight: 600, fontStyle: "italic" }}>
+                    {peerTyping === "recording" ? "sedang merekam suara…" : "sedang mengetik…"}
+                  </small>
+                ) : (
+                  <small className="mono">
+                    {activeChatId.endsWith("@g.us") ? "Grup" : `+${activeChatId.split("@")[0]}`}
+                  </small>
+                )}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
                 {teamMembers.length > 1 && (

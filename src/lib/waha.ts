@@ -94,7 +94,7 @@ export async function createSession(name: string) {
         webhooks: [
           {
             url: "http://127.0.0.1:4000/api/webhooks/waha",
-            events: ["message", "message.ack", "session.status"],
+            events: ["message", "message.ack", "session.status", "presence.update"],
             hmac: { key: webhookSecret },
           },
         ],
@@ -414,6 +414,15 @@ export function setTyping(session: string, chatId: string, state: "start" | "sto
     method: "POST",
     body: JSON.stringify({ session, chatId }),
   });
+}
+
+/** Berlangganan pembaruan presence sebuah kontak agar WAHA mengirim event
+ * `presence.update` (mis. "composing" = sedang mengetik) untuk chat tsb. */
+export function subscribePresence(session: string, chatId: string) {
+  return wahaJson<void>(
+    `/api/${encodeURIComponent(session)}/presence/${encodeURIComponent(chatId)}/subscribe`,
+    { method: "POST" },
+  );
 }
 
 export function replyMessage(

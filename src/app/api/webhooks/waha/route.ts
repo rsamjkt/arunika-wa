@@ -401,6 +401,24 @@ export async function POST(req: NextRequest) {
     publish(ownerId, { type: "message", session: data.session, chatId: data.payload.from ?? null });
   }
 
+  // Presence ("sedang mengetik"): teruskan status composing/recording ke inbox
+  // secara instan. Bergantung engine WA yang meng-emit presence.update.
+  if (data.event === "presence.update") {
+    const pl = data.payload as unknown as { id?: string; presences?: Array<{ lastKnownPresence?: string }> };
+    const chatId = pl?.id;
+    const state = pl?.presences?.[0]?.lastKnownPresence;
+    if (chatId) {
+      publish(ownerId, {
+        type: "presence",
+        session: data.session,
+        chatId,
+        typing: state === "composing" || state === "recording",
+        recording: state === "recording",
+      });
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   if (data.event === "message" && data.payload && !data.payload.fromMe) {
     const chatId = data.payload.from;
     const text = data.payload.body ?? "";
