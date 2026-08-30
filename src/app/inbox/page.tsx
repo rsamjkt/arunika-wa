@@ -186,6 +186,7 @@ function InboxPageInner() {
   const [hasNewBelow, setHasNewBelow] = useState(false);
   const [text, setText] = useState("");
   const [suggesting, setSuggesting] = useState(false);
+  const [liveConnected, setLiveConnected] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendingImage, setSendingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -354,7 +355,10 @@ function InboxPageInner() {
 
   useEffect(() => {
     const es = new EventSource("/api/events");
+    es.onopen = () => setLiveConnected(true);
+    es.onerror = () => setLiveConnected(false); // EventSource auto-reconnect → onopen lagi
     es.onmessage = (e) => {
+      setLiveConnected(true);
       try {
         const ev = JSON.parse(e.data);
         if (ev.type !== "message") return;
@@ -368,7 +372,10 @@ function InboxPageInner() {
         /* abaikan payload rusak */
       }
     };
-    return () => es.close();
+    return () => {
+      setLiveConnected(false);
+      es.close();
+    };
   }, []);
 
   // Auto-scroll only when a genuinely new message just arrived (or the chat
@@ -673,11 +680,12 @@ function InboxPageInner() {
     <>
     <div className={`inbox-shell${activeChatId ? " chat-open" : ""}`}>
       <div className="inbox-left">
-        <div className="sess-switch">
+        <div className="sess-switch" style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <select
             value={activeSession ?? ""}
             onChange={(e) => router.push(`/inbox?session=${encodeURIComponent(e.target.value)}`)}
             className="field"
+            style={{ flex: 1 }}
           >
             {sessions.map((s) => (
               <option key={s.name} value={s.name}>
@@ -685,6 +693,30 @@ function InboxPageInner() {
               </option>
             ))}
           </select>
+          <span
+            title={liveConnected ? "Realtime aktif — pesan baru muncul seketika" : "Menyambung ulang… (sementara memakai auto-refresh)"}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              flexShrink: 0,
+              fontSize: "0.68rem",
+              fontWeight: 700,
+              color: liveConnected ? "var(--success)" : "var(--ink-soft)",
+            }}
+          >
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: liveConnected ? "var(--success)" : "var(--ink-soft)",
+                boxShadow: liveConnected ? "0 0 0 3px var(--success-bg)" : "none",
+                animation: liveConnected ? "pulse 1.8s ease-in-out infinite" : "none",
+              }}
+            />
+            {liveConnected ? "Live" : "…"}
+          </span>
         </div>
 
         <div className="convlist">
