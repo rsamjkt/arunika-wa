@@ -1,77 +1,94 @@
 # Arunika · WA
 
-A self-hosted WhatsApp Gateway dashboard — a clean, production-style frontend built on top of [WAHA](https://github.com/devlikeapro/waha) (WhatsApp HTTP API), giving you a real admin panel for managing WhatsApp devices, conversations, and integrations instead of raw API calls.
+**A multi-tenant WhatsApp Gateway SaaS with a built-in agentic AI assistant.** Manage devices, run broadcasts, automate replies, and let **Arunika** — an AI assistant that can *act* (call tools, look things up, book appointments, hand off to a human) — handle your customers across **WhatsApp and Telegram**, all from one clean dashboard.
 
-![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js) ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white) ![License](https://img.shields.io/badge/license-proprietary-lightgrey)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js) ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white) ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white) ![Tests](https://img.shields.io/badge/tests-Vitest-6E9F18?logo=vitest&logoColor=white) ![License](https://img.shields.io/badge/license-proprietary-lightgrey)
+
+---
 
 ## Overview
 
-Arunika-WA sits between your business and a self-hosted [WAHA](https://github.com/devlikeapro/waha) instance (WEBJS engine). WAHA's own API key never leaves the server — this app is a thin, authenticated Next.js proxy that adds a real UI, multi-user access control, and a self-service API key system on top.
+Arunika-WA is a production, self-hosted platform that turns a self-hosted WhatsApp connection into a real business tool: a multi-user admin panel, per-tenant plans & billing, a team inbox, scheduled/recurring broadcasts, and a genuinely capable AI assistant. It is built as an authenticated Next.js app — the underlying WhatsApp engine's credentials never leave the server; the browser only ever talks to this app's own authenticated API.
 
 ## Features
 
-- **Device management** — QR pairing, connect/disconnect, restart, multi-session support
-- **Inbox** — live chat list and thread view, send text/image, reply/forward/react/star/pin/delete, typing indicator, read receipts
-- **Quick send** — one-off message sending to any number, with number-existence check
-- **Contacts & groups** — browse, view, manage participants
-- **Profile management** — update display name and status for connected devices
-- **API documentation** — interactive, Swagger-style docs with live "try it out" support
-- **Authentication**
-  - Cookie-based login for the dashboard (multi-user, scrypt-hashed passwords)
-  - Self-service API keys (`X-Api-Key` header) for external apps/integrations calling `/api/*` programmatically — generate, rename, revoke, and audit last-used time from the UI
-- **Update awareness** — a scheduled check compares the installed WAHA image against the latest published version and surfaces a dashboard banner when an update is available (never applied automatically)
+### 🤖 Arunika — the AI assistant
+- **Agentic tool-use ("Mode Agent")** — Arunika doesn't just reply, it *acts*: a modular **skill registry** of 13 tools it can call mid-conversation (check time & business hours, search the knowledge base, calculate totals/discounts, track shipments, estimate shipping cost, check stock, take notes, log orders, **book appointments**, search the web, mark chats resolved, hand off to a human).
+- **Knowledge Base + RAG-lite** — retrieval over the tenant's own business info (keyword-relevance, no external vector DB) so answers are grounded and cheap.
+- **Multi-provider** — 9 LLM providers (Anthropic, OpenAI, Gemini, Groq, Mistral, Qwen, DeepSeek, OpenRouter, Vikey.ai); pick per tenant. Key rotation + model fallback for reliability.
+- **Long-term memory**, **time-awareness**, **free-chat persona**, and **web search** (optional).
+- **Smart handoff** — detects "I need a human" / complaints, flags the chat, notifies an agent, and pauses the bot for that conversation.
+- **AI co-pilot** — a "Suggest reply" button drafts a response for a human agent to edit and send.
+- **Cost-aware** — prompt caching, triviality skip, response cache for repeat FAQs, and a model router that sends simple messages to a cheaper sibling model.
+
+### 🌐 Multi-channel
+- One **channel-agnostic brain** answers on both **WhatsApp** and **Telegram** with the same persona, knowledge base, and skills. New channels plug in as adapters.
+
+### 💬 Messaging & inbox
+- **Team inbox** — live chat list & threads, send text/media, reply/forward/react/star/pin/delete, typing indicators, read receipts, conversation assignment & open/resolved status, per-contact tags & notes, canned replies.
+- **Quick send** with number-existence check.
+- **Contacts, groups & profile** management.
+
+### 📣 Broadcast (built to survive)
+- Scheduled **and recurring** (daily/weekly) broadcasts, CSV audience upload, template variables.
+- **Anti-ban layer**: human-like randomized pacing, per-number daily **warm-up** limits, auto-pause on repeated failures, **spintax** message variation, optional number pre-check, and a per-number **health score**.
+
+### 🏢 Multi-tenant SaaS
+- Roles (superadmin / tenant / tenant-staff), plans with device/quota limits, **QRIS** payments, referral program, unlimited team seats on every plan.
+- **Transactional emails** (welcome, invoice, payment) + **security/monitoring notifications** on login, registration, password change, and payment — to both the user and the platform admin.
+
+### 🔌 Integrations & developer tools
+- **Integrations control dashboard** — connect Telegram, courier tracking (shipping), and web search from the UI, no server edits.
+- Self-service **API keys** (`X-Api-Key`) and **outbound webhooks** (HMAC-signed) for external systems.
+- Interactive, Swagger-style **API documentation** with live "try it".
+
+### 🎨 UX
+- Clean, modern dashboard (Minimals-inspired), light/dark theme, lucide icons.
 
 ## Tech stack
 
-- [Next.js 16](https://nextjs.org/) (App Router, Turbopack) + React 19 + TypeScript
-- Server-side Route Handlers proxy all WAHA calls — the WAHA API key is never exposed to the client
-- File-based storage for accounts/sessions/API keys (no external database required)
-- [WAHA](https://github.com/devlikeapro/waha) as the underlying WhatsApp engine (WEBJS / whatsapp-web.js)
+- **[Next.js 16](https://nextjs.org/)** (App Router) · **React 19** · **TypeScript** (strict)
+- Server Route Handlers proxy all engine calls — engine credentials stay server-side
+- **File-based storage** for accounts, sessions, settings & state (no external database required)
+- **Vitest** test suite; **ESLint** + strict `tsc`
+- A self-hosted, unofficial WhatsApp connection engine (WhatsApp-Web protocol) runs alongside as the message transport
 
 ## Getting started
 
 ### Prerequisites
-
 - Node.js 22+
-- A running [WAHA](https://github.com/devlikeapro/waha) instance (Docker) with its API key
+- A running self-hosted WhatsApp engine (Docker) reachable from the app
 
 ### Setup
-
 ```bash
+git clone https://github.com/rsamjkt/arunika-wa.git
+cd arunika-wa
 npm install
-cp .env.example .env.local   # fill in WAHA_BASE_URL, WAHA_API_KEY, ADMIN_USERNAME, ADMIN_PASSWORD
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) and log in with the admin credentials from `.env.local`. Additional users and API keys can be created afterwards from **Settings** in the dashboard.
-
-### Production
-
-```bash
+cp .env.example .env.local   # then fill in the values
 npm run build
-npm run start
+npm run start                # serves on port 4000
 ```
 
-## Authentication model
+Configuration lives in `.env.local` (engine base URL & key, admin bootstrap, SMTP for email, payment gateway, app URL, and optional AI/provider keys). Per-tenant and integration settings (AI provider keys, Telegram, shipping, web search) are managed from the dashboard and stored under `data/` (git-ignored — never committed).
 
-| Caller | Method | Notes |
-|---|---|---|
-| Browser (dashboard) | `arunika_session` httpOnly cookie | Set on login, tied to a user account in `data/users.json` |
-| External app / script | `X-Api-Key: <key>` header | Generated and managed at **Settings → API Key** |
+### Docker / Portainer
+A `Dockerfile` and `docker-compose.yml` are included (host-network mode). See `CATATAN-DEPLOY-PORTAINER.md`.
 
-`/api/users` and `/api/api-keys` (account/key management) only accept the browser session — an API key can never manage other users or keys.
-
-## Project structure
-
+## Scripts
+```bash
+npm run dev      # dev server (Turbopack)
+npm run build    # production build
+npm run start    # start production server (port 4000)
+npm run test     # Vitest suite
+npm run lint     # ESLint
 ```
-src/
-  app/            Pages (App Router) and API route handlers
-  components/     Shared UI components
-  lib/            Server-only WAHA client, auth/session/user/API-key stores
-  proxy.ts        Auth gate for the whole app (Next.js Proxy / middleware)
-data/             Runtime storage — users, sessions, API keys (gitignored)
-```
+
+## Security notes
+- All tenant-owned data is scoped to the authenticated session — never to client-supplied IDs.
+- Outbound user-supplied URLs pass through an SSRF-safe fetch (DNS-validated, no redirects).
+- AI system prompts are hardened against prompt injection from inbound messages.
+- Secrets live only in `.env.local` / `data/` and are never committed.
 
 ## License
 
-Proprietary — all rights reserved.
+Proprietary — © Arunika. All rights reserved.
