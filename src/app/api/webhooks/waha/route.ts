@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getMessages, sendText } from "@/lib/waha";
 import { logEvent } from "@/lib/messageLog";
+import { publish } from "@/lib/eventBus";
 import { isTrivialMessage } from "@/lib/aiTriviality";
 import { deliverOutboundWebhook } from "@/lib/webhookConfig";
 import { getSessionOwner } from "@/lib/tenancy";
@@ -392,6 +393,12 @@ export async function POST(req: NextRequest) {
   const deliveryOwner = getFullUser(ownerId);
   if (deliveryOwner && userHasFeature(deliveryOwner, "webhook")) {
     deliverOutboundWebhook(ownerId, data.event, data).catch(() => {});
+  }
+
+  // Push realtime ke browser inbox (SSE) untuk tiap event pesan — masuk maupun
+  // keluar (auto-reply/agen) — agar UI ter-update INSTAN tanpa menunggu polling.
+  if (data.event === "message" && data.payload) {
+    publish(ownerId, { type: "message", session: data.session, chatId: data.payload.from ?? null });
   }
 
   if (data.event === "message" && data.payload && !data.payload.fromMe) {

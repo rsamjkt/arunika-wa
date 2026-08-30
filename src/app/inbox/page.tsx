@@ -302,7 +302,7 @@ function InboxPageInner() {
     const id = setInterval(() => {
       loadChats();
       loadAssignments();
-    }, 4_000);
+    }, 10_000);
     return () => clearInterval(id);
   }, [activeSession, loadChats, loadAssignments]);
 
@@ -334,9 +334,42 @@ function InboxPageInner() {
     forceScrollRef.current = true;
     if (!activeChatId) return;
     loadMessages();
-    const id = setInterval(loadMessages, 4_000);
+    // Polling jadi sekadar CADANGAN — realtime instan ditangani SSE di bawah.
+    const id = setInterval(loadMessages, 6_000);
     return () => clearInterval(id);
   }, [activeChatId, loadMessages]);
+
+  // Realtime instan via SSE: server men-push saat ada pesan (dari webhook WAHA).
+  // Refs supaya koneksi SSE dibuat SEKALI (tak reconnect tiap render).
+  const loadChatsRef = useRef(loadChats);
+  const loadAssignmentsRef = useRef(loadAssignments);
+  const loadMessagesRef = useRef(loadMessages);
+  const activeChatIdRef = useRef(activeChatId);
+  const activeSessionRef = useRef(activeSession);
+  loadChatsRef.current = loadChats;
+  loadAssignmentsRef.current = loadAssignments;
+  loadMessagesRef.current = loadMessages;
+  activeChatIdRef.current = activeChatId;
+  activeSessionRef.current = activeSession;
+
+  useEffect(() => {
+    const es = new EventSource("/api/events");
+    es.onmessage = (e) => {
+      try {
+        const ev = JSON.parse(e.data);
+        if (ev.type !== "message") return;
+        // Hanya refresh bila event untuk sesi yang sedang dibuka (hindari
+        // memanggil engine WA untuk sesi lain tanpa perlu).
+        if (ev.session && ev.session !== activeSessionRef.current) return;
+        loadChatsRef.current();
+        loadAssignmentsRef.current();
+        if (ev.chatId && ev.chatId === activeChatIdRef.current) loadMessagesRef.current();
+      } catch {
+        /* abaikan payload rusak */
+      }
+    };
+    return () => es.close();
+  }, []);
 
   // Auto-scroll only when a genuinely new message just arrived (or the chat
   // was just opened) and the user isn't mid-scroll reading older history —
