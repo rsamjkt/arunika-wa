@@ -398,7 +398,12 @@ export async function POST(req: NextRequest) {
   // Push realtime ke browser inbox (SSE) untuk tiap event pesan — masuk maupun
   // keluar (auto-reply/agen) — agar UI ter-update INSTAN tanpa menunggu polling.
   if (data.event === "message" && data.payload) {
-    publish(ownerId, { type: "message", session: data.session, chatId: data.payload.from ?? null });
+    publish(ownerId, {
+      type: "message",
+      session: data.session,
+      chatId: data.payload.from ?? null,
+      fromMe: Boolean(data.payload.fromMe),
+    });
   }
 
   // Presence ("sedang mengetik"): teruskan status composing/recording ke inbox

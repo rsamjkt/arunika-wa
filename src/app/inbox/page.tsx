@@ -20,6 +20,8 @@ import {
   Clipboard,
   Send,
   Sparkles,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
 type SessionStatus =
@@ -189,6 +191,10 @@ function InboxPageInner() {
   const [liveConnected, setLiveConnected] = useState(false);
   const [peerTyping, setPeerTyping] = useState<null | "composing" | "recording">(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [soundOn, setSoundOn] = useState(true);
+  const soundOnRef = useRef(true);
+  soundOnRef.current = soundOn;
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const [sending, setSending] = useState(false);
   const [sendingImage, setSendingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -355,6 +361,56 @@ function InboxPageInner() {
   activeChatIdRef.current = activeChatId;
   activeSessionRef.current = activeSession;
 
+  function toggleSound() {
+    setSoundOn((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem("inbox-sound", next ? "on" : "off");
+      } catch {
+        /* localStorage tak tersedia */
+      }
+      return next;
+    });
+  }
+
+  // Nada notifikasi pesan masuk — dibangkitkan via Web Audio (tanpa file audio).
+  function playDing() {
+    try {
+      const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AC) return;
+      const ctx = audioCtxRef.current ?? (audioCtxRef.current = new AC());
+      if (ctx.state === "suspended") void ctx.resume();
+      const now = ctx.currentTime;
+      [880, 1174.66].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        const t = now + i * 0.09;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.14, t + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.17);
+      });
+    } catch {
+      /* autoplay diblokir / tak didukung — abaikan */
+    }
+  }
+
+  // Muat preferensi suara + resume AudioContext pada interaksi pertama (kebijakan autoplay).
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("inbox-sound") === "off") setSoundOn(false);
+    } catch {
+      /* abaikan */
+    }
+    const resume = () => audioCtxRef.current?.resume?.();
+    window.addEventListener("pointerdown", resume);
+    return () => window.removeEventListener("pointerdown", resume);
+  }, []);
+
   useEffect(() => {
     const es = new EventSource("/api/events");
     es.onopen = () => setLiveConnected(true);
@@ -379,6 +435,8 @@ function InboxPageInner() {
         }
 
         if (ev.type !== "message") return;
+        // Bunyikan notifikasi hanya untuk pesan MASUK (bukan kiriman kita/bot).
+        if (!ev.fromMe && soundOnRef.current) playDing();
         // Pesan masuk → lawan bicara berhenti mengetik.
         if (ev.chatId === activeChatIdRef.current) setPeerTyping(null);
         loadChatsRef.current();
@@ -747,6 +805,23 @@ function InboxPageInner() {
             />
             {liveConnected ? "Live" : "…"}
           </span>
+          <button
+            type="button"
+            onClick={toggleSound}
+            title={soundOn ? "Notifikasi suara: aktif — klik untuk matikan" : "Notifikasi suara: mati — klik untuk aktifkan"}
+            aria-label="Toggle notifikasi suara"
+            style={{
+              flexShrink: 0,
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              padding: 4,
+              color: soundOn ? "var(--primary)" : "var(--ink-soft)",
+              display: "inline-flex",
+            }}
+          >
+            {soundOn ? <Volume2 size={17} strokeWidth={2} /> : <VolumeX size={17} strokeWidth={2} />}
+          </button>
         </div>
 
         <div className="convlist">
