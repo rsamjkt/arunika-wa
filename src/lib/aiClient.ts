@@ -74,6 +74,19 @@ async function callAnthropic(
   return text.trim();
 }
 
+/**
+ * Model "reasoning" (DeepSeek V4 lewat Vikey) berpikir dulu sebelum menjawab, dan pikirannya
+ * ikut memakan `max_tokens`. Dengan jatah 400 token untuk balasan CS pendek, seluruh jatah habis
+ * di tahap berpikir → provider menjawab 502 "spent its entire max_tokens budget on reasoning"
+ * (56 auto-reply + 70 pembaruan memori gagal dalam seminggu, Sep 2026). Balasan CS tidak butuh
+ * rantai pikiran; matikan. Uji langsung: balasan yang sama turun dari 400 → 27 token dan 5 → 3 dtk.
+ * Hanya untuk Vikey: API DeepSeek resmi/provider lain menolak parameter yang tak dikenal.
+ */
+function reasoningControl(label: string, model: string): Record<string, unknown> {
+  if (label === "Vikey.ai" && /^deepseek\//.test(model)) return { thinking: { type: "disabled" } };
+  return {};
+}
+
 async function callOpenAICompatible(
   baseUrl: string,
   apiKey: string,
@@ -99,6 +112,7 @@ async function callOpenAICompatible(
     body: JSON.stringify({
       ...modelField,
       max_tokens: MAX_TOKENS,
+      ...reasoningControl(label, model),
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userContent },
@@ -108,7 +122,12 @@ async function callOpenAICompatible(
   if (!res.ok) throw new Error(`${label} API error: ${res.status} ${await res.text().catch(() => "")}`);
   const data = await res.json();
   const text = data.choices?.[0]?.message?.content;
-  if (!text || typeof text !== "string") throw new Error(`${label} tidak mengembalikan balasan teks`);
+  if (!text || typeof text !== "string") {
+    // finish_reason "length" tanpa isi = jatah token habis untuk reasoning; sebut terang
+    // supaya log tidak menyesatkan ("tidak mengembalikan balasan teks" terdengar seperti bug provider).
+    const alasan = data.choices?.[0]?.finish_reason === "length" ? " (jatah max_tokens habis sebelum jawaban ditulis)" : "";
+    throw new Error(`${label} tidak mengembalikan balasan teks${alasan}`);
+  }
   return text.trim();
 }
 
